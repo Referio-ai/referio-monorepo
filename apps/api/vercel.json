@@ -14,10 +14,5 @@
   ],
   "env": {
     "APP_MODULE": "src.main:app"
-  },
-  "functions": {
-    "api/**": {
-      "excludeFiles": "{.next,*.cache,node_modules,public,app}/**"
-    }
   }
 }
