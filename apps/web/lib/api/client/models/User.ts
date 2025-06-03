@@ -3,8 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type User = {
-  id: string;
-  forename: string;
-  surname: string;
-  email: string;
+    id: string;
+    forename: string;
+    surname: string;
+    email: string;
 };
+

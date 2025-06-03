@@ -1,16 +1,14 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
-
 from src.api.api_v1.api import api_router
-from src.config import settings
 
 info_router = APIRouter()
 
 
 @info_router.get("/", status_code=200, include_in_schema=False)
 async def info():
-    return [{"Status": "API Running"}]
+    return [{"Status": "Referio API is running"}]
 
 
 def custom_generate_unique_id(route: APIRoute):
@@ -27,14 +25,12 @@ def custom_generate_unique_id(route: APIRoute):
 
 def get_application():
     _app = FastAPI(
-        title=settings.PROJECT_NAME,
-        description=settings.PROJECT_DESCRIPTION,
+        title='REFERIO API',
         generate_unique_id_function=custom_generate_unique_id,
-        root_path=settings.ROOT,
         root_path_in_servers=True,
     )
 
-    _app.include_router(api_router, prefix=settings.API_VERSION)
+    _app.include_router(api_router, prefix="/api/v1", tags=["API v1"], responses={404: {"description": "V1 Apis"}})
     _app.include_router(info_router, tags=[""])
 
     _app.add_middleware(

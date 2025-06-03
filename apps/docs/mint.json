@@ -66,18 +66,7 @@
     {
       "group": "Users",
       "pages": [
-        "api/users/get-user",
-        "api/users/get-all-users",
-        "api/users/search-users",
-        "api/users/create-user"
-      ]
-    },
-    {
-      "group": "Spells",
-      "pages": [
-        "api/spells/get-spell",
-        "api/spells/get-all-spells",
-        "api/spells/search-spells"
+        "api/get-all-users"
       ]
     }
   ],
