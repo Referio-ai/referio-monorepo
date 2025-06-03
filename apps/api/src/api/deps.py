@@ -1,8 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, HTTPException
-from supabase_py_async import AsyncClient, create_client
-from supabase_py_async.lib.client_options import ClientOptions
+from supabase import AsyncClient, create_client, ClientOptions
 
 from src.config import settings
 
