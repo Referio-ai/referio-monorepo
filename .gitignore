@@ -56,3 +56,6 @@ cover/
 
 # Environments
 .venv
+
+# Log changes
+log-changes/

@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
-import { DashboardLayout } from "@/components/layouts/dashboard";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { OpenAPI } from "@/lib/api/client";
@@ -36,11 +35,11 @@ export default function RootLayout({
       <body className={cn(fontSans.variable, "bg-background font-sans")}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme=""
           enableSystem
           disableTransitionOnChange
         >
-          <DashboardLayout>{children}</DashboardLayout>
+            {children}
           <TailwindIndicator />
         </ThemeProvider>
       </body>
