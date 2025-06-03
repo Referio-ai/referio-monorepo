@@ -53,7 +53,7 @@ if os.getenv("ENVIRONMENT") == "PRODUCTION":
     origins = prod_origins
 
 env_success = requests.get(
-    f"https://app.infisical.com/api/v3/secrets/raw?workspaceId=3a379869-25c8-46f0-8895-4b5625a166bb&environment={ENV}",
+    f"https://app.infisical.com/api/v3/secrets/raw?workspaceId=e184ee5b-a2d1-498e-954f-e52ca65e7bce&environment={ENV}",
     headers={"Authorization": "Bearer " + access_token},
 )
 
