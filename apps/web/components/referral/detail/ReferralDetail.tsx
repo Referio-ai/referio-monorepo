@@ -11,7 +11,7 @@ import {
   Image, 
   Send 
 } from 'lucide-react';
-import { Referral } from '@/lib/constants/referral';
+import { Referral } from '@/constants/referral';
 import { ReferralDetailSkeleton } from '../skeletons/ReferralSkeletons';
 
 interface ReferralDetailProps {

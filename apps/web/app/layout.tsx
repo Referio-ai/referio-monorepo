@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { OpenAPI } from "@/lib/api/client";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
+import { AuthProvider } from "@propelauth/nextjs/client";
+import { AuthRedirectProvider } from "@/components/auth/auth-redirect-provider";
 
 export const fontSans = FontSans({
   subsets: ["latin"],
@@ -39,7 +41,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-            {children}
+          <AuthProvider authUrl={process.env.NEXT_PUBLIC_AUTH_URL!}>
+            <AuthRedirectProvider>{children}</AuthRedirectProvider>
+          </AuthProvider>
           <TailwindIndicator />
         </ThemeProvider>
       </body>
