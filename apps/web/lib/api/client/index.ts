@@ -9,4 +9,5 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { User } from './models/User';
 
+export { ApiV1Service } from './services/ApiV1Service';
 export { UsersService } from './services/UsersService';
