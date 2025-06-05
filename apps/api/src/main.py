@@ -4,6 +4,9 @@ from fastapi.routing import APIRoute
 from src.api.api_v1.api import api_router
 from src.config.supabase_config import auth
 from fastapi import FastAPI, Depends
+from src.config.supabase_config import initialize_clients
+from contextlib import asynccontextmanager
+import asyncio
 
 info_router = APIRouter()
 
@@ -25,17 +28,32 @@ def custom_generate_unique_id(route: APIRoute):
     return f"{route.tags[0]}-{route.name}"
 
 
-def get_application():
-    _app = FastAPI(
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await initialize_clients()
+        yield
+    finally:
+        # Ensure that the clients are closed properly
+        try:
+            # Give a moment for any remaining background tasks to complete
+            await asyncio.sleep(0.5)
+            print("Initiating application....")
+        except Exception as e:
+            print(f"Error during appliaction: {e}")
+        finally:
+            print("Application shutdown complete.")
+
+app = FastAPI(
+        lifespan=lifespan,
         title='REFERIO API',
         generate_unique_id_function=custom_generate_unique_id,
-        root_path_in_servers=True,
     )
 
-    _app.include_router(api_router, prefix="/api/v1", tags=["API v1"], responses={404: {"description": "V1 Apis"}}, dependencies=[Depends(auth.require_user)])
-    _app.include_router(info_router, tags=[""])
+app.include_router(api_router, prefix="/api/v1", tags=["API v1"], responses={404: {"description": "V1 Apis"}})
+app.include_router(info_router, tags=[""])
 
-    _app.add_middleware(
+app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
@@ -43,7 +61,4 @@ def get_application():
         allow_headers=["*"],
     )
 
-    return _app
 
-
-app = get_application()
