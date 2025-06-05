@@ -1,6 +1,5 @@
 from typing import Literal, Optional, Union
-
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
 from src.schemas import User
 
 router = APIRouter()
@@ -8,5 +7,9 @@ router = APIRouter()
 # Example endpoint
 @router.get("/", status_code=200, response_model=User)
 async def get_user() -> User:
-    return ''
-
+    return User(
+        id="sample-user-123",
+        forename="John",
+        surname="Doe",
+        email="john.doe@example.com"
+    ) 

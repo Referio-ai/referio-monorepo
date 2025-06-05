@@ -60,4 +60,7 @@ cover/
 # Log changes
 log-changes/
 
+# AI-generated change logs
+log-changes/
+
 .idea/*

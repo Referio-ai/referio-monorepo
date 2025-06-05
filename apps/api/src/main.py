@@ -32,7 +32,7 @@ def get_application():
         root_path_in_servers=True,
     )
 
-    _app.include_router(api_router, prefix="/api/v1", tags=["API v1"], responses={404: {"description": "V1 Apis"}}, dependencies=[Depends(auth.require_user)])
+    _app.include_router(api_router, prefix="/api/v1", tags=["API v1"], responses={404: {"description": "V1 Apis"}})
     _app.include_router(info_router, tags=[""])
 
     _app.add_middleware(
