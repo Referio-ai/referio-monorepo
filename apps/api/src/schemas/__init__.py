@@ -1,1 +1,1 @@
-from .user import User, UserCreate, UserSearchResults, UserUpdate
+from .organization import Organization, OrganizationCreate, OrganizationUpdate
