@@ -21,8 +21,6 @@ importers:
         specifier: ^1.12.4
         version: 1.12.4
 
-  apps/api: {}
-
   apps/docs:
     dependencies:
       '@mintlify/scraping':
