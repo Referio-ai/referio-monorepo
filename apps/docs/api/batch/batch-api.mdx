@@ -1,0 +1,187 @@
+---
+title: Batch API Reference
+"og:title": "Batch API Reference"
+description: API reference for batch operations in the referral system
+---
+
+## Introduction
+
+The batch API endpoints allow you to manage referral batches in the system. A batch is a collection of referrals that are generated together and share common attributes like outbound and inbound facilities.
+
+## Endpoints
+
+### Create Batch
+
+<CodeGroup>
+```bash curl
+curl -X POST "https://api.example.com/batches/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "referral_batch_size": 100,
+    "referral_outbound_facility_id": "550e8400-e29b-41d4-a716-446655440000",
+    "referral_inbound_facility_id": "550e8400-e29b-41d4-a716-446655440001"
+  }'
+```
+
+```typescript typescript
+const response = await BatchesService.batchesCreateBatch({
+  referral_batch_size: 100,
+  referral_outbound_facility_id: "550e8400-e29b-41d4-a716-446655440000",
+  referral_inbound_facility_id: "550e8400-e29b-41d4-a716-446655440001"
+});
+```
+</CodeGroup>
+
+Creates a new batch of referrals with the specified size and facility IDs.
+
+**Request Body**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| referral_batch_size | integer | Number of referrals to generate in the batch |
+| referral_outbound_facility_id | UUID | ID of the outbound facility |
+| referral_inbound_facility_id | UUID | ID of the inbound facility |
+
+**Response**
+
+```json
+{
+  "message": "Batch created successfully",
+  "batch_id": "550e8400-e29b-41d4-a716-446655440002",
+  "referrals_created": 100,
+  "batch_prefix": "Ab3x9"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| message | string | Success message |
+| batch_id | UUID | Unique identifier of the created batch |
+| referrals_created | integer | Number of referrals created in the batch |
+| batch_prefix | string | Unique prefix assigned to the batch |
+
+### Get Batch
+
+<CodeGroup>
+```bash curl
+curl "https://api.example.com/batches/{batch_id}"
+```
+
+```typescript typescript
+const batch = await BatchesService.batchesGetBatch({
+  batchId: "550e8400-e29b-41d4-a716-446655440002"
+});
+```
+</CodeGroup>
+
+Retrieves a specific batch by its ID.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| batch_id | UUID | Unique identifier of the batch |
+
+**Response**
+
+```json
+{
+  "referral_batch_id": "550e8400-e29b-41d4-a716-446655440002",
+  "referral_batch_prefix": "Ab3x9",
+  "referral_batch_size": 100,
+  "referral_outbound_facility_id": "550e8400-e29b-41d4-a716-446655440000",
+  "referral_inbound_facility_id": "550e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+### Get Batch Referrals
+
+<CodeGroup>
+```bash curl
+curl "https://api.example.com/batches/{batch_id}/referrals"
+```
+
+```typescript typescript
+const referrals = await BatchesService.batchesGetBatchReferrals({
+  batchId: "550e8400-e29b-41d4-a716-446655440002"
+});
+```
+</CodeGroup>
+
+Retrieves all referrals associated with a specific batch.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| batch_id | UUID | Unique identifier of the batch |
+
+**Response**
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "referral_batch_id": "550e8400-e29b-41d4-a716-446655440002",
+    "referral_batch_prefix": "Ab3x9",
+    "referral_outbound_facility_id": "550e8400-e29b-41d4-a716-446655440000",
+    "referral_inbound_facility_id": "550e8400-e29b-41d4-a716-446655440001",
+    "referral_slug": "Xy7z2",
+    "referral_scanned": false,
+    "referral_submitted": false
+  }
+]
+```
+
+### Get Batch Summary
+
+<CodeGroup>
+```bash curl
+curl "https://api.example.com/batches/{batch_id}/summary"
+```
+
+```typescript typescript
+const summary = await BatchesService.batchesGetBatchSummary({
+  batchId: "550e8400-e29b-41d4-a716-446655440002"
+});
+```
+</CodeGroup>
+
+Retrieves a summary of a batch including statistics about its referrals.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| batch_id | UUID | Unique identifier of the batch |
+
+**Response**
+
+```json
+{
+  "total_referrals": 100,
+  "active_referrals": 75,
+  "used_referrals": 25,
+  "conversion_rate": 25.0,
+  "created_at": "2024-03-20T10:00:00Z",
+  "last_activity": "2024-03-20T15:30:00Z"
+}
+```
+
+## Error Responses
+
+The API may return the following error responses:
+
+| Status Code | Description |
+|-------------|-------------|
+| 400 | Bad Request - Invalid input parameters |
+| 404 | Not Found - Batch not found |
+| 500 | Internal Server Error - Server-side error |
+
+## Notes
+
+- Each batch is assigned a unique prefix that is used to identify referrals within that batch
+- Referrals within a batch share the same outbound and inbound facility IDs
+- The batch size determines how many referrals will be generated
+- All referrals in a batch are created with initial states (not scanned, not submitted)
+- Batch operations are atomic - either all referrals are created or none are 

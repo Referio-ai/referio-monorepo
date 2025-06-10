@@ -64,9 +64,9 @@
       ]
     },
     {
-      "group": "Users",
+      "group": "API Reference",
       "pages": [
-        "api/get-all-users"
+        "api/batch/batch-api"
       ]
     }
   ],
