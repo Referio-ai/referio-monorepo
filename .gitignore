@@ -62,5 +62,6 @@ log-changes/
 
 # AI-generated change logs
 log-changes/
+*.log
 
 .idea/*
