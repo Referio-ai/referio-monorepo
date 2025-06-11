@@ -2,10 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type User = {
-    id: string;
-    forename: string;
-    surname: string;
-    email: string;
+export type ReferralBatchUpdate = {
+    referral_batch_id: string;
 };
 

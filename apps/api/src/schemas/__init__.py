@@ -8,3 +8,4 @@ from .referrals_batch import (
     GenerateBatchRequest,
     GenerateBatchResponse
 )
+from .patients import Patient, PatientCreate, PatientUpdate, PatientSearchResults

@@ -2,22 +2,22 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { User } from '../models/User';
+import type { Organization } from '../models/Organization';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-export class UsersService {
+export class OrganizationsService {
     /**
-     * Get User
-     * @returns User Successful Response
+     * Get Organizations
+     * @returns Organization Successful Response
      * @throws ApiError
      */
-    public static apiV1GetUser(): CancelablePromise<User> {
+    public static apiV1GetOrganizations(): CancelablePromise<Array<Organization>> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/users/',
+            url: '/api/v1/organizations/',
             errors: {
-                404: `User Endpoints`,
+                404: `Organization Endpoints`,
             },
         });
     }
