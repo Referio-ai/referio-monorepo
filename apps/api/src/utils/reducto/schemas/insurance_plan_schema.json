@@ -1,0 +1,1179 @@
+{
+  "description": "Root object for dental insurance eligibility verification data",
+  "properties": {
+    "insurance_information": {
+      "description": "Patient and insurance details",
+      "properties": {
+        "claims_address": {
+          "properties": {
+            "city": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "country": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "po_box": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "street": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "unit": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "zip_code": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "title": "InsuranceAddress",
+          "type": "object"
+        },
+        "group_id": {
+          "description": "Insurance group number or the plan number",
+          "type": "string"
+        },
+        "group_name": {
+          "description": "Name of the insurance group, plan name, client name, or the employer name",
+          "type": "string"
+        },
+        "insurance_name": {
+          "description": "Official name of the insurance company. Note do not include the plan information in the insurance name (e.g. Delta Dental CA not Delta Dental CA PPO). Include the state if applicable.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "insurance_phone_number": {
+          "description": "Contact phone number for the insurance provider",
+          "type": "string"
+        },
+        "payor_id": {
+          "description": "Identifier for the insurance payor",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "general_policy_information": {
+      "properties": {
+        "annual_maximum": {
+          "description": "Maximum annual benefits for different network types. This is the total maximum amount that the insurance company will pay for the year. It is NOT the maximum remaining amount.",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "annual_rollover_maximum": {
+          "description": "Maximum annual rollover benefits. This is the total maximum amount that the insurance company will pay for the year. It is NOT the maximum remaining amount.",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "deductible": {
+          "description": "Deductible amounts. This is the total deductible amount that the insurance company will pay for the year. It is NOT the deductible remaining amount.",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "out_of_pocket_maximum": {
+          "description": "Out of pocket maximums. This is the total maximum amount that the insurance company will pay for the year. It is NOT the maximum remaining amount.",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "plan_renewal_type": {
+          "description": "Enum of one of the following: Coverage Year, Calendar Year. Note that fiscal year is not a valid value and is the same as calendar year.",
+          "enum": [
+            "Coverage Year",
+            "Calendar Year"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "renewal_period_end": {
+          "description": "Date when the policy ends coverage (yyyy-mm-dd)",
+          "format": "date",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "renewal_period_start": {
+          "description": "Date when the policy begins coverage (yyyy-mm-dd)",
+          "format": "date",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "orthodontic_policy_information": {
+      "description": "Orthodontic coverage information. Including orthodontic annual deductible, maximum, lifetime maximum, rollover maximum, out of pocket maximum, age limit, necessity, takeover, autopay, payment terms, and pay clear aligner.",
+      "properties": {
+        "ortho_age_limit": {
+          "description": "Age limit for orthodontic coverage",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ortho_annual_deductible": {
+          "description": "Orthodontic annual deductible",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "ortho_annual_maximum": {
+          "description": "Maximum annual orthodontic benefits",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "ortho_annual_out_of_pocket_maximum": {
+          "description": "Orthodontic annual out of pocket maximums",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "ortho_annual_rollover_maximum": {
+          "description": "Orthodontic annual rollover maximums",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "ortho_autopay": {
+          "description": "Set to true if the insurance company processes claims automatically; false if provider must submit claims each period.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ortho_lifetime_maximum": {
+          "description": "Maximum lifetime orthodontic benefits",
+          "properties": {
+            "inn_ppo": {
+              "description": "In-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "inn_premier": {
+              "description": "In-network Premier values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "oon_ppo": {
+              "description": "Out-of-network PPO values",
+              "properties": {
+                "family": {
+                  "description": "Family value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "individual": {
+                  "description": "Individual value. Format is a number to two decimal places (e.g. 100.00)",
+                  "multipleOf": 0.01,
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "ortho_necessity": {
+          "description": "Set to true if plan requires orthodontic treatment to be medically necessary; false otherwise",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ortho_pay_clear_aligner": {
+          "description": "Set to true if the insurance company pays for clear aligners; false otherwise",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ortho_payment_terms": {
+          "description": "Payment frequency for orthodontic claims. Use one of: 'Monthly', 'Quarterly', 'Semi-annually', 'Annually', or the exact term from documentation if not listed here.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ortho_takeover": {
+          "description": "Set to true if plan has provisions for orthodontic treatment takeover from another provider; false otherwise",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "other_provisions": {
+      "items": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "procedures": {
+      "items": {
+        "description": "Coverage information about dental procedures, frequency limitations, policy limitations, and percentages",
+        "properties": {
+          "copay": {
+            "description": "Copayment dollar amount for the procedure. Formated to 2 decimal places.",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "coverage_oon_allowed_amount": {
+            "description": "Allowed amount for out-of-network coverage",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "limitation": {
+            "properties": {
+              "age_restriction": {
+                "description": "Age restrictions for the procedure",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "limitation_description": {
+                "description": "A detailed statement describing the conditions, constraints, or rules that limit how, when, or for whom this procedure code can be used. This may include specific eligibility requirements, coverage restrictions, frequency limits, age considerations, or any other applicable guidelines that affect the procedure's usage and reimbursement.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "limitation_frequency": {
+                "description": "Description of the frequency of the limitation. Format must follow the pattern 'X per Y period' where X is a number, Y is a time period (e.g., months, years, lifetime), and may include modifiers such as 'consecutive', 'calendar', etc. Examples: '1 per 12 consecutive months', '2 per calendar year'. Pay attention to special modifiers such as '1 per 12 consecutive months' or '1 per 12 calendar months' please include the special modifier in the output. Additional examples of the special modifiers are 'consecutive', 'calendar', 'visit', 'date of service', 'provider', and more.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "shares_frequency_with_procedure_codes": {
+                "description": "Comma-separated list of procedure codes (e.g., 'D0120, D0140, D0150') that share the same frequency limitation.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "treatment_area": {
+                "description": "Specific dental area using standard notation (e.g., 'tooth 14', 'upper right quadrant', 'full mouth'). Use exact terminology from source document.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "percentages": {
+            "properties": {
+              "inn_ppo": {
+                "description": "INN PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                "maximum": 100,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "inn_premier": {
+                "description": "INN Premier Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                "maximum": 100,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "oon_ppo": {
+                "description": "OON PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                "maximum": 100,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "prior_auth": {
+            "description": "Set to true if there are prior authorization requirements for the procedure; false otherwise",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "procedure_code": {
+            "description": "The dental procedure code (e.g., D0120). When encountering code ranges (e.g., 'D2391-D2394'), expand into individual codes (D2391, D2392, D2393, D2394). For shorthand terms, map to their standard code (e.g., 'pano' becomes 'D0330').",
+            "pattern": "^D[0-9]+$",
+            "type": "string"
+          },
+          "procedure_deductible_applies": {
+            "description": "Whether the procedure has a deductible",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "procedure_name": {
+            "description": "Name or description of the dental procedure",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "procedure_waiting_period_duration": {
+            "description": "Waiting period duration for the procedure",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "procedure_code"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "services": {
+      "properties": {
+        "categorized_services": {
+          "description": "Categorized services are services (OR Procedure Category) that are exactly matched to the names listed in the 'service_name' property enum. These services are extracted from the document and placed in the 'categorized_services' array.",
+          "items": {
+            "properties": {
+              "service_deductible_applies": {
+                "description": "Set to true if the service has a deductible; false otherwise",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "service_limitation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "service_name": {
+                "description": "Name of the dental service category",
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "Diagnostic",
+                  "Preventive",
+                  "Basic",
+                  "Major",
+                  "Restorative",
+                  "Endodontics",
+                  "Prosthodontics, removable",
+                  "Maxillofacial Prosthetics",
+                  "Implant Services",
+                  "Prosthodontics, fixed",
+                  "Oral & Maxillofacial Surgery",
+                  "Orthodontics",
+                  "Adjunctive General Services",
+                  "Periodontics"
+                ]
+              },
+              "service_percentages": {
+                "properties": {
+                  "inn_ppo_lower": {
+                    "description": "INN PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "inn_ppo_upper": {
+                    "description": "INN PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "inn_premier_lower": {
+                    "description": "INN Premier Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "inn_premier_upper": {
+                    "description": "INN Premier Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "oon_ppo_lower": {
+                    "description": "OON PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "oon_ppo_upper": {
+                    "description": "OON PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "service_waiting_period_duration": {
+                "description": "Waiting period for the service in months",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "uncategorized_services": {
+          "description": "Uncategorized services are services (OR Procedure Category) that do not exactly match the names listed in the 'service_name' property enum. These services are extracted from the document and placed in the 'uncategorized_services' array. DO NOT SKIP ANY SERVICES IN THE DOCUMENT.",
+          "items": {
+            "properties": {
+              "service_deductible_applies": {
+                "description": "Set to true if the service has a deductible; false otherwise",
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "service_limitation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "service_name": {
+                "description": "Name of the dental service category",
+                "type": "string"
+              },
+              "service_percentages": {
+                "properties": {
+                  "inn_ppo_lower": {
+                    "description": "INN PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "inn_ppo_upper": {
+                    "description": "INN PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "inn_premier_lower": {
+                    "description": "INN Premier Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "inn_premier_upper": {
+                    "description": "INN Premier Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "oon_ppo_lower": {
+                    "description": "OON PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "oon_ppo_upper": {
+                    "description": "OON PPO Network Percentage. Format is a percentage (e.g. 100 for 100%) so max is 100",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "service_waiting_period_duration": {
+                "description": "Waiting period for the service in months",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    }
+  },
+  "type": "object"
+}

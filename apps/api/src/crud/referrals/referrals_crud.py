@@ -1,9 +1,12 @@
 from typing import Optional, List
 from uuid import UUID
+import uuid
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from supabase import AsyncClient
 
+from src.schemas.fileresult import FileResult
+from src.utils.supabase.supabase_utils import get_files, upload_file
 from src.crud.base import CRUDBase
 from src.schemas import Referral, ReferralCreate, ReferralUpdate
 
@@ -98,6 +101,45 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 status_code=400,
                 detail=f"Failed to delete referral. {str(e)}",
             )
+    
+    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str) -> FileResult:
+        """Upload files for a referral"""
+        try:
+            fileResults = []
+            if not files:
+                raise HTTPException(status_code=400, detail="No files provided")
+            for file in files:
+              fileResult = await upload_file(
+                id=id,
+                file=file,
+                bucket_name=bucket_name,
+                file_name=str(uuid.uuid4()),
+                base_path=base_path,
+                type=type
+                )
+              fileResults.append(fileResult)
+            return fileResults
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to upload files for referral. {str(e)}",
+            )
+        
+    async def get_files(self, db: AsyncClient, *, id: str, bucket_name: str, base_path: str, type: Optional[str] = None):
+        """Get files for a referral"""
+        try:
+            return await get_files(
+                id=id,
+                bucket_name=bucket_name,
+                base_path=base_path,
+                type=type
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to get files for referral. {str(e)}",
+            )
+
 
 
 referrals_crud = CRUDReferrals(Referral)
