@@ -7,6 +7,9 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { Facility } from './models/Facility';
+export type { FacilityCreate } from './models/FacilityCreate';
+export type { FacilityUpdate } from './models/FacilityUpdate';
 export type { GenerateBatchRequest } from './models/GenerateBatchRequest';
 export type { GenerateBatchResponse } from './models/GenerateBatchResponse';
 export type { HTTPValidationError } from './models/HTTPValidationError';
@@ -20,10 +23,15 @@ export type { ReferralBatchCreate } from './models/ReferralBatchCreate';
 export type { ReferralBatchUpdate } from './models/ReferralBatchUpdate';
 export type { ReferralCreate } from './models/ReferralCreate';
 export type { ReferralUpdate } from './models/ReferralUpdate';
+export type { Reward } from './models/Reward';
+export type { RewardCreate } from './models/RewardCreate';
+export type { RewardUpdate } from './models/RewardUpdate';
 export type { ValidationError } from './models/ValidationError';
 
 export { ApiV1Service } from './services/ApiV1Service';
 export { BatchesService } from './services/BatchesService';
+export { FacilitiesService } from './services/FacilitiesService';
 export { OrganizationsService } from './services/OrganizationsService';
 export { PatientsService } from './services/PatientsService';
 export { ReferralsService } from './services/ReferralsService';
+export { RewardsService } from './services/RewardsService';
