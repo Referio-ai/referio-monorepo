@@ -9,13 +9,36 @@ import {
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard';
 
+interface Referral {
+  id: string;
+  url: string;
+  qrCode: string;
+  status: string;
+}
+
+interface Facility {
+  id: string;
+  name: string;
+}
+
+interface Batch {
+  id: string;
+  outboundFacility: Facility;
+  inboundFacility: Facility;
+  referrals: Referral[];
+  createdAt: string;
+  totalReferrals: number;
+  usedReferrals?: number;
+  description: string;
+}
+
 const ReferralDashboard = () => {
   const [activeTab, setActiveTab] = useState('batches');
-  const [batches, setBatches] = useState([]);
-  const [selectedBatchId, setSelectedBatchId] = useState(null);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
-  const [previewBatch, setPreviewBatch] = useState(null);
+  const [previewBatch, setPreviewBatch] = useState<Batch | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [batchFilters, setBatchFilters] = useState({
@@ -136,9 +159,17 @@ const ReferralDashboard = () => {
       return;
     }
     
+    const outboundFacility = facilities.find(f => f.id === batchForm.outboundFacility);
+    const inboundFacility = facilities.find(f => f.id === batchForm.inboundFacility);
+    
+    if (!outboundFacility || !inboundFacility) {
+      alert('Invalid facility selection');
+      return;
+    }
+
     const batchId = generateBatchId();
     const timestamp = new Date().toISOString();
-    const referrals = [];
+    const referrals: Referral[] = [];
     
     for (let i = 0; i < batchForm.numberOfReferrals; i++) {
       const slug = generateSlug();
@@ -152,11 +183,11 @@ const ReferralDashboard = () => {
       });
     }
     
-    const newBatch = {
+    const newBatch: Batch = {
       id: batchId,
-      outboundFacility: facilities.find(f => f.id === batchForm.outboundFacility),
-      inboundFacility: facilities.find(f => f.id === batchForm.inboundFacility),
-      referrals: referrals,
+      outboundFacility,
+      inboundFacility,
+      referrals,
       createdAt: timestamp,
       totalReferrals: batchForm.numberOfReferrals,
       usedReferrals: 0,
@@ -179,18 +210,20 @@ const ReferralDashboard = () => {
     const printWindow = window.open('', 'PRINT', 'height=600,width=800');
     const htmlContent = generatePrintHTML(previewBatch);
     
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    printWindow?.document.write(htmlContent);
+    printWindow?.document.close();
     
-    printWindow.focus();
+    printWindow?.focus();
     
     // Wait for content to load, then print
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
-    };
+    if (printWindow) {
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow?.print();
+          printWindow?.close();
+        }, 250);
+      };
+    }
   };
 
   // Generate HTML for printing
@@ -325,7 +358,7 @@ const ReferralDashboard = () => {
 
   // Get all referrals from all batches
   const getAllReferrals = () => {
-    const allReferrals = [];
+    const allReferrals: (Referral & { batchId: string; outboundFacility: Facility; inboundFacility: Facility; createdAt: string; })[] = [];
     batches.forEach(batch => {
       batch.referrals.forEach(referral => {
         allReferrals.push({
@@ -564,7 +597,7 @@ const ReferralDashboard = () => {
                       value={batchForm.description}
                       onChange={(e) => setBatchForm({...batchForm, description: e.target.value})}
                       placeholder="Add notes about this batch..."
-                      rows="3"
+                      rows={3}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                     />
                   </div>
