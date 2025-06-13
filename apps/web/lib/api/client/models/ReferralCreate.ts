@@ -12,5 +12,6 @@ export type ReferralCreate = {
     referral_scanned_date?: (string | null);
     referral_submitted?: boolean;
     referral_submitted_date?: (string | null);
+    referral_status?: (string | null);
 };
 

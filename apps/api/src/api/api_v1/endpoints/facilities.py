@@ -2,7 +2,7 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
-from src.schemas import (
+from src.schemas.facilities import (
     Facility, 
     FacilityCreate,
     FacilityUpdate,

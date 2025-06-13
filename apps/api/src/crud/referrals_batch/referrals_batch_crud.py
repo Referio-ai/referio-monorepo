@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from supabase import AsyncClient
 
 from src.crud.base import CRUDBase
-from src.schemas import ReferralBatch, ReferralBatchCreate, ReferralBatchUpdate
+from src.schemas.referrals_batch import ReferralBatch, ReferralBatchCreate, ReferralBatchUpdate
 from src.utils.batch_utils import get_unique_batch_prefix
 import json
 

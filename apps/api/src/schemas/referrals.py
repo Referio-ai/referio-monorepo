@@ -16,6 +16,7 @@ class Referral(BaseModel):
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: bool
     referral_submitted_date: Optional[datetime] = None
+    referral_status: Optional[str] = None
 
 
 class ReferralCreate(BaseModel):
@@ -28,6 +29,7 @@ class ReferralCreate(BaseModel):
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: bool = False
     referral_submitted_date: Optional[datetime] = None
+    referral_status: Optional[str] = None
 
 
 class ReferralUpdate(BaseModel):
@@ -40,6 +42,7 @@ class ReferralUpdate(BaseModel):
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: Optional[bool] = None
     referral_submitted_date: Optional[datetime] = None
+    referral_status: Optional[str] = None
 
 
 class ReferralSearchResults(BaseModel):

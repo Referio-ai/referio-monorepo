@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from supabase import AsyncClient
 
 from src.crud.base import CRUDBase
-from src.schemas import Patient, PatientCreate, PatientUpdate
+from src.schemas.patients import Patient, PatientCreate, PatientUpdate
 
 
 class CRUDPatients(CRUDBase[Patient, PatientCreate, PatientUpdate]):
