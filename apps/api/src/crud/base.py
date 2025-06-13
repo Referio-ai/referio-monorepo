@@ -65,6 +65,17 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         )
         _, updated = data
         return self.model(**updated[0])
+    
+    async def update_status(self, table_name: str, db: AsyncClient, *, obj_in: UpdateSchemaType) -> ModelType:
+        """update by UpdateSchemaType"""
+        data, count = (
+            await db.table(table_name)
+            .update({"referral_status": obj_in.referral_status})
+            .eq("id", obj_in.id)
+            .execute()
+        )
+        _, updated = data
+        return self.model(**updated[0])
 
     async def delete(self, table_name: str, db: AsyncClient, *, id: str) -> ModelType:
         """remove by UpdateSchemaType"""

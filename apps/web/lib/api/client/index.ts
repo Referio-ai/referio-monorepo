@@ -24,6 +24,7 @@ export type { ReferralBatchCreate } from './models/ReferralBatchCreate';
 export type { ReferralBatchUpdate } from './models/ReferralBatchUpdate';
 export type { ReferralCreate } from './models/ReferralCreate';
 export type { ReferralMessagesCreate } from './models/ReferralMessagesCreate';
+export type { ReferralStatusUpdate } from './models/ReferralStatusUpdate';
 export type { ReferralUpdate } from './models/ReferralUpdate';
 export type { Reward } from './models/Reward';
 export type { RewardCreate } from './models/RewardCreate';

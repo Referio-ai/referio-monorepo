@@ -8,7 +8,7 @@ from supabase import AsyncClient
 from src.schemas.fileresult import FileResult
 from src.utils.supabase.supabase_utils import get_files, upload_file
 from src.crud.base import CRUDBase
-from src.schemas import Referral, ReferralCreate, ReferralUpdate
+from src.schemas.referrals import Referral, ReferralCreate, ReferralStatusUpdate, ReferralUpdate
 
 
 class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
@@ -86,6 +86,16 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
         """Update a referral"""
         try:
             return await super().update("referrals", db, obj_in=obj_in)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to update referral. {str(e)}",
+            )
+        
+    async def update_status(self, db: AsyncClient, *, obj_in: ReferralStatusUpdate) -> Referral:
+        """Update a referral"""
+        try:
+            return await super().update_status("referrals", db, obj_in=obj_in)
         except Exception as e:
             raise HTTPException(
                 status_code=400,

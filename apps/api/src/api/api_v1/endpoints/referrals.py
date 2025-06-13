@@ -4,7 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, UploadFile, Form
 from src.schemas.referrals import (
     Referral, 
-    ReferralCreate, 
+    ReferralCreate,
+    ReferralStatusUpdate, 
     ReferralUpdate, 
 )
 from src.config.supabase_config import get_supabase_client
@@ -45,6 +46,13 @@ async def update_referral(referral_id: str, referral: ReferralUpdate) -> Referra
     db = await get_supabase_client()
     referral.id = referral_id
     return await referrals_crud.update(db=db, obj_in=referral)
+
+@router.put("/status/{referral_id}", status_code=200)
+async def update_referral_status(referral_id: str, referral: ReferralStatusUpdate) -> Referral:
+    """Update a referral"""
+    db = await get_supabase_client()
+    referral.id = referral_id
+    return await referrals_crud.update_status(db=db, obj_in=referral)
 
 
 @router.delete("/{referral_id}", status_code=200)

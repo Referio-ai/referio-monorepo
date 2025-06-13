@@ -18,6 +18,7 @@ import type { ReferralBatchCreate } from '../models/ReferralBatchCreate';
 import type { ReferralBatchUpdate } from '../models/ReferralBatchUpdate';
 import type { ReferralCreate } from '../models/ReferralCreate';
 import type { ReferralMessagesCreate } from '../models/ReferralMessagesCreate';
+import type { ReferralStatusUpdate } from '../models/ReferralStatusUpdate';
 import type { ReferralUpdate } from '../models/ReferralUpdate';
 import type { Reward } from '../models/Reward';
 import type { RewardCreate } from '../models/RewardCreate';
@@ -144,6 +145,33 @@ export class ApiV1Service {
             path: {
                 'referral_id': referralId,
             },
+            errors: {
+                404: `Referral Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Update Referral Status
+     * Update a referral
+     * @returns Referral Successful Response
+     * @throws ApiError
+     */
+    public static apiV1UpdateReferralStatus({
+        referralId,
+        requestBody,
+    }: {
+        referralId: string,
+        requestBody: ReferralStatusUpdate,
+    }): CancelablePromise<Referral> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/referrals/status/{referral_id}',
+            path: {
+                'referral_id': referralId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 404: `Referral Endpoints`,
                 422: `Validation Error`,

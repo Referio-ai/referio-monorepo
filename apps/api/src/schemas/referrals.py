@@ -44,6 +44,9 @@ class ReferralUpdate(BaseModel):
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
 
+class ReferralStatusUpdate(BaseModel):
+    id: str
+    referral_status: Optional[str] = None
 
 class ReferralSearchResults(BaseModel):
     results: Sequence[Referral]
