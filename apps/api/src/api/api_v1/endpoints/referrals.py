@@ -2,19 +2,15 @@ from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, UploadFile, Form
-from src.schemas import (
+from src.schemas.referrals import (
     Referral, 
     ReferralCreate, 
     ReferralUpdate, 
-    ReferralSearchResults,
-    GenerateBatchRequest,
-    GenerateBatchResponse
 )
 from src.config.supabase_config import get_supabase_client
 from src.utils.supabase.supabase_utils import upload_file
 from src.schemas.fileresult import FileResult
 from src.crud.referrals import referrals_crud
-from src.services import BatchService
 
 router = APIRouter()
 
@@ -65,22 +61,22 @@ async def get_referrals_by_batch(batch_id: UUID) -> List[Referral]:
     return await referrals_crud.get_by_batch_id(db=db, batch_id=batch_id) 
 
 
-@router.post("upload/{referral_id}/{type}", status_code=200)
+@router.post("/upload/{referral_id}/{type}", status_code=200)
 async def upload_referral_document(
     referral_id: str,
     type: str,
     files: List[UploadFile] = Form(None),
-) -> FileResult:
+):
     """Upload a document for a referral"""
     db = await get_supabase_client()
     return await referrals_crud.upload_files(db=db, id=referral_id, files=files, type=type, bucket_name="referral-documents", base_path="referrals")
 
 
 @router.get("/file/{referral_id}/{type}", status_code=200)
-async def get_referral_file(
+async def get_referral_files(
     referral_id: str,
     type: str,
-) -> FileResult:
+) :
     """Get a file for a referral"""
     db = await get_supabase_client()
     return await referrals_crud.get_files(db=db, id=referral_id, type=type, bucket_name="referral-documents", base_path="referrals")

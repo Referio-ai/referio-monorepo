@@ -12,5 +12,6 @@ export type ReferralUpdate = {
     referral_scanned_date?: (string | null);
     referral_submitted?: (boolean | null);
     referral_submitted_date?: (string | null);
+    referral_status?: (string | null);
 };
 

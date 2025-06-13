@@ -1,7 +1,7 @@
 from typing import List, Literal, Optional, Union
 
 from fastapi import APIRouter
-from src.schemas import Organization
+from src.schemas.organization import Organization
 
 from src.config.supabase_config import get_supabase_client
 

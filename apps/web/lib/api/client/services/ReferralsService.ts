@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { Body_API_v1_upload_referral_document } from '../models/Body_API_v1_upload_referral_document';
 import type { Referral } from '../models/Referral';
 import type { ReferralCreate } from '../models/ReferralCreate';
 import type { ReferralUpdate } from '../models/ReferralUpdate';
@@ -135,6 +136,62 @@ export class ReferralsService {
             url: '/api/v1/referrals/batch/{batch_id}',
             path: {
                 'batch_id': batchId,
+            },
+            errors: {
+                404: `Referral Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Upload Referral Document
+     * Upload a document for a referral
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1UploadReferralDocument({
+        referralId,
+        type,
+        formData,
+    }: {
+        referralId: string,
+        type: string,
+        formData?: Body_API_v1_upload_referral_document,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/upload/{referral_id}/{type}',
+            path: {
+                'referral_id': referralId,
+                'type': type,
+            },
+            formData: formData,
+            mediaType: 'application/x-www-form-urlencoded',
+            errors: {
+                404: `Referral Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Referral Files
+     * Get a file for a referral
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1GetReferralFiles({
+        referralId,
+        type,
+    }: {
+        referralId: string,
+        type: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/file/{referral_id}/{type}',
+            path: {
+                'referral_id': referralId,
+                'type': type,
             },
             errors: {
                 404: `Referral Endpoints`,

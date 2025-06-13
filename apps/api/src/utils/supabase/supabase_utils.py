@@ -76,7 +76,16 @@ async def get_files(
         # Upload directly to Supabase storage
         supabase_client = await get_supabase_client()
         list_response = await supabase_client.storage.from_(bucket_name).list(file_path, {"limit": 1000})
-         
+
+        # generate signed URLs for each file
+        if list_response is None:
+            raise Exception("List response is None - no files found")
+        for file in list_response:
+            file["signed_url"] = await generate_signed_url(
+                file_object=file_path + file["name"],
+                bucket_name=bucket_name,
+            )
+
         if not list_response:
             raise Exception("Upload failed - no response from Supabase")
 
@@ -107,8 +116,8 @@ async def generate_signed_url(
     """
     try:
         # Call the method directly without await
-        supbase_client = get_supabase_client()
-        response = await supbase_client.storage.from_(bucket_name).create_signed_url(
+        supabase_client = await get_supabase_client()
+        response = await supabase_client.storage.from_(bucket_name).create_signed_url(
             f"{file_object}", expires_in=86400
         )
         if not response:

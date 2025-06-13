@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from supabase import AsyncClient
 
 from src.crud.base import CRUDBase
-from src.schemas import Reward, RewardCreate, RewardUpdate
+from src.schemas.rewards import Reward, RewardCreate, RewardUpdate
 import json
 
 

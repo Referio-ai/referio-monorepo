@@ -102,7 +102,7 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 detail=f"Failed to delete referral. {str(e)}",
             )
     
-    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str) -> FileResult:
+    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str):
         """Upload files for a referral"""
         try:
             fileResults = []

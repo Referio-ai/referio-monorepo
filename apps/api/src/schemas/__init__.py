@@ -11,3 +11,4 @@ from .referrals_batch import (
 from .patients import Patient, PatientCreate, PatientUpdate, PatientSearchResults
 from .rewards import Reward, RewardCreate, RewardUpdate, RewardSearchResults
 from .facilities import Facility, FacilityCreate, FacilityUpdate, FacilitySearchResults
+from .referral_messages import ReferralMessagesCreate, ReferralMessagesUpdate, ReferralMessages

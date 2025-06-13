@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { Body_API_v1_upload_referral_document } from '../models/Body_API_v1_upload_referral_document';
 import type { Facility } from '../models/Facility';
 import type { FacilityCreate } from '../models/FacilityCreate';
 import type { FacilityUpdate } from '../models/FacilityUpdate';
@@ -16,6 +17,7 @@ import type { ReferralBatch } from '../models/ReferralBatch';
 import type { ReferralBatchCreate } from '../models/ReferralBatchCreate';
 import type { ReferralBatchUpdate } from '../models/ReferralBatchUpdate';
 import type { ReferralCreate } from '../models/ReferralCreate';
+import type { ReferralMessagesCreate } from '../models/ReferralMessagesCreate';
 import type { ReferralUpdate } from '../models/ReferralUpdate';
 import type { Reward } from '../models/Reward';
 import type { RewardCreate } from '../models/RewardCreate';
@@ -164,6 +166,62 @@ export class ApiV1Service {
             url: '/api/v1/referrals/batch/{batch_id}',
             path: {
                 'batch_id': batchId,
+            },
+            errors: {
+                404: `Referral Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Upload Referral Document
+     * Upload a document for a referral
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1UploadReferralDocument({
+        referralId,
+        type,
+        formData,
+    }: {
+        referralId: string,
+        type: string,
+        formData?: Body_API_v1_upload_referral_document,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/upload/{referral_id}/{type}',
+            path: {
+                'referral_id': referralId,
+                'type': type,
+            },
+            formData: formData,
+            mediaType: 'application/x-www-form-urlencoded',
+            errors: {
+                404: `Referral Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Referral Files
+     * Get a file for a referral
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1GetReferralFiles({
+        referralId,
+        type,
+    }: {
+        referralId: string,
+        type: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/file/{referral_id}/{type}',
+            path: {
+                'referral_id': referralId,
+                'type': type,
             },
             errors: {
                 404: `Referral Endpoints`,
@@ -909,6 +967,107 @@ export class ApiV1Service {
             },
             errors: {
                 404: `Facilities Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Messages By Referral Id
+     * Get all messages by referral ID
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1GetMessagesByReferralId({
+        referralId,
+    }: {
+        referralId: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals-messages/{referral_id}',
+            path: {
+                'referral_id': referralId,
+            },
+            errors: {
+                404: `Referral Messages Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Create Message
+     * Create a new message for a referral
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1CreateMessage({
+        requestBody,
+    }: {
+        requestBody: ReferralMessagesCreate,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals-messages/',
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                404: `Referral Messages Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Upload Referral Document
+     * Upload a document for a referral messages
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1UploadReferralDocument1({
+        messageId,
+        type,
+        formData,
+    }: {
+        messageId: string,
+        type: string,
+        formData?: Body_API_v1_upload_referral_document,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals-messages/upload/{message_id}/{type}',
+            path: {
+                'message_id': messageId,
+                'type': type,
+            },
+            formData: formData,
+            mediaType: 'application/x-www-form-urlencoded',
+            errors: {
+                404: `Referral Messages Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Get Referral Files
+     * Get a file for a referral messages
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static apiV1GetReferralFiles1({
+        messageId,
+        type,
+    }: {
+        messageId: string,
+        type: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals-messages/file/{message_id}/{type}',
+            path: {
+                'message_id': messageId,
+                'type': type,
+            },
+            errors: {
+                404: `Referral Messages Endpoints`,
                 422: `Validation Error`,
             },
         });
