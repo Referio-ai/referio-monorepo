@@ -10,6 +10,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 export type { Body_API_v1_upload_referral_document } from './models/Body_API_v1_upload_referral_document';
 export type { Facility } from './models/Facility';
 export type { FacilityCreate } from './models/FacilityCreate';
+export type { FacilityPagination } from './models/FacilityPagination';
 export type { FacilityUpdate } from './models/FacilityUpdate';
 export type { GenerateBatchRequest } from './models/GenerateBatchRequest';
 export type { GenerateBatchResponse } from './models/GenerateBatchResponse';

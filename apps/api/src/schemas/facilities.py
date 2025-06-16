@@ -43,3 +43,8 @@ class FacilityUpdate(BaseModel):
 
 class FacilitySearchResults(BaseModel):
     results: Sequence[Facility]
+
+
+class FacilityPagination(BaseModel):
+    items: Sequence[Facility]
+    pagination: Dict[str, Any]
