@@ -7,7 +7,6 @@ import {
   Search, Home, BarChart3, Settings, LogOut, User, ChevronDown, LayoutDashboard,
   ClipboardList, MapPin, Activity, HelpCircle
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/dashboard';
 
 interface Referral {
   id: string;
@@ -449,34 +448,7 @@ const ReferralDashboard = () => {
   const todaysBatches = batches.filter(b => new Date(b.createdAt).toDateString() === new Date().toDateString());
 
   return (
-    <DashboardLayout
-      title="Referral Management"
-      onSearch={(query) => {
-        // Implement search functionality
-        console.log('Search:', query);
-      }}
-      sidebarItems={[
-        { icon: Home, label: 'Dashboard', active: false },
-        { icon: QrCode, label: 'Referrals', active: true },
-        { icon: Building, label: 'Facilities', active: false },
-        { icon: Users, label: 'Patients', active: false },
-        { icon: BarChart3, label: 'Analytics', active: false },
-        { icon: ClipboardList, label: 'Reports', active: false },
-        { icon: Settings, label: 'Settings', active: false },
-      ]}
-      onLogout={() => {
-        // Implement logout functionality
-        console.log('Logout clicked');
-      }}
-      onProfileClick={() => {
-        // Implement profile click functionality
-        console.log('Profile clicked');
-      }}
-      onSettingsClick={() => {
-        // Implement settings click functionality
-        console.log('Settings clicked');
-      }}
-    >
+    <>
       <div className="p-6">
         {/* Page Title and Stats */}
         <div className="mb-8">
@@ -1093,7 +1065,7 @@ const ReferralDashboard = () => {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

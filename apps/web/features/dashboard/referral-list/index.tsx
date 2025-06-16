@@ -15,11 +15,11 @@ import {
 // Import our new components
 import Sidebar from '@/components/referral/layout/Sidebar';
 import Header from '@/components/referral/layout/Header';
-import ReferralList from '@/components/referral/list/ReferralList';
+import ReferralListComponent from '@/components/referral/list/ReferralList';
 import ReferralDetail from '@/components/referral/detail/ReferralDetail';
 import NewReferralForm from '@/components/referral/forms/NewReferralForm';
 
-export const Dashboard = () => {
+export const ReferralList = () => {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [activeTab, setActiveTab] = useState<ReferralStatus | 'all'>('all');
   const [filterDoctor, setFilterDoctor] = useState('all');
@@ -104,28 +104,10 @@ export const Dashboard = () => {
   
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <Sidebar 
-        userInitials="DS"
-        onNavigate={handleNavigate}
-      />
-      
-      {/* Main content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <Header 
-          title="Referral Management"
-          userInitials="ET"
-          userName="Dr. Taylor"
-          onSearch={handleSearch}
-          onUserMenuClick={handleUserMenuClick}
-          isLoading={isLoading}
-        />
-        
-        {/* Main content area */}
         <div className="flex-1 flex">
           {/* Referral list */}
-          <ReferralList 
+          <ReferralListComponent 
             referrals={filteredReferrals}
             selectedReferralId={selectedReferral?.id}
             activeTab={activeTab}
@@ -179,4 +161,4 @@ export const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default ReferralList;
