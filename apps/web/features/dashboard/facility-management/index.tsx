@@ -9,7 +9,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 interface Organization {
   organization_id: string;
@@ -49,7 +49,6 @@ const ITEMS_PER_PAGE = 10;
 const ALL_VALUE = 'all';
 
 const FacilityManagement = () => {
-  const { toast } = useToast();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [filters, setFilters] = useState<FacilityFilters>({
@@ -107,16 +106,12 @@ const FacilityManagement = () => {
         setOrganizations(data);
       } catch (error) {
         console.error('Error fetching organizations:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch organizations. Please try again later.",
-          variant: "destructive",
-        });
+        toast.error("Failed to fetch organizations. Please try again later.");
       }
     };
 
     fetchOrganizations();
-  }, [toast]);
+  }, []);
 
   // Mock data - in real app, this would come from an API
   useEffect(() => {
@@ -175,11 +170,7 @@ const FacilityManagement = () => {
   // Handle add facility
   const handleAddFacility = () => {
     if (!newFacility.organization_id) {
-      toast({
-        title: "Error",
-        description: "Please select an organization for the facility.",
-        variant: "destructive",
-      });
+      toast.error("Please select an organization for the facility.");
       return;
     }
 
@@ -211,10 +202,7 @@ const FacilityManagement = () => {
       status: 'active',
       totalReferrals: 0,
     });
-    toast({
-      title: "Facility Added",
-      description: "The facility has been successfully added.",
-    });
+    toast.success("The facility has been successfully added.");
   };
 
   // Handle delete facility
@@ -228,10 +216,7 @@ const FacilityManagement = () => {
       setFacilities(prev => prev.filter(f => f.id !== facilityToDelete.id));
       setIsDeleteDialogOpen(false);
       setFacilityToDelete(null);
-      toast({
-        title: "Facility Deleted",
-        description: "The facility has been successfully deleted.",
-      });
+      toast.success("The facility has been successfully deleted.");
     }
   };
 
