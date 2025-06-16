@@ -1,17 +1,14 @@
+'use client';
 import React, { useState } from 'react';
 import { 
   Search, Bell, User, ChevronDown, Settings, LogOut 
 } from 'lucide-react';
+import { useUser, useLogoutFunction, useRedirectFunctions } from "@propelauth/nextjs/client";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   title: string;
   onSearch?: (query: string) => void;
-  user?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  onLogout?: () => void;
   onProfileClick?: () => void;
   onSettingsClick?: () => void;
 }
@@ -19,15 +16,22 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   title,
   onSearch,
-  user = {
-    name: 'Admin User',
-    email: 'admin@referralqr.com'
-  },
-  onLogout,
   onProfileClick,
   onSettingsClick
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { user } = useUser();
+  const logoutFn = useLogoutFunction();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logoutFn();
+    router.push('/');
+  };
+
+  if (!user) {
+    return null; // or a loading state
+  }
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -61,10 +65,10 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                {user.avatar ? (
+                {user.pictureUrl ? (
                   <img 
-                    src={user.avatar} 
-                    alt={user.name} 
+                    src={user.pictureUrl} 
+                    alt={user.email} 
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
@@ -72,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </div>
               <div className="text-left">
-                <p className="text-sm font-medium text-gray-700">{user.name}</p>
+                <p className="text-sm font-medium text-gray-700">{user.email.split('@')[0]}</p>
                 <p className="text-xs text-gray-500">{user.email}</p>
               </div>
               <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -103,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <hr className="my-2 border-gray-200" />
                 <button 
                   onClick={() => {
-                    onLogout?.();
+                    handleLogout();
                     setShowUserMenu(false);
                   }}
                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"

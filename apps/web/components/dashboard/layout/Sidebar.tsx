@@ -1,14 +1,16 @@
+'use client';
 import React from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   QrCode, Home, Building, Users, BarChart3, ClipboardList, 
-  Settings, LogOut, HelpCircle, Menu 
+  Settings, LogOut, HelpCircle, Menu, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 export interface SidebarItem {
   icon: React.ElementType;
   label: string;
-  active: boolean;
   onClick?: () => void;
+  path?: string;
 }
 
 interface SidebarProps {
@@ -24,8 +26,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   items,
   onLogout
 }) => {
+  const router = useRouter();
+  //get active path
+  const activePath = usePathname();
+
+  //get the data path from the items
+
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-white shadow-lg transition-all duration-300 flex flex-col`}>
+    <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-white shadow-lg transition-all duration-300 flex flex-col h-screen`}>
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className={`flex items-center gap-3 ${!isOpen && 'justify-center'}`}>
@@ -33,15 +41,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <QrCode className="w-6 h-6 text-white" />
             </div>
             {isOpen && (
-              <span className="text-xl font-bold text-gray-800">ReferralQR</span>
+              <span className="text-xl font-bold text-gray-800">Referio.ai</span>
             )}
           </div>
-          <button
+          {isOpen && <button
             onClick={onToggle}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
+            {isOpen ? <ChevronLeft className="w-5 h-5 text-gray-600" /> : <ChevronRight className="w-5 h-5 text-gray-600" />}
+          </button>}
+        </div>
+        <div className="flex items-center justify-center mt-4 self-center">
+        {!isOpen && <button
+            onClick={onToggle}
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors w-full bg-gray-100 items-center justify-center"
+          >
+            {isOpen ? <ChevronLeft className="w-5 h-5 text-gray-600" /> : <ChevronRight className="w-5 h-5 text-gray-600" />}
+          </button>}
         </div>
       </div>
       
@@ -50,9 +66,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {items.map((item, index) => (
             <li key={index}>
               <button
-                onClick={item.onClick}
+                onClick={item.onClick || (() => {
+                  router.push(item.path || '/dashboard');
+                })}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                  item.active 
+                  activePath === item.path 
                     ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 font-medium' 
                     : 'text-gray-600 hover:bg-gray-100'
                 } ${!isOpen && 'justify-center'}`}

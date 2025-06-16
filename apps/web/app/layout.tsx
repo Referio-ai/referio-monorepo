@@ -7,6 +7,7 @@ import { OpenAPI } from "@/lib/api/client";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { AuthProvider } from "@propelauth/nextjs/client";
 import { AuthRedirectProvider } from "@/components/auth/auth-redirect-provider";
+import { RedirectToLogin } from "@propelauth/nextjs/client";
 
 export const fontSans = FontSans({
   subsets: ["latin"],
@@ -20,10 +21,11 @@ if (process.env.NODE_ENV === "production") {
 console.log("Using OpenAPI.base", OpenAPI.BASE);
 
 export const metadata: Metadata = {
-  title: "Next-Fast-Turbo",
-  description: "A Next.js, FastAPI and Turbo project scaffol",
+  title: "Referio.ai",
+  description: "AI-Powered Referral Management Platform",
   icons: {
-    icon: ["/favicon.png"],
+    icon: ["/logo.png"],
+    apple: ["/logo.png"],
   },
 };
 

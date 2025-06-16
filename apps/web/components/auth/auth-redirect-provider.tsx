@@ -1,8 +1,9 @@
 'use client'
 
-import { useUser } from "@propelauth/nextjs/client";
+import { useUser, useRedirectFunctions } from "@propelauth/nextjs/client";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+//import { useAuth } from "@propelauth/nextjs/client";
 
 // Define public routes that don't require authentication
 const PUBLIC_ROUTES = ["/", "/login", "/signup"];
