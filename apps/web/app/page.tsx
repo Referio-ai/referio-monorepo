@@ -1,8 +1,7 @@
-
-import { QRScan } from '@/features/qr-scan';
+import { LandingPage } from '@/features/landing-page/landing-page';
 
 export default async function Page() {
   return (
-    <QRScan />
+    <LandingPage />
   );
 }

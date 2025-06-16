@@ -11,8 +11,21 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 
+interface Organization {
+  organization_id: string;
+  organization_name: string;
+  organization_address: Record<string, any>;
+  organization_primary_contact_fname: string;
+  organization_primary_contact_mname: string;
+  organization_primary_contact_lname: string;
+  organization_primary_contact_email: string;
+  organization_primary_contact_phone_number: string;
+  organization_prefix: string;
+}
+
 interface Facility {
   id: string;
+  organization_id: string;
   name: string;
   type: string;
   address: string;
@@ -29,6 +42,7 @@ interface FacilityFilters {
   type: string;
   status: string;
   city: string;
+  organization_id: string;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -36,12 +50,14 @@ const ALL_VALUE = 'all';
 
 const FacilityManagement = () => {
   const { toast } = useToast();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [filters, setFilters] = useState<FacilityFilters>({
     search: '',
     type: ALL_VALUE,
     status: ALL_VALUE,
     city: ALL_VALUE,
+    organization_id: ALL_VALUE,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -51,6 +67,7 @@ const FacilityManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [facilityToDelete, setFacilityToDelete] = useState<Facility | null>(null);
   const [newFacility, setNewFacility] = useState<Partial<Facility>>({
+    organization_id: '',
     name: '',
     type: '',
     address: '',
@@ -80,11 +97,33 @@ const FacilityManagement = () => {
     'Phoenix',
   ];
 
+  // Fetch organizations
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        const response = await fetch('/api/v1/organizations');
+        if (!response.ok) throw new Error('Failed to fetch organizations');
+        const data = await response.json();
+        setOrganizations(data);
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch organizations. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchOrganizations();
+  }, [toast]);
+
   // Mock data - in real app, this would come from an API
   useEffect(() => {
     // Simulate API call
     const mockFacilities: Facility[] = Array.from({ length: 25 }, (_, i) => ({
       id: `FAC${String(i + 1).padStart(3, '0')}`,
+      organization_id: `ORG${String((i % 5) + 1).padStart(3, '0')}`, // Mock organization IDs
       name: `${facilityTypes[i % facilityTypes.length]} ${i + 1}`,
       type: facilityTypes[i % facilityTypes.length],
       address: `${100 + i} Main St`,
@@ -111,8 +150,9 @@ const FacilityManagement = () => {
       const matchesType = filters.type === ALL_VALUE || facility.type === filters.type;
       const matchesStatus = filters.status === ALL_VALUE || facility.status === filters.status;
       const matchesCity = filters.city === ALL_VALUE || facility.city === filters.city;
+      const matchesOrganization = filters.organization_id === ALL_VALUE || facility.organization_id === filters.organization_id;
 
-      return matchesSearch && matchesType && matchesStatus && matchesCity;
+      return matchesSearch && matchesType && matchesStatus && matchesCity && matchesOrganization;
     });
 
     setFilteredFacilities(filtered);
@@ -134,8 +174,18 @@ const FacilityManagement = () => {
 
   // Handle add facility
   const handleAddFacility = () => {
+    if (!newFacility.organization_id) {
+      toast({
+        title: "Error",
+        description: "Please select an organization for the facility.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const facility: Facility = {
       id: `FAC${String(facilities.length + 1).padStart(3, '0')}`,
+      organization_id: newFacility.organization_id,
       name: newFacility.name || '',
       type: newFacility.type || '',
       address: newFacility.address || '',
@@ -150,6 +200,7 @@ const FacilityManagement = () => {
     setFacilities(prev => [...prev, facility]);
     setIsAddModalOpen(false);
     setNewFacility({
+      organization_id: '',
       name: '',
       type: '',
       address: '',
@@ -255,6 +306,22 @@ const FacilityManagement = () => {
                 className="flex-1"
               />
             </div>
+            <Select
+              value={filters.organization_id}
+              onValueChange={(value) => handleFilterChange('organization_id', value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Organization" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>All Organizations</SelectItem>
+                {organizations.map(org => (
+                  <SelectItem key={org.organization_id} value={org.organization_id}>
+                    {org.organization_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select
               value={filters.type}
               onValueChange={(value) => handleFilterChange('type', value)}
@@ -449,6 +516,7 @@ const FacilityManagement = () => {
                   type: ALL_VALUE,
                   status: ALL_VALUE,
                   city: ALL_VALUE,
+                  organization_id: ALL_VALUE,
                 })}
               >
                 Clear Filters
@@ -465,6 +533,24 @@ const FacilityManagement = () => {
             <DialogTitle>Add New Facility</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="organization">Organization</Label>
+              <Select
+                value={newFacility.organization_id}
+                onValueChange={(value) => setNewFacility(prev => ({ ...prev, organization_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map(org => (
+                    <SelectItem key={org.organization_id} value={org.organization_id}>
+                      {org.organization_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Facility Name</Label>

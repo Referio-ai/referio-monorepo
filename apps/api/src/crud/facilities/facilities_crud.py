@@ -33,6 +33,11 @@ class CRUDFacilityBatch(CRUDBase[Facility, FacilityCreate, FacilityUpdate]):
 
     async def create(self, db: AsyncClient, *, obj_in: FacilityCreate) -> Facility:
         """Create a new facility"""
+
+        # convert the UUIDs to strings
+        obj_in.organization_id = str(obj_in.organization_id)
+        obj_in.propelauth_facility_id = str(obj_in.propelauth_facility_id)
+
         try:
             #serialize the UUIDs to strings
             return await super().create("facility_entity", db, obj_in=obj_in)
