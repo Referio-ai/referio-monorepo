@@ -7,6 +7,7 @@ from src.schemas.facilities import (
     FacilityCreate,
     FacilityUpdate,
     FacilitySearchResults,
+    FacilityPagination,
 )
 from src.config.supabase_config import get_supabase_client
 from src.crud.facilities import facilities_crud
@@ -15,10 +16,10 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200)
-async def get_facilities() -> List[Facility]:
+async def get_facilities(page: int = 1, page_size: int = 10, search: str = "") -> FacilityPagination:
     """Get all facilities"""
     db = await get_supabase_client()
-    return await facilities_crud.get_all(db=db)
+    return await facilities_crud.get_all_paginated(db=db, page=page, page_size=page_size, search=search)
 
 
 @router.get("/{facility_id}", status_code=200)

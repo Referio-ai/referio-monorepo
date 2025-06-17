@@ -8,6 +8,7 @@ import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { AuthProvider } from "@propelauth/nextjs/client";
 import { AuthRedirectProvider } from "@/components/auth/auth-redirect-provider";
 import { RedirectToLogin } from "@propelauth/nextjs/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export const fontSans = FontSans({
   subsets: ["latin"],
@@ -34,9 +35,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }): JSX.Element {
+
+  const queryClient = new QueryClient();
+
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(fontSans.variable, "bg-background font-sans")}>
+
         <ThemeProvider
           attribute="class"
           defaultTheme=""
@@ -44,10 +50,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider authUrl={process.env.NEXT_PUBLIC_AUTH_URL!}>
-            <AuthRedirectProvider>{children}</AuthRedirectProvider>
+            <AuthRedirectProvider>
+              {children}
+              </AuthRedirectProvider>
           </AuthProvider>
           <TailwindIndicator />
         </ThemeProvider>
+
       </body>
     </html>
   );

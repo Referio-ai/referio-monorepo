@@ -30,6 +30,16 @@ class CRUDFacilityBatch(CRUDBase[Facility, FacilityCreate, FacilityUpdate]):
                 status_code=500,
                 detail=f"An error occurred while fetching facility es. {str(e)}",
             )
+        
+    async def get_all_paginated(self, db: AsyncClient, *, page: int = 1, page_size: int = 10, search: str = "") -> List[Facility]:
+        """Get all facilities paginated"""
+        try:
+            return await super().get_all_paginated("facility_entity", db, page=page, page_size=page_size, search=search)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred while fetching facility es. {str(e)}",
+            )
 
     async def create(self, db: AsyncClient, *, obj_in: FacilityCreate) -> Facility:
         """Create a new facility"""

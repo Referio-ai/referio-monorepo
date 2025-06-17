@@ -4,6 +4,7 @@ import { useUser, useRedirectFunctions } from "@propelauth/nextjs/client";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 //import { useAuth } from "@propelauth/nextjs/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Define public routes that don't require authentication
 const PUBLIC_ROUTES = ["/", "/login", "/signup"];
@@ -16,6 +17,7 @@ export function AuthRedirectProvider({
   const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = new QueryClient();
 
   useEffect(() => {
     if (!loading) {
@@ -42,5 +44,5 @@ export function AuthRedirectProvider({
     );
   }
 
-  return <>{children}</>;
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 } 

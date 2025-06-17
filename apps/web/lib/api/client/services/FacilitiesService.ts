@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { Facility } from '../models/Facility';
 import type { FacilityCreate } from '../models/FacilityCreate';
+import type { FacilityPagination } from '../models/FacilityPagination';
 import type { FacilityUpdate } from '../models/FacilityUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -12,25 +13,39 @@ export class FacilitiesService {
     /**
      * Get Facilities
      * Get all facilities
-     * @returns Facility Successful Response
+     * @returns FacilityPagination Successful Response
      * @throws ApiError
      */
-    public static apiV1GetFacilities(): CancelablePromise<Array<Facility>> {
+    public static apiV1GetFacilities({
+        page = 1,
+        pageSize = 10,
+        search = '',
+    }: {
+        page?: number,
+        pageSize?: number,
+        search?: string,
+    }): CancelablePromise<FacilityPagination> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/facilities/',
+            query: {
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
             errors: {
                 404: `Facilities Endpoints`,
+                422: `Validation Error`,
             },
         });
     }
     /**
-     * Create Reward
-     * Create a new reward
+     * Create Facility
+     * Create a new facility
      * @returns Facility Successful Response
      * @throws ApiError
      */
-    public static apiV1CreateReward({
+    public static apiV1CreateFacility({
         requestBody,
     }: {
         requestBody: FacilityCreate,
@@ -47,21 +62,21 @@ export class FacilitiesService {
         });
     }
     /**
-     * Get Reward
-     * Get a specific reward by ID
+     * Get Facility
+     * Get a specific facility by ID
      * @returns Facility Successful Response
      * @throws ApiError
      */
-    public static apiV1GetReward({
-        rewardId,
+    public static apiV1GetFacility({
+        facilityId,
     }: {
-        rewardId: string,
+        facilityId: string,
     }): CancelablePromise<Facility> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/facilities/{reward_id}',
+            url: '/api/v1/facilities/{facility_id}',
             path: {
-                'reward_id': rewardId,
+                'facility_id': facilityId,
             },
             errors: {
                 404: `Facilities Endpoints`,
@@ -70,72 +85,26 @@ export class FacilitiesService {
         });
     }
     /**
-     * Update Reward
-     * Update a reward
+     * Update Facility
+     * Update a facility
      * @returns Facility Successful Response
      * @throws ApiError
      */
-    public static apiV1UpdateReward({
-        rewardId,
+    public static apiV1UpdateFacility({
+        facilityId,
         requestBody,
     }: {
-        rewardId: string,
+        facilityId: string,
         requestBody: FacilityUpdate,
     }): CancelablePromise<Facility> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/v1/facilities/{reward_id}',
+            url: '/api/v1/facilities/{facility_id}',
             path: {
-                'reward_id': rewardId,
+                'facility_id': facilityId,
             },
             body: requestBody,
             mediaType: 'application/json',
-            errors: {
-                404: `Facilities Endpoints`,
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Delete Reward
-     * Delete a reward
-     * @returns Facility Successful Response
-     * @throws ApiError
-     */
-    public static apiV1DeleteReward({
-        rewardId,
-    }: {
-        rewardId: string,
-    }): CancelablePromise<Facility> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/facilities/{reward_id}',
-            path: {
-                'reward_id': rewardId,
-            },
-            errors: {
-                404: `Facilities Endpoints`,
-                422: `Validation Error`,
-            },
-        });
-    }
-    /**
-     * Get Facilities By Batch
-     * Get all facilities for a specific batch
-     * @returns Facility Successful Response
-     * @throws ApiError
-     */
-    public static apiV1GetFacilitiesByBatch({
-        batchId,
-    }: {
-        batchId: string,
-    }): CancelablePromise<Array<Facility>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/facilities/batch/{batch_id}',
-            path: {
-                'batch_id': batchId,
-            },
             errors: {
                 404: `Facilities Endpoints`,
                 422: `Validation Error`,
