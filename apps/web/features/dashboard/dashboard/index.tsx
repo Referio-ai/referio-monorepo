@@ -45,10 +45,6 @@ export const Dashboard = () => {
   const activeFacilities = 8; // Dummy data
   const todaysBatches = 3; // Dummy data
 
-  // Calculate completion rate
-  const completedReferrals = SAMPLE_REFERRALS.filter(ref => ref.status === 'completed').length;
-  const completionRate = ((completedReferrals / totalReferrals) * 100).toFixed(1);
-
   return (
     <div className="p-6 space-y-6">
       {/* Key Metrics */}
