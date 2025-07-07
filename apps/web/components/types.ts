@@ -17,6 +17,12 @@ export interface PatientInfo {
   birthYear: string;
 }
 
+export interface OfficeInfo {
+  name: string;
+  address: string;
+  phone: string;
+}
+
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,8 +42,8 @@ export interface FileUploadProps {
 }
 
 export interface StartScreenStepProps {
-  referringToOffice: string;
-  referringFromOffice: string;
+  referringToOffice: OfficeInfo;
+  referringFromOffice: OfficeInfo;
   isPreviouslyScanned: boolean;
   scannedPatientInfo: PatientInfo | null;
   userId: string | null;

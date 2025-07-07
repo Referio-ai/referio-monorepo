@@ -6,6 +6,8 @@ import { Inbox } from 'lucide-react';
 import { 
   Referral, 
   ReferralStatus, 
+  ReferralSortOption,
+  ReferralSearchFilter,
   NewReferralFormData, 
   SAMPLE_REFERRALS, 
   STATUS_BADGE_STYLES, 
@@ -13,16 +15,16 @@ import {
 } from '@/constants/referral';
 
 // Import our new components
-import Sidebar from '@/components/referral/layout/Sidebar';
-import Header from '@/components/referral/layout/Header';
 import ReferralListComponent from '@/components/referral/list/ReferralList';
 import ReferralDetail from '@/components/referral/detail/ReferralDetail';
 import NewReferralForm from '@/components/referral/forms/NewReferralForm';
 
 export const ReferralList = () => {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
-  const [activeTab, setActiveTab] = useState<ReferralStatus | 'all'>('all');
-  const [filterDoctor, setFilterDoctor] = useState('all');
+  const [activeTab, setActiveTab] = useState<ReferralStatus | 'all'>('new');
+  const [searchFilter, setSearchFilter] = useState<ReferralSearchFilter>('patient');
+  const [sortBy, setSortBy] = useState<ReferralSortOption>('date-newest');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isNewReferralOpen, setIsNewReferralOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -38,15 +40,58 @@ export const ReferralList = () => {
     return () => clearTimeout(timer);
   }, []);
   
-  // Filter by status and referring doctor
-  const filteredReferrals = referrals.filter(ref => {
-    const statusMatch = activeTab === 'all' || ref.status === activeTab;
-    const doctorMatch = filterDoctor === 'all' || ref.referredBy === filterDoctor;
-    return statusMatch && doctorMatch;
-  });
-  
-  // Get unique referring doctors for filter dropdown
-  const referringDoctors = ['all', ...new Set(referrals.map(ref => ref.referredBy))];
+  // Filter, search, and sort referrals
+  const processedReferrals = React.useMemo(() => {
+    let result = referrals.filter(ref => {
+      const statusMatch = activeTab === 'all' || ref.status === activeTab;
+      
+      // Search based on selected filter
+      let searchMatch = true;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        switch (searchFilter) {
+          case 'patient':
+            searchMatch = ref.patientName.toLowerCase().includes(query);
+            break;
+          case 'dob':
+            searchMatch = ref.dateOfBirth.toLowerCase().includes(query);
+            break;
+          case 'phone':
+            searchMatch = ref.phone.toLowerCase().includes(query);
+            break;
+          case 'doctor':
+            searchMatch = ref.referredBy.toLowerCase().includes(query);
+            break;
+          case 'practice':
+            searchMatch = ref.practice.toLowerCase().includes(query);
+            break;
+          default:
+            searchMatch = true;
+        }
+      }
+      
+      return statusMatch && searchMatch;
+    });
+
+    // Sort the results
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-newest':
+          return new Date(b.dateReceived).getTime() - new Date(a.dateReceived).getTime();
+        case 'date-oldest':
+          return new Date(a.dateReceived).getTime() - new Date(b.dateReceived).getTime();
+        case 'patient-name':
+          return a.patientName.localeCompare(b.patientName);
+        case 'priority':
+          const priorityOrder = { 'overdue': 0, 'urgent': 1, 'normal': 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [referrals, activeTab, searchFilter, searchQuery, sortBy]);
   
   const getStatusBadge = (status: ReferralStatus) => {
     return <Badge className={STATUS_BADGE_STYLES[status]}>{STATUS_LABELS[status]}</Badge>;
@@ -66,8 +111,17 @@ export const ReferralList = () => {
 
   // Search handler
   const handleSearch = (query: string) => {
-    console.log('Searching for:', query);
-    // Implement search logic here
+    setSearchQuery(query);
+  };
+
+  // Search filter handler
+  const handleSearchFilterChange = (filter: ReferralSearchFilter) => {
+    setSearchFilter(filter);
+  };
+
+  // Sort handler
+  const handleSortChange = (sort: ReferralSortOption) => {
+    setSortBy(sort);
   };
 
   // User menu handler
@@ -108,14 +162,17 @@ export const ReferralList = () => {
         <div className="flex-1 flex">
           {/* Referral list */}
           <ReferralListComponent 
-            referrals={filteredReferrals}
+            referrals={processedReferrals}
             selectedReferralId={selectedReferral?.id}
             activeTab={activeTab}
-            filterDoctor={filterDoctor}
-            referringDoctors={referringDoctors}
+            searchFilter={searchFilter}
+            sortBy={sortBy}
+            searchQuery={searchQuery}
             onReferralSelect={setSelectedReferral}
             onTabChange={setActiveTab}
-            onDoctorFilterChange={setFilterDoctor}
+            onSearchFilterChange={handleSearchFilterChange}
+            onSortChange={handleSortChange}
+            onSearchChange={handleSearch}
             onNewReferralClick={() => setIsNewReferralOpen(true)}
             getStatusBadge={getStatusBadge}
             isLoading={isLoading}

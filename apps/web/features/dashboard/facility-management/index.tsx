@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner';
 import { useGetFacilities, createFacility } from '@/lib/hooks/facilities';
 import AddFacilityModal from './components/AddFacilityModal/index';
-import { useOrganizations } from '@/lib/hooks/organizations';
+import { useOrganizations } from '@/lib/hooks/organizations/index';
 import { PaginationWrapper } from '@/components/PaginationWrapper';
 
 interface Organization {

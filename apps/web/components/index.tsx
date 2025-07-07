@@ -6,4 +6,5 @@ export * from './ReviewSubmitStep';
 export * from './GiftCardStep';
 export * from './AppHeader';
 export * from './ProgressBar';
-export * from './NavigationFooter'; 
+export * from './NavigationFooter';
+export * from './custom-components'; 

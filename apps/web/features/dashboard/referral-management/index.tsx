@@ -7,6 +7,13 @@ import {
   Search, Home, BarChart3, Settings, LogOut, User, ChevronDown, LayoutDashboard,
   ClipboardList, MapPin, Activity, HelpCircle
 } from 'lucide-react';
+import { CreateBatchModal, BatchList, ReferralList } from './components';
+import { useGetFacilities } from '@/lib/hooks/facilities';
+import { useBatches } from '@/lib/hooks/batch';
+import { useReferrals, useReferralsByBatch } from '@/lib/hooks/referrals';
+import { Facility as ApiFacility } from '@/lib/api/client/models/Facility';
+import { ReferralBatch } from '@/lib/api/client/models/ReferralBatch';
+import { Referral as ApiReferral } from '@/lib/api/client/models/Referral';
 
 interface Referral {
   id: string;
@@ -22,22 +29,33 @@ interface Facility {
 
 interface Batch {
   id: string;
-  outboundFacility: Facility;
-  inboundFacility: Facility;
-  referrals: Referral[];
-  createdAt: string;
-  totalReferrals: number;
+  referral_batch_id: string;
+  referral_batch_prefix: string;
+  referral_batch_size: number;
+  referral_outbound_facility_id: string;
+  referral_inbound_facility_id: string;
+  outboundFacility?: Facility;
+  inboundFacility?: Facility;
+  referrals?: Referral[];
+  createdAt?: string;
+  totalReferrals?: number;
   usedReferrals?: number;
-  description: string;
+  description?: string;
 }
 
 const ReferralDashboard = () => {
   const [activeTab, setActiveTab] = useState('batches');
-  const [batches, setBatches] = useState<Batch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [previewBatch, setPreviewBatch] = useState<Batch | null>(null);
+  const [batchPage, setBatchPage] = useState(1);
+  const [batchPageSize, setBatchPageSize] = useState(10);
+  const [referralPage, setReferralPage] = useState(1);
+  const [referralPageSize, setReferralPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [batchFilters, setBatchFilters] = useState({
@@ -52,34 +70,36 @@ const ReferralDashboard = () => {
   });
   const [copiedId, setCopiedId] = useState(null);
 
-  // Sample facilities - in real app, these would come from an API
-  const facilities = [
-    { id: 'FAC001', name: 'Main Hospital - Downtown' },
-    { id: 'FAC002', name: 'North Medical Center' },
-    { id: 'FAC003', name: 'South Community Clinic' },
-    { id: 'FAC004', name: 'West Urgent Care' },
-    { id: 'FAC005', name: 'East Specialty Center' }
-  ];
+  // Fetch batches, facilities and referrals from API
+  const { data: batchesData, isLoading: isBatchesLoading } = useBatches();
+  const { data: facilitiesResponse, isLoading: isFacilitiesLoading } = useGetFacilities({
+    page: 1,
+    pageSize: 5,
+    search: ''
+  });
+  const { data: allReferralsData, isLoading: isReferralsLoading } = useReferrals({
+    page: referralPage,
+    page_size: referralPageSize,
+    search: ''
+  });
 
-  // Sidebar navigation items
-  const sidebarItems = [
-    { icon: Home, label: 'Dashboard', active: false },
-    { icon: QrCode, label: 'Referrals', active: true },
-    { icon: Building, label: 'Facilities', active: false },
-    { icon: Users, label: 'Patients', active: false },
-    { icon: BarChart3, label: 'Analytics', active: false },
-    { icon: ClipboardList, label: 'Reports', active: false },
-    { icon: Settings, label: 'Settings', active: false },
-  ];
-
-  // Generate a unique batch ID
-  const generateBatchId = () => {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 5);
-    return `BATCH-${timestamp}-${random}`.toUpperCase();
+  const apiFacilities = facilitiesResponse?.items || [];
+  const pagination = (allReferralsData as any)?.pagination || {
+    page: 1,
+    page_size: 10,
+    total_items: 0,
+    total_pages: 0
   };
+  const apiBatches = batchesData || [];
+  const apiReferrals = (allReferralsData as any)?.items || allReferralsData || [];
+  
+  // Transform API facilities for backward compatibility
+  const facilities = apiFacilities.map((facility: ApiFacility) => ({
+    id: facility.facility_id,
+    name: facility.facility_name
+  }));
 
-  // Generate a unique slug
+  // Generate a unique slug for referrals
   const generateSlug = () => {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 7);
@@ -151,7 +171,48 @@ const ReferralDashboard = () => {
     return svg;
   };
 
-  // Handle batch generation
+  // Transform API referrals to component format
+  const transformReferral = (apiReferral: ApiReferral): Referral => {
+    const referralUrl = `${window.location.origin}/qr-scan?id=${apiReferral.referral_slug}`;
+    return {
+      id: apiReferral.referral_slug,
+      url: referralUrl,
+      qrCode: generateQRCode(referralUrl),
+      status: apiReferral.referral_status || (apiReferral.referral_submitted ? 'Submitted' : apiReferral.referral_scanned ? 'Scanned' : 'Active')
+    };
+  };
+
+  // Group referrals by batch prefix
+  const referralsByBatch = apiReferrals.reduce((acc, referral) => {
+    const batchPrefix = referral.referral_batch_prefix;
+    if (!acc[batchPrefix]) {
+      acc[batchPrefix] = [];
+    }
+    acc[batchPrefix].push(transformReferral(referral));
+    return acc;
+  }, {} as Record<string, Referral[]>);
+
+  // Transform API batches to include facility details and real referrals
+  const batches: Batch[] = apiBatches.map((batch: ReferralBatch) => {
+    const outboundFacility = facilities.find(f => f.id === batch.referral_outbound_facility_id);
+    const inboundFacility = facilities.find(f => f.id === batch.referral_inbound_facility_id);
+    const batchReferrals = referralsByBatch[batch.referral_batch_prefix] || [];
+    const usedReferrals = batchReferrals.filter(r => r.status !== 'Active').length;
+    
+    return {
+      ...batch,
+      id: batch.referral_batch_id,
+      outboundFacility: outboundFacility || { id: batch.referral_outbound_facility_id, name: 'Unknown Facility' },
+      inboundFacility: inboundFacility || { id: batch.referral_inbound_facility_id, name: 'Unknown Facility' },
+      referrals: batchReferrals,
+      totalReferrals: batch.referral_batch_size,
+      usedReferrals: usedReferrals,
+      description: '', // TODO: Add description field to API
+      createdAt: new Date().toISOString() // TODO: Add created_at field to API
+    };
+  });
+
+  // Handle batch generation - TODO: Replace with API call
   const handleBatchGenerate = () => {
     if (!batchForm.outboundFacility || !batchForm.inboundFacility) {
       alert('Please select both outbound and inbound facilities');
@@ -166,36 +227,17 @@ const ReferralDashboard = () => {
       return;
     }
 
-    const batchId = generateBatchId();
-    const timestamp = new Date().toISOString();
-    const referrals: Referral[] = [];
-    
-    for (let i = 0; i < batchForm.numberOfReferrals; i++) {
-      const slug = generateSlug();
-      const referralUrl = `https://referral.example.com/${slug}`;
-      
-      referrals.push({
-        id: slug,
-        url: referralUrl,
-        qrCode: generateQRCode(referralUrl),
-        status: 'active'
-      });
-    }
-    
-    const newBatch: Batch = {
-      id: batchId,
-      outboundFacility,
-      inboundFacility,
-      referrals,
-      createdAt: timestamp,
-      totalReferrals: batchForm.numberOfReferrals,
-      usedReferrals: 0,
-      description: batchForm.description
-    };
-    
-    setBatches([newBatch, ...batches]);
+    // TODO: Implement API call to create batch using BatchesService
+    // For now, just close the modal
     setBatchForm({ outboundFacility: '', inboundFacility: '', numberOfReferrals: 1, description: '' });
     setShowCreateModal(false);
+    
+    alert('Batch creation will be implemented with API integration');
+  };
+
+  // Handle page size change for referrals
+  const handleReferralPageSizeChange = (newPageSize: number) => {
+    setReferralPageSize(newPageSize);
   };
 
   // Show print preview
@@ -227,11 +269,15 @@ const ReferralDashboard = () => {
 
   // Generate HTML for printing
   const generatePrintHTML = (batch) => {
+    if (!batch?.outboundFacility || !batch?.inboundFacility || !batch?.referrals) {
+      return '<html><body><p>Invalid batch data</p></body></html>';
+    }
+    
     return `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QR Codes - ${batch.id}</title>
+          <title>QR Codes - ${batch.referral_batch_prefix}</title>
           <style>
             @page {
               size: A4;
@@ -330,10 +376,10 @@ const ReferralDashboard = () => {
         <body>
           <div class="header">
             <h1>Referral QR Codes</h1>
-            <p><strong>Batch ID:</strong> ${batch.id}</p>
+            <p><strong>Batch Prefix:</strong> ${batch.referral_batch_prefix}</p>
             ${batch.description ? `<p><strong>Description:</strong> ${batch.description}</p>` : ''}
             <p><strong>Route:</strong> ${batch.outboundFacility.name} → ${batch.inboundFacility.name}</p>
-            <p><strong>Generated:</strong> ${new Date(batch.createdAt).toLocaleString()}</p>
+            <p><strong>Generated:</strong> ${batch.createdAt ? new Date(batch.createdAt).toLocaleString() : 'Unknown'}</p>
           </div>
           <div class="qr-grid">
             ${batch.referrals.map(referral => `
@@ -353,39 +399,6 @@ const ReferralDashboard = () => {
         </body>
       </html>
     `;
-  };
-
-  // Get all referrals from all batches
-  const getAllReferrals = () => {
-    const allReferrals: (Referral & { batchId: string; outboundFacility: Facility; inboundFacility: Facility; createdAt: string; })[] = [];
-    batches.forEach(batch => {
-      batch.referrals.forEach(referral => {
-        allReferrals.push({
-          ...referral,
-          batchId: batch.id,
-          outboundFacility: batch.outboundFacility,
-          inboundFacility: batch.inboundFacility,
-          createdAt: batch.createdAt
-        });
-      });
-    });
-    return allReferrals;
-  };
-
-  // Get filtered referrals
-  const getFilteredReferrals = () => {
-    if (!selectedBatchId) return getAllReferrals();
-    
-    const batch = batches.find(b => b.id === selectedBatchId);
-    if (!batch) return [];
-    
-    return batch.referrals.map(referral => ({
-      ...referral,
-      batchId: batch.id,
-      outboundFacility: batch.outboundFacility,
-      inboundFacility: batch.inboundFacility,
-      createdAt: batch.createdAt
-    }));
   };
 
   // Copy referral URL to clipboard
@@ -413,39 +426,23 @@ const ReferralDashboard = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Delete batch
-  const deleteBatch = (batchId) => {
-    setBatches(batches.filter(b => b.id !== batchId));
-    if (selectedBatchId === batchId) {
+  // Delete batch - TODO: Replace with API call
+  const deleteBatch = (batchPrefix) => {
+    // TODO: Implement API call to delete batch
+    alert('Batch deletion will be implemented with API integration');
+    if (selectedBatchId === batchPrefix) {
       setSelectedBatchId(null);
     }
   };
 
-  // Delete individual referral
-  const deleteReferral = (batchId, referralId) => {
-    setBatches(batches.map(batch => {
-      if (batch.id === batchId) {
-        return {
-          ...batch,
-          referrals: batch.referrals.filter(r => r.id !== referralId),
-          totalReferrals: batch.totalReferrals - 1
-        };
-      }
-      return batch;
-    }));
+  // Delete individual referral - TODO: Replace with API call
+  const deleteReferral = (batchPrefix, referralId) => {
+    // TODO: Implement API call to delete referral
+    alert('Referral deletion will be implemented with API integration');
   };
 
-  // Get filtered batches
-  const getFilteredBatches = () => {
-    return batches.filter(batch => {
-      const matchesOutbound = !batchFilters.outboundFacility || batch.outboundFacility.id === batchFilters.outboundFacility;
-      const matchesInbound = !batchFilters.inboundFacility || batch.inboundFacility.id === batchFilters.inboundFacility;
-      return matchesOutbound && matchesInbound;
-    });
-  };
-
-  const totalReferrals = batches.reduce((sum, batch) => sum + batch.totalReferrals, 0);
-  const todaysBatches = batches.filter(b => new Date(b.createdAt).toDateString() === new Date().toDateString());
+  const totalReferrals = batches.reduce((sum, batch) => sum + (batch.totalReferrals || 0), 0);
+  const todaysBatches = batches.filter(b => b.createdAt && new Date(b.createdAt).toDateString() === new Date().toDateString());
 
   return (
     <>
@@ -491,108 +488,13 @@ const ReferralDashboard = () => {
         </div>
 
         {/* Create Batch Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all">
-              <div className="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Sparkles className="w-6 h-6" />
-                    Create New Batch
-                  </h2>
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-8">
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Outbound Facility
-                    </label>
-                    <select
-                      value={batchForm.outboundFacility}
-                      onChange={(e) => setBatchForm({...batchForm, outboundFacility: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">Select facility...</option>
-                      {facilities.map(facility => (
-                        <option key={facility.id} value={facility.id}>
-                          {facility.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Inbound Facility
-                    </label>
-                    <select
-                      value={batchForm.inboundFacility}
-                      onChange={(e) => setBatchForm({...batchForm, inboundFacility: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">Select facility...</option>
-                      {facilities.map(facility => (
-                        <option key={facility.id} value={facility.id}>
-                          {facility.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Number of Referrals
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={batchForm.numberOfReferrals}
-                      onChange={(e) => setBatchForm({...batchForm, numberOfReferrals: parseInt(e.target.value) || 1})}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Description (Optional)
-                    </label>
-                    <textarea
-                      value={batchForm.description}
-                      onChange={(e) => setBatchForm({...batchForm, description: e.target.value})}
-                      placeholder="Add notes about this batch..."
-                      rows={3}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-8 flex gap-4 justify-end">
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleBatchGenerate}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all"
-                  >
-                    Generate Batch
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <CreateBatchModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleBatchGenerate}
+          form={batchForm}
+          onFormChange={setBatchForm}
+        />
 
         {/* Print Preview Modal */}
         {showPrintPreview && previewBatch && (
@@ -625,15 +527,15 @@ const ReferralDashboard = () => {
                           {previewBatch.description && (
                             <p className="text-lg"><strong className="font-semibold">Description:</strong> {previewBatch.description}</p>
                           )}
-                          <p className="text-lg"><strong className="font-semibold">Route:</strong> {previewBatch.outboundFacility.name} → {previewBatch.inboundFacility.name}</p>
-                          <p className="text-lg"><strong className="font-semibold">Generated:</strong> {new Date(previewBatch.createdAt).toLocaleString()}</p>
+                          <p className="text-lg"><strong className="font-semibold">Route:</strong> {previewBatch.outboundFacility?.name || 'Unknown'} → {previewBatch.inboundFacility?.name || 'Unknown'}</p>
+                          <p className="text-lg"><strong className="font-semibold">Generated:</strong> {previewBatch.createdAt ? new Date(previewBatch.createdAt).toLocaleString() : 'Unknown'}</p>
                         </div>
                       </div>
                     </div>
                     
                     <div className="px-12 py-8">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {previewBatch.referrals.map((referral) => (
+                        {(previewBatch.referrals || []).map(referral => (
                           <div key={referral.id} className="group relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
                             <div className="relative bg-white border-2 border-gray-200 p-6 text-center rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
@@ -645,8 +547,8 @@ const ReferralDashboard = () => {
                               </div>
                               <p className="text-sm font-mono font-bold text-gray-800 break-all mb-3 bg-gray-100 px-3 py-2 rounded-lg">{referral.id}</p>
                               <div className="text-sm text-gray-600 space-y-1">
-                                <p><strong className="font-semibold text-blue-600">From:</strong> {previewBatch.outboundFacility.name}</p>
-                                <p><strong className="font-semibold text-purple-600">To:</strong> {previewBatch.inboundFacility.name}</p>
+                                <p><strong className="font-semibold text-blue-600">From:</strong> {previewBatch.outboundFacility?.name || 'Unknown'}</p>
+                                <p><strong className="font-semibold text-purple-600">To:</strong> {previewBatch.inboundFacility?.name || 'Unknown'}</p>
                               </div>
                             </div>
                           </div>
@@ -657,7 +559,7 @@ const ReferralDashboard = () => {
                     <div className="sticky bottom-0 bg-white px-12 pt-8 pb-12 rounded-b-lg">
                       <div className="text-center pt-8 border-t border-gray-200">
                         <p className="text-gray-500">
-                          Generated on {new Date().toLocaleString()} | Total QR Codes: {previewBatch.referrals.length}
+                          Generated on {new Date().toLocaleString()} | Total QR Codes: {previewBatch.referrals?.length || 0}
                         </p>
                       </div>
                     </div>
@@ -756,312 +658,36 @@ const ReferralDashboard = () => {
 
           {/* Batch List Tab */}
           {activeTab === 'batches' && (
-            <div>
-              {/* Batch Filters */}
-              {batches.length > 0 && (
-                <div className="p-6 border-b border-gray-200 bg-gray-50/50">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <Filter className="w-5 h-5 text-gray-500" />
-                    <label className="text-sm font-semibold text-gray-700">Filter by:</label>
-                    
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm text-gray-600">Outbound:</label>
-                      <select
-                        value={batchFilters.outboundFacility}
-                        onChange={(e) => setBatchFilters({...batchFilters, outboundFacility: e.target.value})}
-                        className="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      >
-                        <option value="">All Facilities</option>
-                        {facilities.map(facility => (
-                          <option key={facility.id} value={facility.id}>
-                            {facility.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm text-gray-600">Inbound:</label>
-                      <select
-                        value={batchFilters.inboundFacility}
-                        onChange={(e) => setBatchFilters({...batchFilters, inboundFacility: e.target.value})}
-                        className="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      >
-                        <option value="">All Facilities</option>
-                        {facilities.map(facility => (
-                          <option key={facility.id} value={facility.id}>
-                            {facility.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    {(batchFilters.outboundFacility || batchFilters.inboundFacility) && (
-                      <button
-                        onClick={() => setBatchFilters({ outboundFacility: '', inboundFacility: '' })}
-                        className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
-                      >
-                        Clear Filters
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {batches.length === 0 ? (
-                <div className="p-16 text-center">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-                    <Package className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 mb-6">No batches created yet.</p>
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all"
-                  >
-                    Create Your First Batch
-                  </button>
-                </div>
-              ) : getFilteredBatches().length === 0 ? (
-                <div className="p-16 text-center">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-                    <Filter className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 mb-6">No batches match the selected filters.</p>
-                  <button
-                    onClick={() => setBatchFilters({ outboundFacility: '', inboundFacility: '' })}
-                    className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-all"
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Batch ID
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Description
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Outbound → Inbound
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Referrals
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Scanned QR
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Created
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {getFilteredBatches().map((batch) => (
-                        <tr key={batch.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="font-mono text-sm font-medium text-gray-900">{batch.id}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-gray-600 max-w-xs truncate" title={batch.description}>
-                              {batch.description || '-'}
-                            </p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="font-medium text-blue-600">{batch.outboundFacility.name}</span>
-                              <ChevronRight className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium text-purple-600">{batch.inboundFacility.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold">{batch.totalReferrals}</span>
-                              <span className="text-xs text-gray-500">referrals</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium">{batch.usedReferrals || 0}</span>
-                              <span className="text-xs text-gray-500">/ {batch.totalReferrals}</span>
-                              <div className="w-24 bg-gray-200 rounded-full h-2.5">
-                                <div 
-                                  className="bg-gradient-to-r from-green-500 to-green-600 h-2.5 rounded-full transition-all duration-300"
-                                  style={{ width: `${(batch.usedReferrals || 0) / batch.totalReferrals * 100}%` }}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(batch.createdAt).toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setActiveTab('referrals');
-                                  setSelectedBatchId(batch.id);
-                                }}
-                                className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
-                              >
-                                View Referrals
-                              </button>
-                              <button
-                                onClick={() => showPrintPreviewModal(batch)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Print QR Codes"
-                              >
-                                <Printer className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => deleteBatch(batch.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Delete Batch"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <BatchList
+              batches={batches}
+              facilities={facilities}
+              batchFilters={batchFilters}
+              setBatchFilters={setBatchFilters}
+              setShowCreateModal={setShowCreateModal}
+              showPrintPreviewModal={showPrintPreviewModal}
+              deleteBatch={deleteBatch}
+              setActiveTab={setActiveTab}
+              setSelectedBatchId={setSelectedBatchId}
+            />
           )}
 
           {/* Referrals List Tab */}
           {activeTab === 'referrals' && (
-            <div>
-              {/* Filter by Batch */}
-              <div className="p-6 border-b border-gray-200 bg-gray-50/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Filter className="w-5 h-5 text-gray-500" />
-                    <label className="text-sm font-semibold text-gray-700">Filter by Batch:</label>
-                    <select
-                      value={selectedBatchId || ''}
-                      onChange={(e) => setSelectedBatchId(e.target.value || null)}
-                      className="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">All Batches</option>
-                      {batches.map(batch => (
-                        <option key={batch.id} value={batch.id}>
-                          {batch.id} ({batch.totalReferrals} referrals)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {selectedBatchId && (
-                    <button
-                      onClick={() => {
-                        const batch = batches.find(b => b.id === selectedBatchId);
-                        if (batch) showPrintPreviewModal(batch);
-                      }}
-                      className="px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg flex items-center gap-2 transition-colors font-medium"
-                    >
-                      <Printer className="w-4 h-4" />
-                      Print Batch QR Codes
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {getFilteredReferrals().length === 0 ? (
-                <div className="p-16 text-center">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-                    <QrCode className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500">No referrals found. {selectedBatchId ? 'Try selecting a different batch.' : 'Create a batch to generate referrals.'}</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Referral ID
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Batch ID
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Facilities
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {getFilteredReferrals().map((referral) => (
-                        <tr key={referral.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-medium text-gray-900">{referral.id}</span>
-                              <button
-                                onClick={() => copyToClipboard(referral.url, referral.id)}
-                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Copy URL"
-                              >
-                                {copiedId === referral.id ? (
-                                  <Check className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <Copy className="w-4 h-4 text-gray-400" />
-                                )}
-                              </button>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-600">{referral.batchId}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm">
-                              <div className="font-medium text-blue-600">{referral.outboundFacility.name}</div>
-                              <div className="text-gray-500">→ <span className="text-purple-600">{referral.inboundFacility.name}</span></div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-gradient-to-r from-green-400 to-green-500 text-white">
-                              {referral.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => downloadQRCode(referral.qrCode, referral.id)}
-                                className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 font-medium"
-                                title="Download QR Code"
-                              >
-                                <Download className="w-4 h-4" />
-                                Download QR
-                              </button>
-                              <button
-                                onClick={() => deleteReferral(referral.batchId, referral.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Delete Referral"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <ReferralList
+              batches={batches}
+              selectedBatchId={selectedBatchId}
+              setSelectedBatchId={setSelectedBatchId}
+              copiedId={copiedId}
+              copyToClipboard={copyToClipboard}
+              downloadQRCode={downloadQRCode}
+              deleteReferral={deleteReferral}
+              showPrintPreviewModal={showPrintPreviewModal}
+              currentPage={referralPage}
+              pageSize={referralPageSize}
+              onPageChange={setReferralPage}
+              totalItems={pagination.total_count}
+              onPageSizeChange={handleReferralPageSizeChange}
+            />
           )}
         </div>
       </div>

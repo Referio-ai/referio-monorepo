@@ -1,4 +1,4 @@
-from typing import ClassVar, Sequence, Optional
+from typing import ClassVar, Sequence, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -50,3 +50,8 @@ class ReferralStatusUpdate(BaseModel):
 
 class ReferralSearchResults(BaseModel):
     results: Sequence[Referral]
+
+
+class ReferralPagination(BaseModel):
+    items: Sequence[Referral]
+    pagination: Dict[str, Any]
