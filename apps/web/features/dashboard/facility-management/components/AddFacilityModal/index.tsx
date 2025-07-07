@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useOrganizations } from '@/lib/hooks/organizations';
+import { useOrganizations } from '@/lib/hooks/organizations/index';
 
 interface Organization {
   organization_id: string;

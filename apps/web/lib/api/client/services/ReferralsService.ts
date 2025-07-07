@@ -17,10 +17,15 @@ export class ReferralsService {
      * @returns Referral Successful Response
      * @throws ApiError
      */
-    public static apiV1GetReferrals(): CancelablePromise<Array<Referral>> {
+    public static apiV1GetReferrals({ page, page_size, search }: { page: number, page_size: number, search: string }): CancelablePromise<Array<Referral>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/referrals/',
+            query: {
+                page,
+                page_size,
+                search,
+            },
             errors: {
                 404: `Referral Endpoints`,
             },

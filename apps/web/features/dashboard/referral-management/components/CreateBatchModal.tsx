@@ -1,12 +1,15 @@
-import React from 'react';
-import { X, Sparkles } from 'lucide-react';
-import { Facility, BatchForm } from '../types';
+import React, { useMemo } from 'react';
+import { X, Sparkles, Loader2 } from 'lucide-react';
+import { useGetFacilities } from '@/lib/hooks/facilities';
+import { Facility as ApiFacility } from '@/lib/api/client/models/Facility';
+import { SearchableSelect } from '@/components/custom-components';
+import { useCreateBatch, transformBatchFormToCreate } from '@/lib/hooks/batch';
+import { BatchForm } from '../types';
 
 interface CreateBatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: () => void;
-  facilities: Facility[];
   form: BatchForm;
   onFormChange: (form: BatchForm) => void;
 }
@@ -15,10 +18,69 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  facilities,
   form,
   onFormChange,
 }) => {
+  // Fetch facilities with search support
+  const { data: facilitiesResponse, isLoading: isFacilitiesLoading } = useGetFacilities({
+    page: 1,
+    pageSize: 100, // Get a large number to avoid pagination issues
+    search: ''
+  });
+
+  // Create batch mutation
+  const createBatchMutation = useCreateBatch();
+
+  const facilities = facilitiesResponse?.items || [];
+
+  // Transform API facilities to dropdown options
+  const facilityOptions = useMemo(() => {
+    return facilities.map((facility: ApiFacility) => ({
+      value: facility.facility_id,
+      label: facility.facility_name
+    }));
+  }, [facilities]);
+
+  // Validate form
+  const isFormValid = useMemo(() => {
+    return (
+      form.outboundFacility &&
+      form.inboundFacility &&
+      form.outboundFacility !== form.inboundFacility &&
+      form.numberOfReferrals > 0 &&
+      form.numberOfReferrals <= 100
+    );
+  }, [form]);
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!isFormValid) {
+      return;
+    }
+
+    try {
+      const batchData = transformBatchFormToCreate(form);
+      await createBatchMutation.mutateAsync(batchData);
+      
+      // Call the parent onSubmit callback
+      onSubmit();
+      
+      // Close the modal
+      onClose();
+      
+      // Reset form
+      onFormChange({
+        outboundFacility: '',
+        inboundFacility: '',
+        numberOfReferrals: 1,
+        description: ''
+      });
+    } catch (error) {
+      // Error is already handled by the mutation's onError
+      console.error('Failed to create batch:', error);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -32,7 +94,8 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
             </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              disabled={createBatchMutation.isPending}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
             >
               <X className="w-5 h-5" />
             </button>
@@ -43,43 +106,52 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Outbound Facility
+                Outbound Facility *
               </label>
-              <select
-                value={form.outboundFacility}
-                onChange={(e) => onFormChange({...form, outboundFacility: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                <option value="">Select facility...</option>
-                {facilities.map(facility => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.name}
-                  </option>
-                ))}
-              </select>
+              {isFacilitiesLoading ? (
+                <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-500">
+                  Loading facilities...
+                </div>
+              ) : (
+                <SearchableSelect
+                  value={form.outboundFacility}
+                  onValueChange={(value) => onFormChange({...form, outboundFacility: value})}
+                  placeholder="Select outbound facility..."
+                  searchPlaceholder="Search facilities..."
+                  options={facilityOptions}
+                  disabled={createBatchMutation.isPending}
+                />
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Inbound Facility
+                Inbound Facility *
               </label>
-              <select
-                value={form.inboundFacility}
-                onChange={(e) => onFormChange({...form, inboundFacility: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                <option value="">Select facility...</option>
-                {facilities.map(facility => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.name}
-                  </option>
-                ))}
-              </select>
+              {isFacilitiesLoading ? (
+                <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-500">
+                  Loading facilities...
+                </div>
+              ) : (
+                <SearchableSelect
+                  value={form.inboundFacility}
+                  onValueChange={(value) => onFormChange({...form, inboundFacility: value})}
+                  placeholder="Select inbound facility..."
+                  searchPlaceholder="Search facilities..."
+                  options={facilityOptions}
+                  disabled={createBatchMutation.isPending}
+                />
+              )}
+              {form.outboundFacility && form.inboundFacility && form.outboundFacility === form.inboundFacility && (
+                <p className="text-red-500 text-sm mt-1">
+                  Outbound and inbound facilities must be different
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Number of Referrals
+                Number of Referrals *
               </label>
               <input
                 type="number"
@@ -87,8 +159,12 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
                 max="100"
                 value={form.numberOfReferrals}
                 onChange={(e) => onFormChange({...form, numberOfReferrals: parseInt(e.target.value) || 1})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                disabled={createBatchMutation.isPending}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
+              <p className="text-gray-500 text-sm mt-1">
+                Maximum 100 referrals per batch
+              </p>
             </div>
 
             <div>
@@ -100,23 +176,42 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
                 onChange={(e) => onFormChange({...form, description: e.target.value})}
                 placeholder="Add notes about this batch..."
                 rows={3}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                disabled={createBatchMutation.isPending}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
 
+          {/* Error display */}
+          {createBatchMutation.isError && (
+            <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
+              <p className="text-red-700 text-sm">
+                {createBatchMutation.error?.message || 'Failed to create batch. Please try again.'}
+              </p>
+            </div>
+          )}
+
           <div className="mt-8 flex gap-4 justify-end">
             <button
               onClick={onClose}
-              className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-medium"
+              disabled={createBatchMutation.isPending}
+              className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
-              onClick={onSubmit}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all"
+              onClick={handleSubmit}
+              disabled={!isFormValid || isFacilitiesLoading || createBatchMutation.isPending}
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
             >
-              Generate Batch
+              {createBatchMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating Batch...
+                </>
+              ) : (
+                'Generate Batch'
+              )}
             </button>
           </div>
         </div>

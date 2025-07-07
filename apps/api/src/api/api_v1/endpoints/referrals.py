@@ -6,7 +6,8 @@ from src.schemas.referrals import (
     Referral, 
     ReferralCreate,
     ReferralStatusUpdate, 
-    ReferralUpdate, 
+    ReferralUpdate,
+    ReferralPagination,
 )
 from src.config.supabase_config import get_supabase_client
 from src.utils.supabase.supabase_utils import upload_file
@@ -17,10 +18,19 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200)
-async def get_referrals() -> List[Referral]:
+async def get_referrals(page: int = 1, page_size: int = 10, search: str = "") -> ReferralPagination:
     """Get all referrals"""
-    db = await get_supabase_client()
-    return await referrals_crud.get_all(db=db)
+    try:
+        db = await get_supabase_client()
+        return await referrals_crud.get_all_paginated(db=db, table_name="referrals", page=page, page_size=page_size, search=search)
+    except HTTPException:
+        # Re-raise HTTPException from CRUD layer
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching referrals. {str(e)}",
+        )
 
 
 @router.get("/{referral_id}", status_code=200)
