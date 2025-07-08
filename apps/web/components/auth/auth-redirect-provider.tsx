@@ -36,7 +36,7 @@ export function AuthRedirectProvider({
   }, [user, loading, pathname, router]);
 
   // Show loading state while checking authentication
-  if (loading) {
+  if ((!user || loading) && !PUBLIC_ROUTES.includes(pathname)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
