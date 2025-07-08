@@ -93,7 +93,8 @@ const ReferralList: React.FC<ReferralListProps> = ({
   const getFilteredReferrals = (): ExtendedReferral[] => {
     if (!selectedBatchId) return getAllReferrals();
     
-    const batch = batches.find(b => b.referral_batch_prefix === selectedBatchId);
+    // Fix: Use batch.id instead of batch.referral_batch_prefix to match the dropdown
+    const batch = batches.find(b => b.id === selectedBatchId);
     if (!batch || !batch.referrals || !batch.outboundFacility || !batch.inboundFacility || !batch.createdAt) return [];
     
     return batch.referrals.map(referral => ({
@@ -110,12 +111,12 @@ const ReferralList: React.FC<ReferralListProps> = ({
     const filteredReferrals = getFilteredReferrals();
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return filteredReferrals.slice(startIndex, endIndex);
+    return filteredReferrals
   };
 
-  const totalReferrals = totalItems;
+  const filteredReferrals = getFilteredReferrals();
+  const totalReferrals = filteredReferrals.length;
   const paginatedReferrals = getPaginatedReferrals();
-  const totalPages = Math.ceil(totalReferrals / pageSize) || 1;
 
   const handlePageSizeChange = (newPageSize: number) => {
     onPageSizeChange(newPageSize);
@@ -141,7 +142,7 @@ const ReferralList: React.FC<ReferralListProps> = ({
               <option value="">All Batches</option>
               {batches.map(batch => (
                 <option key={batch.id} value={batch.id}>
-                  {batch.id} ({batch.totalReferrals} referrals)
+                  {batch.referral_batch_prefix} ({batch.totalReferrals} referrals)
                 </option>
               ))}
             </select>
@@ -307,12 +308,12 @@ const ReferralList: React.FC<ReferralListProps> = ({
           </div>
           
           {/* Enhanced Pagination */}
-          {totalReferrals > pageSize && (
+          {totalItems > pageSize && (
             <div className="bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <PaginationWrapper
                   currentPage={currentPage}
-                  totalItems={totalReferrals}
+                  totalItems={totalItems}
                   itemsPerPage={pageSize}
                   onPageChange={onPageChange}
                   maxVisiblePages={5}
