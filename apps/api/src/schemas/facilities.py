@@ -14,6 +14,7 @@ class Facility(BaseModel):
     facility_primary_contact_phone_number: str
     facility_primary_contact_email: EmailStr
     propelauth_facility_id: UUID
+    deleted: Optional[bool] = False
     table_name: ClassVar[str] = "facility"
 
 
@@ -27,6 +28,7 @@ class FacilityCreate(BaseModel):
     facility_primary_contact_phone_number: str = Field(..., pattern=r'^\+?1?\d{9,15}$')
     facility_primary_contact_email: EmailStr
     propelauth_facility_id: UUID
+    deleted: Optional[bool] = False
 
 
 class FacilityUpdate(BaseModel):
@@ -39,6 +41,7 @@ class FacilityUpdate(BaseModel):
     facility_primary_contact_phone_number: Optional[str] = Field(None, pattern=r'^\+?1?\d{9,15}$')
     facility_primary_contact_email: Optional[EmailStr] = None
     propelauth_facility_id: Optional[UUID] = None
+    deleted: Optional[bool] = None
 
 
 class FacilitySearchResults(BaseModel):

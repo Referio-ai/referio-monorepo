@@ -11,3 +11,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+.swal2-confirm {
+  background-color: #3b82f6 !important;
+  transition: all 0.3s ease;
+  transform: scale(1);
+}
+
+.swal2-confirm:hover {
+  background-color: #2563eb !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.swal2-cancel {
+  background-color: #f91616 !important;
+  transition: all 0.3s ease;
+  transform: scale(1);
+}
+
+.swal2-cancel:hover {
+  background-color: #dc2626 !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(249, 22, 22, 0.3);
+}
+
+.swal2-confirm:active,
+.swal2-cancel:active {
+  transform: scale(0.98);
+}
+
+.swal2-confirm:focus,
+.swal2-cancel:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}

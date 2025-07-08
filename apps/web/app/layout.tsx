@@ -9,6 +9,7 @@ import { AuthProvider } from "@propelauth/nextjs/client";
 import { AuthRedirectProvider } from "@/components/auth/auth-redirect-provider";
 import { RedirectToLogin } from "@propelauth/nextjs/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import 'sweetalert2/src/sweetalert2.scss'
 
 export const fontSans = FontSans({
   subsets: ["latin"],

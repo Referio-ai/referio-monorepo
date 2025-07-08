@@ -1,67 +1,49 @@
-# Dependencies
-node_modules
-.pnp
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
 .pnp.js
 
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# testing
+/coverage
 
-# Testing
-coverage
+# next.js
+/.next/
+/out/
 
-# Turbo
-.turbo
+# production
+/build
 
-# Vercel
-.vercel
-
-# Build Outputs
-.next/
-out/
-build
-dist
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Misc
+# misc
 .DS_Store
 *.pem
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+# local env files
+.env*.local
 
-# Environments
-.venv
+# vercel
+.vercel
 
-# Log changes
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# turbo
+.turbo
+
+# Log changes folder
 log-changes/
 
-# AI-generated change logs
-log-changes/
-*.log
+.next
 
-.idea/*
+apps/web/node_modules
+apps/docs/node_modules
+packages
+.idea

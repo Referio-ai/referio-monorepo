@@ -2,6 +2,7 @@ from typing import List
 from uuid import UUID
 from supabase import AsyncClient
 from fastapi.responses import JSONResponse
+from fastapi import HTTPException
 
 from src.crud.referrals import referrals_crud
 from src.crud.referrals_batch import referrals_batch_crud
@@ -32,57 +33,64 @@ class BatchService:
         Returns:
             GenerateBatchResponse with batch details and created referrals count
         """
-        # Generate unique batch prefix
-        batch_prefix = await get_unique_batch_prefix(db)
+        try:
+            # Generate unique batch prefix
+            batch_prefix = await get_unique_batch_prefix(db)
 
-        print(f"Batch prefix: {batch_prefix}")
+            print(f"Batch prefix: {batch_prefix}")
 
-        # Create the referral batch
-        batch_create = ReferralBatchCreate(
-            referral_outbound_facility_id=request.referral_outbound_facility_id,
-            referral_inbound_facility_id=request.referral_inbound_facility_id,
-            referral_batch_size=request.referral_batch_size,
-            referral_batch_prefix=batch_prefix
-        )
-
-        # Create the referral batch
-        batch = await referrals_batch_crud.create(db, obj_in=batch_create)
-        
-        # Create referrals for the batch
-        referrals_to_create = []
-        
-        for i in range(request.referral_batch_size):
-            # Generate random 5-character alphanumeric slug
-            referral_slug = generate_random_prefix()
-            
-            referral_create = ReferralCreate(
-                referral_outbound_facility_id=str(request.referral_outbound_facility_id),
-                referral_inbound_facility_id=str(request.referral_inbound_facility_id),
-                referral_batch_id=batch.referral_batch_id,
-                referral_batch_prefix=batch_prefix,
-                referral_scanned=False,
-                referral_submitted=False,
-                referral_slug=referral_slug
+            # Create the referral batch
+            batch_create = ReferralBatchCreate(
+                referral_outbound_facility_id=request.referral_outbound_facility_id,
+                referral_inbound_facility_id=request.referral_inbound_facility_id,
+                referral_batch_size=request.referral_batch_size,
+                referral_batch_prefix=batch_prefix
             )
-            referrals_to_create.append(referral_create)
 
+            # Create the referral batch
+            batch = await referrals_batch_crud.create(db, obj_in=batch_create)
+            
+            # Create referrals for the batch
+            referrals_to_create = []
+            
+            for i in range(request.referral_batch_size):
+                # Generate random 5-character alphanumeric slug
+                referral_slug = generate_random_prefix()
+                
+                referral_create = ReferralCreate(
+                    referral_outbound_facility_id=str(request.referral_outbound_facility_id),
+                    referral_inbound_facility_id=str(request.referral_inbound_facility_id),
+                    referral_batch_id=batch.referral_batch_id,
+                    referral_batch_prefix=batch_prefix,
+                    referral_scanned=False,
+                    referral_submitted=False,
+                    referral_slug=referral_slug
+                )
+                referrals_to_create.append(referral_create)
 
-        print(f"Referral: {batch_prefix}")
-        
-        # Create all referrals in a batch
-        created_referrals = await referrals_crud.create_batch(
-            db, 
-            referrals=referrals_to_create
-        )
-        
-        return JSONResponse(
-            content={
-                "message": "Batch created successfully",
-                "batch_id": str(batch.referral_batch_id),
-                "referrals_created": len(created_referrals),
-                "batch_prefix": batch_prefix
-            }
-        )
+            print(f"Referral: {batch_prefix}")
+            
+            # Create all referrals in a batch
+            created_referrals = await referrals_crud.create_batch(
+                db, 
+                referrals=referrals_to_create
+            )
+            
+            return JSONResponse(
+                content={
+                    "message": "Batch created successfully",
+                    "batch_id": str(batch.referral_batch_id),
+                    "referrals_created": len(created_referrals),
+                    "batch_prefix": batch_prefix
+                }
+            )
+            
+        except Exception as e:
+            print(f"Error generating batch: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to generate batch: {str(e)}"
+            )
 
     @staticmethod
     async def get_batch_referrals(
@@ -99,7 +107,14 @@ class BatchService:
         Returns:
             List of referrals in the batch
         """
-        return await referrals_crud.get_by_batch_id(db, batch_id=batch_id)
+        try:
+            return await referrals_crud.get_by_batch_id(db, batch_id=batch_id)
+        except Exception as e:
+            print(f"Error getting batch referrals: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get batch referrals: {str(e)}"
+            )
 
     @staticmethod
     async def get_batch_summary(
@@ -116,17 +131,58 @@ class BatchService:
         Returns:
             Dictionary with batch summary information
         """
-        referrals = await referrals_crud.get_by_batch_id(db, batch_id=batch_id)
-        
-        total_referrals = len(referrals)
-        scanned_referrals = sum(1 for r in referrals if r.referral_scanned)
-        submitted_referrals = sum(1 for r in referrals if r.referral_submitted)
-        
-        return {
-            "batch_id": str(batch_id),
-            "total_referrals": total_referrals,
-            "scanned_referrals": scanned_referrals,
-            "submitted_referrals": submitted_referrals,
-            "scan_rate": (scanned_referrals / total_referrals * 100) if total_referrals > 0 else 0,
-            "submission_rate": (submitted_referrals / total_referrals * 100) if total_referrals > 0 else 0
-        } 
+        try:
+            referrals = await referrals_crud.get_by_batch_id(db, batch_id=batch_id)
+            
+            total_referrals = len(referrals)
+            scanned_referrals = sum(1 for r in referrals if r.referral_scanned)
+            submitted_referrals = sum(1 for r in referrals if r.referral_submitted)
+            
+            return {
+                "batch_id": str(batch_id),
+                "total_referrals": total_referrals,
+                "scanned_referrals": scanned_referrals,
+                "submitted_referrals": submitted_referrals,
+                "scan_rate": (scanned_referrals / total_referrals * 100) if total_referrals > 0 else 0,
+                "submission_rate": (submitted_referrals / total_referrals * 100) if total_referrals > 0 else 0
+            }
+        except Exception as e:
+            print(f"Error getting batch summary: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get batch summary: {str(e)}"
+            )
+    
+    @staticmethod
+    async def delete_batch(
+        db: AsyncClient, 
+        batch_id: UUID
+    ) -> dict:
+        """
+        Soft delete a batch and all associated referrals by marking them as deleted
+        """
+        try:
+
+            # get the prefix of the batch
+            batch = await db.table("referrals_batch").select("referral_batch_prefix").eq("referral_batch_id", batch_id).execute()
+            batch_prefix = batch.data[0]["referral_batch_prefix"]
+
+            # soft delete all referrals with the same prefix
+            await db.table("referrals").update({"deleted": True}).eq("referral_batch_prefix", batch_prefix).execute()
+            
+            # Soft delete the batch itself
+            await db.table("referrals_batch").update({"deleted": True}).eq("referral_batch_id", batch_id).execute()
+    
+            return JSONResponse(
+                content={
+                    "message": "Batch deleted successfully",
+                    "batch_id": str(batch_id),
+                    "success": True
+                }
+            )
+        except Exception as e:
+            print(f"Error deleting batch: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete batch: {str(e)}"
+            )

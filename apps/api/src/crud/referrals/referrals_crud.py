@@ -33,15 +33,20 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 detail=f"An error occurred while fetching referrals. {str(e)}",
             )
 
-    async def get_by_batch_id(self, db: AsyncClient, *, batch_id: UUID) -> List[Referral]:
+    async def get_by_batch_id(self, db: AsyncClient, *, batch_id: UUID, include_deleted: bool = False) -> List[Referral]:
         """Get all referrals by batch ID"""
         try:
-            data, count = (
-                await db.table("referrals")
+            query = (
+                db.table("referrals")
                 .select("*")
                 .eq("referral_batch_id", str(batch_id))
-                .execute()
             )
+            
+            # Filter out deleted records unless explicitly requested
+            if not include_deleted:
+                query = query.neq("deleted", True)
+                
+            data, count = await query.execute()
             _, got = data
             return [Referral(**item) for item in got]
         except Exception as e:

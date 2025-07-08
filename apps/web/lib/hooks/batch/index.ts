@@ -23,6 +23,13 @@ export const useBatches = () => useQuery({
   staleTime: 1000 * 60 * 5, // 5 minutes
 });
 
+// Get all batches with pagination (for future use when client is updated)
+export const useBatchesPaginated = ({ page, page_size, search }: { page?: number, page_size?: number, search?: string } = {}) => useQuery({
+  queryKey: BATCH_KEYS.list(`${page || 1}-${page_size || 10}-${search || ''}`),
+  queryFn: () => BatchesService.apiV1GetBatches(), // Will be updated when client supports pagination
+  staleTime: 1000 * 60 * 5, // 5 minutes
+});
+
 // Get single batch
 export const useBatch = (batchId: string) => useQuery({
   queryKey: BATCH_KEYS.detail(batchId),

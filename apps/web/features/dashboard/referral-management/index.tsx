@@ -7,9 +7,10 @@ import {
   Search, Home, BarChart3, Settings, LogOut, User, ChevronDown, LayoutDashboard,
   ClipboardList, MapPin, Activity, HelpCircle
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { CreateBatchModal, BatchList, ReferralList } from './components';
 import { useGetFacilities } from '@/lib/hooks/facilities';
-import { useBatches } from '@/lib/hooks/batch';
+import { useBatchesPaginated, useDeleteBatch } from '@/lib/hooks/batch';
 import { useReferrals, useReferralsByBatch } from '@/lib/hooks/referrals';
 import { Facility as ApiFacility } from '@/lib/api/client/models/Facility';
 import { ReferralBatch } from '@/lib/api/client/models/ReferralBatch';
@@ -71,17 +72,26 @@ const ReferralDashboard = () => {
   const [copiedId, setCopiedId] = useState(null);
 
   // Fetch batches, facilities and referrals from API
-  const { data: batchesData, isLoading: isBatchesLoading } = useBatches();
+  const { data: batchesData, isLoading: isBatchesLoading, refetch: refetchBatches } = useBatchesPaginated({
+    page: batchPage,
+    page_size: batchPageSize,
+    search: ''
+  });
+
   const { data: facilitiesResponse, isLoading: isFacilitiesLoading } = useGetFacilities({
     page: 1,
     pageSize: 5,
     search: ''
   });
+  
   const { data: allReferralsData, isLoading: isReferralsLoading } = useReferrals({
     page: referralPage,
     page_size: referralPageSize,
     search: ''
   });
+
+  // Delete batch mutation
+  const deleteBatchMutation = useDeleteBatch();
 
   const apiFacilities = facilitiesResponse?.items || [];
   const pagination = (allReferralsData as any)?.pagination || {
@@ -90,7 +100,7 @@ const ReferralDashboard = () => {
     total_items: 0,
     total_pages: 0
   };
-  const apiBatches = batchesData || [];
+  const apiBatches = (batchesData as any)?.items || batchesData || [];
   const apiReferrals = (allReferralsData as any)?.items || allReferralsData || [];
   
   // Transform API facilities for backward compatibility
@@ -231,8 +241,13 @@ const ReferralDashboard = () => {
     // For now, just close the modal
     setBatchForm({ outboundFacility: '', inboundFacility: '', numberOfReferrals: 1, description: '' });
     setShowCreateModal(false);
-    
-    alert('Batch creation will be implemented with API integration');
+
+    Swal.fire({
+      title: 'Batch created successfully',
+      icon: 'success',
+      confirmButtonText: 'OK'
+    });
+    refetchBatches();
   };
 
   // Handle page size change for referrals
@@ -426,12 +441,77 @@ const ReferralDashboard = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Delete batch - TODO: Replace with API call
-  const deleteBatch = (batchPrefix) => {
-    // TODO: Implement API call to delete batch
-    alert('Batch deletion will be implemented with API integration');
-    if (selectedBatchId === batchPrefix) {
-      setSelectedBatchId(null);
+  // Delete batch - Updated with API call using SweetAlert2
+  const deleteBatch = async (batchId: string) => {
+    try {
+      
+      // Find the batch to get its name for the confirmation dialog
+      const batch = batches.find(b => b.id === batchId);
+      const batchName = batch?.referral_batch_prefix || 'this batch';
+
+      // Show SweetAlert2 confirmation dialog
+      const result = await Swal.fire({
+        title: 'Delete Batch?',
+        text: `Are you sure you want to delete ${batchName}? This action cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+      });
+      
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      // Show loading state
+      Swal.fire({
+        title: 'Deleting...',
+        text: 'Please wait while we delete the batch.',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Call the delete API
+      await deleteBatchMutation.mutateAsync(batchId, {
+        onSuccess: () => {
+          // Close the loading dialog
+          Swal.fire({
+            title: 'Batch deleted successfully',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          });
+
+          // Refresh the batches
+          refetchBatches();
+        },
+        onError: () => {
+          // Close loading dialog and show error
+          Swal.fire({
+            title: 'Error',
+            text: 'Failed to delete batch',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        }
+      });
+      
+      // Clear selected batch if it was deleted
+      if (selectedBatchId === batchId) {
+        setSelectedBatchId(null);
+      }
+
+      // Close the loading dialog
+      Swal.close();
+    } catch (error) {
+      // Close loading dialog and show error
+      Swal.close();
+      
+      // Error is already handled by the mutation hook, but we can show additional feedback
+      console.error('Failed to delete batch:', error);
     }
   };
 
@@ -668,6 +748,11 @@ const ReferralDashboard = () => {
               deleteBatch={deleteBatch}
               setActiveTab={setActiveTab}
               setSelectedBatchId={setSelectedBatchId}
+              currentPage={batchPage}
+              pageSize={batchPageSize}
+              onPageChange={setBatchPage}
+              totalItems={batches.length}
+              onPageSizeChange={setBatchPageSize}
             />
           )}
 

@@ -60,10 +60,28 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
 
     try {
       const batchData = transformBatchFormToCreate(form);
-      await createBatchMutation.mutateAsync(batchData);
-      
-      // Call the parent onSubmit callback
-      onSubmit();
+      await createBatchMutation.mutateAsync(batchData, {
+        onSuccess: () => {
+          // Close the modal
+          onClose();
+          
+          // Reset form
+          onFormChange({
+            outboundFacility: '',
+            inboundFacility: '',
+            numberOfReferrals: 1,
+            description: ''
+          });
+
+          // Call the parent onSubmit callback
+          onSubmit();
+
+        },
+        onError: () => {
+          // Error is already handled by the mutation's onError
+        }
+      });
+    
       
       // Close the modal
       onClose();

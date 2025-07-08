@@ -18,31 +18,46 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
-    async def get(self, table_name: str, db: AsyncClient, *, id: str) -> Optional[ModelType]:
+    async def get(self, table_name: str, db: AsyncClient, *, id: str, include_deleted: bool = False) -> Optional[ModelType]:
         """get by table_name by id"""
-        data, count = (
-            await db.table(table_name).select("*").eq("id", id).execute()
-        )
+        query = db.table(table_name).select("*").eq("id", id)
+        
+        # Filter out deleted records unless explicitly requested
+        if not include_deleted:
+            query = query.neq("deleted", True)
+            
+        data, count = await query.execute()
         _, got = data
         return self.model(**got[0]) if got else None
 
-    async def get_all(self, table_name: str, db: AsyncClient) -> list[ModelType]:
+    async def get_all(self, table_name: str, db: AsyncClient, include_deleted: bool = False) -> list[ModelType]:
         """get all by table_name"""
-        data, count = await db.table(table_name).select("*").execute()
+        query = db.table(table_name).select("*")
+        
+        # Filter out deleted records unless explicitly requested
+        if not include_deleted:
+            query = query.neq("deleted", True)
+            
+        data, count = await query.execute()
         _, got = data
         return [self.model(**item) for item in got]
 
     async def search_all(
-        self, table_name: str, db: AsyncClient, *, field: str, search_value: str, max_results: int
+        self, table_name: str, db: AsyncClient, *, field: str, search_value: str, max_results: int, include_deleted: bool = False
     ) -> list[ModelType]:
         """search all by table_name"""
-        data, count = (
-            await db.table(table_name)
+        query = (
+            db.table(table_name)
             .select("*")
             .ilike(field, f"%{search_value}%")
             .limit(max_results)
-            .execute()
         )
+        
+        # Filter out deleted records unless explicitly requested
+        if not include_deleted:
+            query = query.neq("deleted", True)
+            
+        data, count = await query.execute()
         _, got = data
         return [self.model(**item) for item in got]
 
@@ -91,7 +106,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         *, 
         page: int = 1, 
         page_size: int = 10,
-        search: str = ""
+        search: str = "",
+        include_deleted: bool = False
     ) -> Tuple[list[ModelType], dict]:
         """Get paginated results from table_name
         
@@ -109,17 +125,18 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         # Calculate offset
         offset = (page - 1) * page_size
         
-        # Get total count
-        count_data, _ = await db.table(table_name).select("*", count="exact").execute()
+        # Get total count with filtering
+        count_query = db.table(table_name).select("*", count="exact")
+        if not include_deleted:
+            count_query = count_query.neq("deleted", True)
+        count_data, _ = await count_query.execute()
         total_count = len(count_data[1])  # First element contains the count
         
-        # Get paginated data
-        data, _ = (
-            await db.table(table_name)
-            .select("*")
-            .range(offset, offset + page_size - 1)
-            .execute()
-        )
+        # Get paginated data with filtering
+        data_query = db.table(table_name).select("*").range(offset, offset + page_size - 1)
+        if not include_deleted:
+            data_query = data_query.neq("deleted", True)
+        data, _ = await data_query.execute()
         _, items = data
         
         # Calculate total pages
