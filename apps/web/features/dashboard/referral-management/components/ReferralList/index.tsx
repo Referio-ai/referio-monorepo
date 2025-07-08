@@ -308,11 +308,8 @@ const ReferralList: React.FC<ReferralListProps> = ({
           
           {/* Enhanced Pagination */}
           {totalReferrals > pageSize && (
-            <div className="bg-white border-t border-gray-200 px-6 py-4">
+            <div className="bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages} • {totalReferrals.toLocaleString()} total referrals
-                </div>
                 <PaginationWrapper
                   currentPage={currentPage}
                   totalItems={totalReferrals}

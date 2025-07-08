@@ -46,6 +46,11 @@ interface BatchListProps {
   deleteBatch: (batchPrefix: string) => void;
   setActiveTab: (tab: string) => void;
   setSelectedBatchId: (id: string) => void;
+  currentPage: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  totalItems: number;
 }
 
 const BatchList: React.FC<BatchListProps> = ({
@@ -58,13 +63,36 @@ const BatchList: React.FC<BatchListProps> = ({
   deleteBatch,
   setActiveTab,
   setSelectedBatchId,
+  currentPage,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  totalItems,
 }) => {
+  const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
   const getFilteredBatches = () => {
     return batches.filter(batch => {
       const matchesOutbound = !batchFilters.outboundFacility || batch.outboundFacility?.id === batchFilters.outboundFacility;
       const matchesInbound = !batchFilters.inboundFacility || batch.inboundFacility?.id === batchFilters.inboundFacility;
       return matchesOutbound && matchesInbound;
     });
+  };
+
+  const getPaginatedBatches = () => {
+    const filteredBatches = getFilteredBatches();
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredBatches.slice(startIndex, endIndex);
+  };
+
+  const filteredBatches = getFilteredBatches();
+  const paginatedBatches = getPaginatedBatches();
+  const totalPages = Math.ceil(filteredBatches.length / pageSize) || 1;
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    onPageSizeChange(newPageSize);
+    onPageChange(1); // Reset to first page when page size changes
   };
 
   return (
@@ -133,7 +161,7 @@ const BatchList: React.FC<BatchListProps> = ({
             Create Your First Batch
           </button>
         </div>
-      ) : getFilteredBatches().length === 0 ? (
+                ) : filteredBatches.length === 0 ? (
         <div className="p-16 text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
             <Filter className="w-10 h-10 text-gray-400" />
@@ -170,7 +198,7 @@ const BatchList: React.FC<BatchListProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {getFilteredBatches().map((batch) => (
+                {paginatedBatches.map((batch) => (
                   <tr key={batch.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                       <div className="min-w-0">
@@ -211,7 +239,7 @@ const BatchList: React.FC<BatchListProps> = ({
                         <button
                           onClick={() => {
                             setActiveTab('referrals');
-                            setSelectedBatchId(batch.id);
+                            setSelectedBatchId(batch.referral_batch_id);
                           }}
                           className="px-2 lg:px-3 py-1.5 text-xs lg:text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium whitespace-nowrap"
                         >
@@ -226,7 +254,7 @@ const BatchList: React.FC<BatchListProps> = ({
                           <Printer className="w-3 h-3 lg:w-4 lg:h-4" />
                         </button>
                         <button
-                          onClick={() => deleteBatch(batch.id)}
+                          onClick={() => deleteBatch(batch.referral_batch_id)}
                           className="p-1.5 lg:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete Batch"
                         >
@@ -239,6 +267,80 @@ const BatchList: React.FC<BatchListProps> = ({
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {filteredBatches.length > 0 && (
+            <div className="p-6 border-t border-gray-200 bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">Show:</label>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {PAGE_SIZE_OPTIONS.map(size => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onPageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {[...Array(totalPages)].map((_, i) => {
+                        const page = i + 1;
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => onPageChange(page)}
+                              className={`px-3 py-1 text-sm border rounded-lg transition-colors ${
+                                page === currentPage
+                                  ? 'bg-blue-500 text-white border-blue-500'
+                                  : 'border-gray-300 hover:bg-gray-100'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (page === currentPage - 2 || page === currentPage + 2) {
+                          return (
+                            <span key={page} className="px-2 py-1 text-gray-500">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => onPageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

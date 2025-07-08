@@ -5,6 +5,7 @@ from .referrals_batch import (
     ReferralBatchCreate, 
     ReferralBatchUpdate, 
     ReferralBatchSearchResults,
+    ReferralBatchPagination,
     GenerateBatchRequest,
     GenerateBatchResponse
 )

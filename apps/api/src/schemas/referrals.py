@@ -17,6 +17,7 @@ class Referral(BaseModel):
     referral_submitted: bool
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    deleted: Optional[bool] = False
 
 
 class ReferralCreate(BaseModel):
@@ -30,6 +31,7 @@ class ReferralCreate(BaseModel):
     referral_submitted: bool = False
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    deleted: Optional[bool] = False
 
 
 class ReferralUpdate(BaseModel):
@@ -43,6 +45,7 @@ class ReferralUpdate(BaseModel):
     referral_submitted: Optional[bool] = None
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    deleted: Optional[bool] = None
 
 class ReferralStatusUpdate(BaseModel):
     id: str

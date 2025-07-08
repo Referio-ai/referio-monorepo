@@ -31,6 +31,16 @@ class CRUDReferralBatch(CRUDBase[ReferralBatch, ReferralBatchCreate, ReferralBat
                 status_code=500,
                 detail=f"An error occurred while fetching referral batches. {str(e)}",
             )
+    
+    async def get_all_paginated(self, db: AsyncClient, *, page: int = 1, page_size: int = 10, search: str = "") -> dict:
+        """Get all referral batches paginated"""
+        try:
+            return await super().get_all_paginated("referrals_batch", db, page=page, page_size=page_size, search=search)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred while fetching referral batches. {str(e)}",
+            )
 
     async def create(self, db: AsyncClient, *, obj_in: ReferralBatchCreate) -> ReferralBatch:
         """Create a new referral batch"""

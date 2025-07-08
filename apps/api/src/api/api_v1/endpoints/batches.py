@@ -7,6 +7,7 @@ from src.schemas.referrals_batch import (
     ReferralBatchCreate, 
     ReferralBatchUpdate, 
     ReferralBatchSearchResults,
+    ReferralBatchPagination,
     GenerateBatchRequest,
     GenerateBatchResponse
 )
@@ -18,21 +19,37 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200)
-async def get_batches() -> List[ReferralBatch]:
+async def get_batches(page: int = 1, page_size: int = 10, search: str = "") -> ReferralBatchPagination:
     """
-    Get all referral batches
+    Get all referral batches with pagination
+    
+    Parameters:
+        page (int): Page number starting from 1. Defaults to 1.
+        page_size (int): Number of items per page. Defaults to 10.
+        search (str): Search term to filter batches. Defaults to empty string.
     
     Returns:
-        List[ReferralBatch]: A list of all referral batches in the system
-            Each ReferralBatch contains:
-            - id: UUID - Unique identifier for the batch
-            - name: str - Name of the batch
-            - description: Optional[str] - Description of the batch
-            - created_at: datetime - Creation timestamp
-            - updated_at: datetime - Last update timestamp
+        ReferralBatchPagination: A paginated response containing:
+            - items: List[ReferralBatch] - List of referral batches for the current page
+            - pagination: Dict containing:
+                - total_count: int - Total number of batches
+                - total_pages: int - Total number of pages
+                - current_page: int - Current page number
+                - page_size: int - Number of items per page
+                - has_next: bool - Whether there are more pages
+                - has_previous: bool - Whether there are previous pages
     """
-    db = await get_supabase_client()
-    return await referrals_batch_crud.get_all(db=db)
+    try:
+        db = await get_supabase_client()
+        return await referrals_batch_crud.get_all_paginated(db=db, page=page, page_size=page_size, search=search)
+    except HTTPException:
+        # Re-raise HTTPException from CRUD layer
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching referral batches. {str(e)}",
+        )
 
 
 @router.get("/{batch_id}", status_code=200)
@@ -129,7 +146,7 @@ async def delete_batch(batch_id: str) -> ReferralBatch:
             - updated_at: datetime - Last update timestamp
     """
     db = await get_supabase_client()
-    return await referrals_batch_crud.delete(db=db, id=batch_id)
+    return await BatchService.delete_batch(db=db, batch_id=batch_id)
 
 
 @router.post("/generate", status_code=201)

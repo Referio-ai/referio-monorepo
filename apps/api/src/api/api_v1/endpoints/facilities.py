@@ -21,9 +21,6 @@ async def get_facilities(page: int = 1, page_size: int = 10, search: str = "") -
     try:
         db = await get_supabase_client()
         return await facilities_crud.get_all_paginated(db=db, page=page, page_size=page_size, search=search)
-    except HTTPException:
-        # Re-raise HTTPException from CRUD layer
-        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
