@@ -47,6 +47,38 @@ class ReferralUpdate(BaseModel):
     referral_status: Optional[str] = None
     deleted: Optional[bool] = None
 
+
+class ReferralWithDetails(BaseModel):
+    """Referral response with facility and patient details"""
+    referral_id: UUID
+    referral_outbound_facility_id: UUID
+    referral_inbound_facility_id: UUID
+    referral_outbound_date: Optional[datetime] = None
+    referral_batch_prefix: str
+    referral_slug: str
+    patient_id: Optional[UUID] = None
+    referral_scanned: bool
+    referral_scanned_date: Optional[datetime] = None
+    referral_submitted: bool
+    referral_submitted_date: Optional[datetime] = None
+    referral_status: Optional[str] = None
+    deleted: Optional[bool] = False
+    
+    # Facility details
+    outbound_facility_name: Optional[str] = None
+    inbound_facility_name: Optional[str] = None
+    
+    # Patient details (only if patient exists)
+    patient_fname: Optional[str] = None
+    patient_mname: Optional[str] = None
+    patient_lname: Optional[str] = None
+    patient_dob: Optional[datetime] = None
+    patient_contact_phone: Optional[str] = None
+    patient_contact_email: Optional[str] = None
+    patient_gender: Optional[str] = None
+    patient_insurance_member_id: Optional[str] = None
+
+
 class ReferralStatusUpdate(BaseModel):
     id: str
     referral_status: Optional[str] = None

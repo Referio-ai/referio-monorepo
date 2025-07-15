@@ -1,4 +1,4 @@
-from src.config.infisical import KOLLA_API_URL, ENV
+from src.config.infisical import ENV
 
 SLACK_URL = "https://slack.com/api/chat.postMessage"
 

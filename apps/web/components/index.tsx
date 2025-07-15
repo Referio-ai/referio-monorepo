@@ -1,6 +1,7 @@
 export * from './types';
 export * from './Modal';
 export * from './FileUpload';
+export * from './ReferralFormUpload';
 export * from './StartScreenStep';
 export * from './ReviewSubmitStep';
 export * from './GiftCardStep';

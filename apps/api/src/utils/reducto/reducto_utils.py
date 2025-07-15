@@ -2,7 +2,7 @@ import json
 from typing import Dict
 import aiohttp
 from pathlib import Path
-from apps.api.src.config import infisical
+from src.config.infisical import REDUCTO_API_KEY
 from src.prompts.reducto_prompts import REDUCTO_PROMPT
 
 
@@ -11,7 +11,7 @@ async def reducto_referral_extraction(document_url: str) -> Dict:
     url = "https://platform.reducto.ai/extract"
     try:
         # Load schema
-        schema_path = Path(__file__).resolve().parent  / "schemas" / "insurance_plan_schema.json"
+        schema_path = Path(__file__).resolve().parent  / "schemas" / "orthodontic_referral_schema.json"
         with open(schema_path) as f:
             reducto_extract_schema_payload = json.load(f)
 
@@ -24,13 +24,12 @@ async def reducto_referral_extraction(document_url: str) -> Dict:
             "array_extract_mode": "streaming",
         }
         headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "authorization": f"Bearer {infisical.REDUCTO_API_KEY}",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {REDUCTO_API_KEY}",
         }
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers) as response:
+            async with session.post(url, json=payload, headers=headers, verify_ssl=False) as response:
                 if response.status == 404:
                     print(f"Response for request: {url} is HTTP_404")
                     return None
