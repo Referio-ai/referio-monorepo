@@ -34,11 +34,11 @@ export const NavigationFooter: React.FC<NavigationFooterProps> = ({
         ) : (
           <button
             onClick={onSubmitReferral}
-            disabled={isLoading || referralFormDataLength === 0}
+            disabled={isLoading }
             className="bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center"
           >
             {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Send size={18} className="mr-2" />}
-            Submit Referral
+            Submit 
           </button>
         )}
       </div>

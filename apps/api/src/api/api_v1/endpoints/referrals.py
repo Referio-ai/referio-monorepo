@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, UploadFile, Form
@@ -8,11 +8,14 @@ from src.schemas.referrals import (
     ReferralStatusUpdate, 
     ReferralUpdate,
     ReferralPagination,
+    ReferralWithDetails,
+    ReferralWithDetailsPagination,
 )
 from src.config.supabase_config import get_supabase_client
 from src.utils.supabase.supabase_utils import upload_file
 from src.schemas.fileresult import FileResult
 from src.crud.referrals import referrals_crud
+from src.services.referral_service import ReferralService
 
 router = APIRouter()
 
@@ -84,10 +87,45 @@ async def upload_referral_document(
     referral_id: str,
     type: str,
     files: List[UploadFile] = Form(None),
+    document_category: Optional[str] = Form(None),
 ):
     """Upload a document for a referral"""
     db = await get_supabase_client()
-    return await referrals_crud.upload_files(db=db, id=referral_id, files=files, type=type, bucket_name="referral-documents", base_path="referrals")
+    return await referrals_crud.upload_files(db=db, id=referral_id, files=files, type=type, bucket_name="referral-documents", base_path="referrals", document_category=document_category)
+
+
+@router.post("/upload-form/{referral_id}", status_code=200)
+async def upload_referral_form_with_extraction(
+    referral_id: str,
+    files: List[UploadFile] = Form(...),
+):
+    """
+    Upload referral form(s) and extract data using Reducto AI
+    
+    This endpoint:
+    1. Uploads the referral form files to storage
+    2. Processes each file through Reducto for data extraction
+    3. Stores the extraction results
+    4. Returns both upload results and extracted data
+    
+    Args:
+        referral_id: ID of the referral to attach the forms to
+        files: List of referral form files to upload and process
+        
+    Returns:
+        Dict containing:
+        - upload_results: File upload information
+        - extraction_results: Reducto extraction results for each file
+        - referral_id: The referral ID
+        - processed_files: Number of files processed
+        - successful_extractions: Number of successful extractions
+    """
+    db = await get_supabase_client()
+    return await ReferralService.upload_referral_form(
+        db=db, 
+        referral_id=referral_id, 
+        form_data=files
+    )
 
 
 @router.get("/file/{referral_id}/{type}", status_code=200)
@@ -98,3 +136,65 @@ async def get_referral_files(
     """Get a file for a referral"""
     db = await get_supabase_client()
     return await referrals_crud.get_files(db=db, id=referral_id, type=type, bucket_name="referral-documents", base_path="referrals")
+
+@router.get("/slug/{referral_id}", status_code=200)
+async def get_referral_by_slug(
+    referral_id: str,
+) -> ReferralWithDetails:
+    """Get a referral by slug with facility and patient details"""
+    db = await get_supabase_client()
+    return await ReferralService.fetch_referral_by_slug(db=db, referral_slug=referral_id)
+
+
+@router.get("/with-details/", status_code=200)
+async def get_referrals_with_details(page: int = 1, page_size: int = 10, search: str = "") -> ReferralWithDetailsPagination:
+    """Get all referrals with patient and facility details for management dashboard"""
+    try:
+        db = await get_supabase_client()
+        return await ReferralService.get_referrals_with_details_paginated(
+            db=db, page=page, page_size=page_size, search=search
+        )
+    except HTTPException:
+        # Re-raise HTTPException from CRUD layer
+        raise
+    except Exception as e:
+        print(f"An error occurred while fetching referrals with details. {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching referrals with details. {str(e)}",
+        )
+    
+@router.post("/mark-as-scanned/{slug}", status_code=200)
+async def mark_referral_as_scanned(slug: str) -> Referral:
+    """Mark a referral as scanned"""
+    try:
+        db = await get_supabase_client()
+        return await ReferralService.mark_referral_as_scanned(db=db, slug=slug)
+    except HTTPException:
+        # Re-raise HTTPException from CRUD layer
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while marking referral as scanned. {str(e)}",
+        )
+    
+@router.post("/upload-document/{referral_id}", status_code=200)
+async def upload_document(
+    referral_id: str,
+    formData: List[UploadFile] = Form(...),
+    document_type: str = Form(...),
+    document_category: str = Form(...),
+):
+    """Upload a document with document type and reference via referral_id and document_category"""
+    try:
+        db = await get_supabase_client()
+        return await ReferralService.upload_document(db=db, referral_id=referral_id, form_data=formData, document_type=document_type, document_category=document_category)
+    except HTTPException:
+        # Re-raise HTTPException from CRUD layer
+        raise   
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while uploading document. {str(e)}",
+        )

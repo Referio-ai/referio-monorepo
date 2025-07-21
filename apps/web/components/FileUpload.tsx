@@ -9,24 +9,48 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   title, 
   description, 
   icon, 
-  existingFilesCount = 0 
+  files,
+  existingFilesCount = 0,
+  actionButtonText,
+  actionButtonOnClick,
+  documentType = 'unknown'
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<FilePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (existingFilesCount === 0 && selectedFiles.length > 0) {
-      // If parent indicates no files but component has them, means a reset happened.
-      // setSelectedFiles([]); // This might be too aggressive, depends on desired behavior
-      // setPreviews([]);
+    setSelectedFiles(files || []);
+  }, [files]);
+
+  // Also reset previews when files prop changes
+  useEffect(() => {
+    if (files) {
+      const newPreviews = files.map(file => {
+        if (file.type.startsWith('image/')) {
+          return { name: file.name, url: URL.createObjectURL(file), type: 'image' as const };
+        } else {
+          return { name: file.name, type: 'other' as const };
+        }
+      });
+      setPreviews(newPreviews);
+    } else {
+      setPreviews([]);
     }
-  }, [existingFilesCount]);
+  }, [files]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length > 0) {
-      const newFiles = multiple ? [...selectedFiles, ...files] : files;
+      // Add document type to each file
+      const filesWithDocType = files.map(file => {
+        // Create a new file object with document type metadata
+        const fileWithMetadata = file as File & { documentType?: string };
+        fileWithMetadata.documentType = documentType;
+        return fileWithMetadata;
+      });
+
+      const newFiles = multiple ? [...selectedFiles, ...filesWithDocType] : filesWithDocType;
       setSelectedFiles(newFiles);
       onFilesSelected(newFiles);
 
@@ -106,19 +130,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       />
 
       {/* File Previews */}
-      {previews.length > 0 && (
+      {files && files.length > 0 && (
         <div className="w-full max-w-md mb-8">
           <h4 className="text-sm font-medium text-gray-700 mb-3">Selected files:</h4>
           <div className="space-y-2">
-            {previews.map((preview, index) => (
+            {files.map((preview, index) => (
               <div key={preview.name + index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
                 <div className="flex items-center overflow-hidden">
-                  {preview.type === 'image' ? (
-                    <img src={preview.url} alt={preview.name} className="w-10 h-10 object-cover rounded mr-3 flex-shrink-0" />
-                  ) : (
-                    <FileText size={20} className="text-gray-500 mr-3 flex-shrink-0" />
-                  )}
-                  <span className="text-sm text-gray-700 truncate" title={preview.name}>{preview.name}</span>
+                  <FileText size={20} className="text-gray-500 mr-3 flex-shrink-0" />
+                <span className="text-sm text-gray-700 truncate" title={preview.name}>{preview.name}</span>
                 </div>
                 <button 
                   type="button" 
@@ -131,7 +151,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             ))}
           </div>
           
-          {previews.length > 0 && (
+          {files && files.length > 0 && (
             <button
               type="button"
               onClick={clearAllFiles}
@@ -147,14 +167,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <div className="w-full max-w-md">
         <button
           type="button"
-          disabled={previews.length === 0}
-          className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-            previews.length > 0
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
+          onClick={actionButtonOnClick}
+          className={`w-full py-3 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700`}
         >
-          Continue
+          {actionButtonText || 'Continue'}
         </button>
       </div>
     </div>

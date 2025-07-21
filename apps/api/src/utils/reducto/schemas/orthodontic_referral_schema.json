@@ -1,0 +1,503 @@
+{
+  "description": "Root object for dental orthodontic referral slip data extraction",
+  "properties": {
+    "patient_information": {
+      "description": "Basic patient demographic and contact information",
+      "properties": {
+        "first_name": {
+          "description": "Patient's first name",
+          "type": "string",
+          "minLength": 1
+        },
+        "last_name": {
+          "description": "Patient's last name",
+          "type": "string",
+          "minLength": 1
+        },
+        "middle_name": {
+          "description": "Patient's middle name or initial",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date_of_birth": {
+          "description": "Patient's date of birth (yyyy-mm-dd)",
+          "format": "date",
+          "type": "string"
+        },
+        "age": {
+          "description": "Patient's age at time of referral",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "gender": {
+          "description": "Patient's gender",
+          "enum": [
+            "Male",
+            "Female",
+            "Other",
+            "Not Specified"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "phone_number": {
+          "description": "Primary contact phone number for the patient or guardian",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "email": {
+          "description": "Email address for the patient or guardian",
+          "format": "email",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "address": {
+          "description": "Patient's home address",
+          "properties": {
+            "street": {
+              "description": "Street address",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "unit": {
+              "description": "Apartment/Unit number",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "city": {
+              "description": "City",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "description": "State or province",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "zip_code": {
+              "description": "ZIP or postal code",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "country": {
+              "description": "Country",
+              "default": "USA",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "guardian_name": {
+          "description": "Name of parent or legal guardian if patient is a minor",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "guardian_relationship": {
+          "description": "Relationship of guardian to patient",
+          "enum": [
+            "Mother",
+            "Father",
+            "Legal Guardian",
+            "Other"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "first_name",
+        "last_name",
+        "date_of_birth"
+      ],
+      "type": "object"
+    },
+    "referral_information": {
+      "description": "Details about the orthodontic referral",
+      "properties": {
+        "referral_date": {
+          "description": "Date when the referral was made (yyyy-mm-dd)",
+          "format": "date",
+          "type": "string"
+        },
+        "referral_reason": {
+          "description": "Primary reason for orthodontic referral",
+          "enum": [
+            "Crowding",
+            "Spacing",
+            "Overbite",
+            "Underbite",
+            "Crossbite",
+            "Open Bite",
+            "Overjet",
+            "Impacted Teeth",
+            "TMJ/TMD",
+            "Aesthetic Concerns",
+            "Comprehensive Evaluation",
+            "Other"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "clinical_description": {
+          "description": "Detailed clinical description of the orthodontic concerns and reason for referral",
+          "type": "string",
+          "minLength": 1
+        },
+        "urgency": {
+          "description": "Urgency level of the referral",
+          "enum": [
+            "Routine",
+            "Urgent",
+            "Emergency"
+          ],
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": "Routine"
+        },
+        "treatment_history": {
+          "description": "Any previous orthodontic treatment or relevant dental history",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "special_considerations": {
+          "description": "Any special medical conditions, allergies, or considerations for treatment",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "referral_date",
+        "clinical_description"
+      ],
+      "type": "object"
+    },
+    "referring_provider": {
+      "description": "Information about the referring dentist or provider",
+      "properties": {
+        "provider_name": {
+          "description": "Full name of the referring dentist/provider",
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_title": {
+          "description": "Professional title (e.g., DDS, DMD)",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "practice_name": {
+          "description": "Name of the dental practice or clinic",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider_phone": {
+          "description": "Contact phone number for the referring provider",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider_email": {
+          "description": "Email address for the referring provider",
+          "format": "email",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider_address": {
+          "description": "Address of the referring practice",
+          "properties": {
+            "street": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "suite": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "city": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "state": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "zip_code": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "npi_number": {
+          "description": "National Provider Identifier (NPI) number",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "license_number": {
+          "description": "State license number",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "provider_name"
+      ],
+      "type": "object"
+    },
+    "insurance_information": {
+      "description": "Patient's dental insurance information if provided",
+      "properties": {
+        "has_insurance": {
+          "description": "Whether the patient has dental insurance",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "insurance_company": {
+          "description": "Name of the dental insurance company",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "policy_number": {
+          "description": "Insurance policy or ID number",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "group_number": {
+          "description": "Insurance group number",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subscriber_name": {
+          "description": "Name of the insurance subscriber",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subscriber_dob": {
+          "description": "Date of birth of the insurance subscriber (yyyy-mm-dd)",
+          "format": "date",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "orthodontic_coverage": {
+          "description": "Whether orthodontic treatment is covered",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "clinical_findings": {
+      "description": "Specific clinical observations and measurements",
+      "properties": {
+        "malocclusion_class": {
+          "description": "Angle's classification of malocclusion",
+          "enum": [
+            "Class I",
+            "Class II Division 1",
+            "Class II Division 2",
+            "Class III",
+            "Not Specified"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "overjet_mm": {
+          "description": "Overjet measurement in millimeters",
+          "type": [
+            "number",
+            "null"
+          ],
+          "multipleOf": 0.1
+        },
+        "overbite_percentage": {
+          "description": "Overbite as percentage of lower incisor coverage",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "crowding_severity": {
+          "description": "Severity of dental crowding",
+          "enum": [
+            "None",
+            "Mild",
+            "Moderate",
+            "Severe"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spacing_present": {
+          "description": "Whether spacing between teeth is present",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "crossbite_location": {
+          "description": "Location of crossbite if present",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "impacted_teeth": {
+          "description": "List of impacted teeth using universal numbering system",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "missing_teeth": {
+          "description": "List of missing teeth using universal numbering system",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "additional_findings": {
+          "description": "Any additional clinical findings or observations",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "attachments": {
+      "description": "Information about any attached documents or images",
+      "properties": {
+        "radiographs_included": {
+          "description": "Whether X-rays are included with the referral",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "radiograph_types": {
+          "description": "Types of radiographs included",
+          "items": {
+            "enum": [
+              "Panoramic",
+              "Cephalometric",
+              "Bitewing",
+              "Periapical",
+              "CBCT",
+              "Other"
+            ],
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "photographs_included": {
+          "description": "Whether clinical photographs are included",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "models_included": {
+          "description": "Whether dental models or impressions are included",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "other_attachments": {
+          "description": "Description of any other included documents",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "patient_information",
+    "referral_information",
+    "referring_provider"
+  ],
+  "type": "object"
+} 
