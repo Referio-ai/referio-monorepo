@@ -1,5 +1,5 @@
 from .organization import Organization, OrganizationCreate, OrganizationUpdate
-from .referrals import Referral, ReferralCreate, ReferralUpdate, ReferralSearchResults, ReferralPagination, ReferralWithDetails
+from .referrals import Referral, ReferralCreate, ReferralUpdate, ReferralSearchResults, ReferralPagination, ReferralWithDetails, ReferralWithDetailsPagination
 from .referrals_batch import (
     ReferralBatch, 
     ReferralBatchCreate, 

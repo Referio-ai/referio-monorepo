@@ -39,6 +39,10 @@ export interface FileUploadProps {
   description: string;
   icon: React.ReactNode;
   existingFilesCount?: number;
+  files?: File[];
+  actionButtonText?: string;
+  actionButtonOnClick?: () => void;
+  documentType?: string;
 }
 
 export interface StartScreenStepProps {
@@ -57,6 +61,7 @@ export interface ReviewSubmitStepProps {
   insuranceCardData: File[];
   xrayData: File[];
   otherDocsData: File[];
+  onSubmitReferral: () => void;
 }
 
 export interface GiftCardStepProps {
@@ -71,6 +76,9 @@ export interface GiftCardStepProps {
 export interface AppHeaderProps {
   currentStep: number;
   referralId: string | null;
+  prevStep: () => void;
+  title?: string;
+  showBackButton?: boolean;
 }
 
 export interface ProgressBarProps {
@@ -86,4 +94,19 @@ export interface NavigationFooterProps {
   onNextStep: () => void;
   onSubmitReferral: () => void;
   referralFormDataLength: number;
+}
+
+export interface ReferralFormUploadProps {
+  onFilesSelected: (files: File[]) => void;
+  onUploadComplete?: (uploadedFiles: File[]) => void;
+  referralId?: string;
+  existingFilesCount?: number;
+  isRequired?: boolean;
+  maxFiles?: number;
+  maxFileSize?: number;
+  isPreviouslyScanned?: boolean;
+  scannedPatientInfo?: PatientInfo | null;
+  lastScannedDate?: string | null;
+  nextStep: () => void;
+  documentType?: string;
 } 

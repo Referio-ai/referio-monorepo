@@ -9,6 +9,12 @@ export const useReferrals = ({ page, page_size, search }: { page: number, page_s
   queryFn: () => ReferralsService.apiV1GetReferrals({ page, page_size, search }),
 });
 
+export const useReferralsWithDetails = ({ page, page_size, search }: { page: number, page_size: number, search: string }) => useQuery({
+  queryKey: ["referrals-with-details", page, page_size, search],
+  queryFn: () => ReferralService.getReferralsWithDetails({ page, page_size, search }),
+  staleTime: 1000 * 60 * 2, // Cache for 2 minutes
+});
+
 export const useReferralsByBatch = (batchId: string) => useQuery({
   queryKey: ["referrals", "batch", batchId],
   queryFn: () => ReferralsService.apiV1GetReferralsByBatch({ batchId }),
@@ -48,3 +54,21 @@ export const useUploadReferralForm = () => {
     },
   })
 }
+
+export const useMarkReferralAsScanned = () => {
+  return useMutation({
+    mutationFn: async ({ slug }: { slug: string }) => {
+      const response = await ReferralService.markReferralAsScanned({ slug })
+      return response
+    },
+  })
+}
+
+export const useUploadDocument = () => {
+  return useMutation({
+    mutationFn: async ({ referralId, formData, documentType, documentCategory }: { referralId: string, formData: File[], documentType: string, documentCategory: string }) => {
+      const response = await ReferralService.uploadDocument({ referralId, formData, documentType, documentCategory })
+      return response
+    },
+  })
+} 

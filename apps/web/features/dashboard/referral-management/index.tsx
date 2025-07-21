@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
 import { CreateBatchModal, BatchList, ReferralList } from './components';
 import { useGetFacilities } from '@/lib/hooks/facilities';
 import { useBatchesPaginated, useDeleteBatch } from '@/lib/hooks/batch';
-import { useReferrals, useReferralsByBatch } from '@/lib/hooks/referrals';
+import { useReferrals, useReferralsByBatch, useReferralsWithDetails } from '@/lib/hooks/referrals';
 import { Facility as ApiFacility } from '@/lib/api/client/models/Facility';
 import { ReferralBatch } from '@/lib/api/client/models/ReferralBatch';
 import { Referral as ApiReferral } from '@/lib/api/client/models/Referral';
@@ -84,7 +84,7 @@ const ReferralDashboard = () => {
     search: ''
   });
   
-  const { data: allReferralsData, isLoading: isReferralsLoading } = useReferrals({
+  const { data: allReferralsData, isLoading: isReferralsLoading } = useReferralsWithDetails({
     page: referralPage,
     page_size: referralPageSize,
     search: ''
@@ -181,14 +181,57 @@ const ReferralDashboard = () => {
     return svg;
   };
 
+  // Helper functions for patient information
+  const formatPatientInitials = (fname?: string, mname?: string, lname?: string): string => {
+    if (!fname && !lname) return '';
+    const firstInitial = fname ? fname.charAt(0).toUpperCase() : '';
+    const middleInitial = mname ? mname.charAt(0).toUpperCase() : '';
+    const lastInitial = lname ? lname.charAt(0).toUpperCase() : '';
+    return `${firstInitial}${middleInitial}${lastInitial}`.trim();
+  };
+
+  const formatSubmissionYear = (dateString?: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.getFullYear().toString();
+    } catch {
+      return '';
+    }
+  };
+
+  const formatSubmissionDisplay = (referral: any): string => {
+    if (!referral.referral_submitted) return '';
+    
+    const initials = formatPatientInitials(
+      referral.patient_fname, 
+      referral.patient_mname, 
+      referral.patient_lname
+    );
+    const year = formatSubmissionYear(referral.referral_submitted_date);
+    
+    if (initials && year) {
+      return `${initials} (${year})`;
+    } else if (initials) {
+      return initials;
+    } else if (year) {
+      return `(${year})`;
+    }
+    return '';
+  };
+
   // Transform API referrals to component format
   const transformReferral = (apiReferral: ApiReferral): Referral => {
     const referralUrl = `${window.location.origin}/qr-scan?id=${apiReferral.referral_slug}`;
+    const submissionDisplay = formatSubmissionDisplay(apiReferral);
+    const baseStatus = apiReferral.referral_status || (apiReferral.referral_submitted ? 'Submitted' : apiReferral.referral_scanned ? 'Scanned' : 'Active');
+    const statusWithSubmission = submissionDisplay ? `${baseStatus} - ${submissionDisplay}` : baseStatus;
+    
     return {
       id: apiReferral.referral_slug,
       url: referralUrl,
       qrCode: generateQRCode(referralUrl),
-      status: apiReferral.referral_status || (apiReferral.referral_submitted ? 'Submitted' : apiReferral.referral_scanned ? 'Scanned' : 'Active')
+      status: statusWithSubmission
     };
   };
 

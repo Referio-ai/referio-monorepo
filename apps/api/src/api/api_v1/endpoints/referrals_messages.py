@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
@@ -33,10 +33,11 @@ async def upload_referral_document(
     message_id: str,
     type: str,
     files: List[UploadFile] = Form(None),
+    document_category: Optional[str] = Form(None),
 ):
     """Upload a document for a referral messages"""
     db = await get_supabase_client()
-    return await referrals_crud.upload_files(db=db, id=message_id, files=files, type=type, bucket_name="referral-documents", base_path="messages")
+    return await referrals_crud.upload_files(db=db, id=message_id, files=files, type=type, bucket_name="referral-documents", base_path="messages", document_category=document_category)
 
 
 @router.get("/file/{message_id}/{type}", status_code=200)

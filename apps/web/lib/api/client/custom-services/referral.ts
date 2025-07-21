@@ -47,4 +47,70 @@ export class ReferralService {
             mediaType: 'multipart/form-data',
         });
     }
+
+    public static getReferralsWithDetails({
+        page,
+        page_size,
+        search,
+    }: {
+        page: number,
+        page_size: number,
+        search: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/with-details/',
+            query: {
+                page,
+                page_size,
+                search,
+            },
+            errors: {
+                404: `Referral Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
+
+    public static markReferralAsScanned({
+        slug,
+    }: {
+        slug: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/mark-as-scanned/{referral_id}',
+            path: {
+                'referral_id': slug,
+            },
+        });
+    }
+
+    public static uploadDocument({
+        referralId,
+        formData,
+        documentType,
+        documentCategory,
+    }: {
+        referralId: string,
+        formData: File[],
+        documentType: string,
+        documentCategory: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/upload-document/{referral_id}',
+            path: {
+                'referral_id': referralId,
+            },
+            formData: {
+                formData: formData,
+                document_type: documentType,
+                document_category: documentCategory,
+            },
+            mediaType: 'multipart/form-data',
+        });
+    }
 } 
+
+

@@ -46,9 +46,9 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
             if not include_deleted:
                 query = query.neq("deleted", True)
                 
-            data, count = await query.execute()
-            _, got = data
-            return [Referral(**item) for item in got]
+            result = await query.execute()
+            data = result.data
+            return [Referral(**item) for item in data]
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -74,13 +74,9 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 referral.referral_outbound_facility_id = str(referral.referral_outbound_facility_id)
                 referral.referral_inbound_facility_id = str(referral.referral_inbound_facility_id)
             
-            data, count = (
-                await db.table("referrals")
-                .insert([referral.model_dump() for referral in referrals])
-                .execute()
-            )
-            _, created = data
-            return [Referral(**item) for item in created]
+            result = await db.table("referrals").insert([referral.model_dump() for referral in referrals]).execute()
+            data = result.data
+            return [Referral(**item) for item in data]
         except Exception as e:
             raise HTTPException(
                 status_code=400,
@@ -117,7 +113,7 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 detail=f"Failed to delete referral. {str(e)}",
             )
     
-    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str):
+    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str, document_category: Optional[str] = None):
         """Upload files for a referral"""
         try:
             fileResults = []
@@ -132,6 +128,9 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 base_path=base_path,
                 type=type
                 )
+              # Add document_category to the fileResult if provided
+              if document_category:
+                  fileResult.document_category = document_category
               fileResults.append(fileResult)
             return fileResults
         except Exception as e:

@@ -26,9 +26,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if not include_deleted:
             query = query.neq("deleted", True)
             
-        data, count = await query.execute()
-        _, got = data
-        return self.model(**got[0]) if got else None
+        result = await query.execute()
+        data = result.data
+        return self.model(**data[0]) if data else None
 
     async def get_all(self, table_name: str, db: AsyncClient, include_deleted: bool = False) -> list[ModelType]:
         """get all by table_name"""
@@ -38,9 +38,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if not include_deleted:
             query = query.neq("deleted", True)
             
-        data, count = await query.execute()
-        _, got = data
-        return [self.model(**item) for item in got]
+        result = await query.execute()
+        data = result.data
+        return [self.model(**item) for item in data]
 
     async def search_all(
         self, table_name: str, db: AsyncClient, *, field: str, search_value: str, max_results: int, include_deleted: bool = False
@@ -57,47 +57,33 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if not include_deleted:
             query = query.neq("deleted", True)
             
-        data, count = await query.execute()
-        _, got = data
-        return [self.model(**item) for item in got]
+        result = await query.execute()
+        data = result.data
+        return [self.model(**item) for item in data]
 
     async def create(self, table_name: str, db: AsyncClient, *, obj_in: CreateSchemaType) -> ModelType:
         """create by CreateSchemaType"""
-        data, count = (
-            await db.table(table_name).insert(obj_in.model_dump()).execute()
-        )
-        _, created = data
-        return self.model(**created[0])
+        result = await db.table(table_name).insert(obj_in.model_dump()).execute()
+        data = result.data
+        return self.model(**data[0])
 
     async def update(self, table_name: str, db: AsyncClient, *, obj_in: UpdateSchemaType) -> ModelType:
         """update by UpdateSchemaType"""
-        data, count = (
-            await db.table(table_name)
-            .update(obj_in.model_dump())
-            .eq("id", obj_in.id)
-            .execute()
-        )
-        _, updated = data
-        return self.model(**updated[0])
+        result = await db.table(table_name).update(obj_in.model_dump()).eq("id", obj_in.id).execute()
+        data = result.data
+        return self.model(**data[0])
     
     async def update_status(self, table_name: str, db: AsyncClient, *, obj_in: UpdateSchemaType) -> ModelType:
         """update by UpdateSchemaType"""
-        data, count = (
-            await db.table(table_name)
-            .update({"referral_status": obj_in.referral_status})
-            .eq("id", obj_in.id)
-            .execute()
-        )
-        _, updated = data
-        return self.model(**updated[0])
+        result = await db.table(table_name).update({"referral_status": obj_in.referral_status}).eq("id", obj_in.id).execute()
+        data = result.data
+        return self.model(**data[0])
 
     async def delete(self, table_name: str, db: AsyncClient, *, id: str) -> ModelType:
         """remove by UpdateSchemaType"""
-        data, count = (
-            await db.table(table_name).delete().eq("id", id).execute()
-        )
-        _, deleted = data
-        return self.model(**deleted[0])
+        result = await db.table(table_name).delete().eq("id", id).execute()
+        data = result.data
+        return self.model(**data[0])
 
     async def get_all_paginated(
         self, 
@@ -129,15 +115,15 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         count_query = db.table(table_name).select("*", count="exact")
         if not include_deleted:
             count_query = count_query.neq("deleted", True)
-        count_data, _ = await count_query.execute()
-        total_count = len(count_data[1])  # First element contains the count
+        count_result = await count_query.execute()
+        total_count = count_result.count if count_result.count is not None else 0
         
         # Get paginated data with filtering
         data_query = db.table(table_name).select("*").range(offset, offset + page_size - 1)
         if not include_deleted:
             data_query = data_query.neq("deleted", True)
-        data, _ = await data_query.execute()
-        _, items = data
+        data_result = await data_query.execute()
+        items = data_result.data
         
         # Calculate total pages
         total_pages = 5

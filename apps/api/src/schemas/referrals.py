@@ -1,7 +1,7 @@
 from typing import ClassVar, Sequence, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Referral(BaseModel):
@@ -18,6 +18,16 @@ class Referral(BaseModel):
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
     deleted: Optional[bool] = False
+
+    @field_validator('referral_id', 'referral_outbound_facility_id', 'referral_inbound_facility_id', 'patient_id', mode='before')
+    @classmethod
+    def validate_uuid_fields(cls, v):
+        """Convert string UUIDs to UUID objects"""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            return UUID(v)
+        return v
 
 
 class ReferralCreate(BaseModel):
@@ -62,6 +72,8 @@ class ReferralWithDetails(BaseModel):
     referral_submitted: bool
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    referral_remark: Optional[str] = None
+    referral_doctor_name: Optional[str] = None
     deleted: Optional[bool] = False
     
     # Facility details
@@ -78,6 +90,16 @@ class ReferralWithDetails(BaseModel):
     patient_gender: Optional[str] = None
     patient_insurance_member_id: Optional[str] = None
 
+    @field_validator('referral_id', 'referral_outbound_facility_id', 'referral_inbound_facility_id', 'patient_id', mode='before')
+    @classmethod
+    def validate_uuid_fields(cls, v):
+        """Convert string UUIDs to UUID objects"""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            return UUID(v)
+        return v
+
 
 class ReferralStatusUpdate(BaseModel):
     id: str
@@ -89,4 +111,9 @@ class ReferralSearchResults(BaseModel):
 
 class ReferralPagination(BaseModel):
     items: Sequence[Referral]
+    pagination: Dict[str, Any]
+
+
+class ReferralWithDetailsPagination(BaseModel):
+    items: Sequence[ReferralWithDetails]
     pagination: Dict[str, Any]
