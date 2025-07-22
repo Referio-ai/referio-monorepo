@@ -19,6 +19,9 @@ import ReferralListComponent from '@/components/referral/list/ReferralList';
 import ReferralDetail from '@/components/referral/detail/ReferralDetail';
 import NewReferralForm from '@/components/referral/forms/NewReferralForm';
 
+// Import the useScannedReferrals hook
+import { useScannedReferrals } from '@/lib/hooks/referrals';
+
 export const ReferralList = () => {
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [activeTab, setActiveTab] = useState<ReferralStatus | 'all'>('new');
@@ -28,17 +31,90 @@ export const ReferralList = () => {
   const [isNewReferralOpen, setIsNewReferralOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Use sample data from constants
-  const referrals = SAMPLE_REFERRALS;
+  // Add pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
-  // Simulate loading state
+  // Use the useScannedReferrals hook to fetch real data
+  const { 
+    data: scannedReferralsData, 
+    isLoading: isScannedReferralsLoading, 
+    error: scannedReferralsError,
+    refetch: refetchScannedReferrals 
+  } = useScannedReferrals({
+    page,
+    page_size: pageSize,
+    search: searchQuery,
+    status: activeTab
+  });
+  
+  // Extract data from API response
+  const scannedReferrals = scannedReferralsData?.items || [];
+  const pagination = scannedReferralsData?.pagination || {
+    total_count: 0,
+    total_pages: 1,
+    current_page: 1,
+    page_size: 10,
+    has_next: false,
+    has_previous: false
+  };
+  
+  // Transform API data to match the expected Referral interface
+  const transformApiReferralToReferral = (apiReferral: any): Referral => {
+    const patientName = apiReferral.patient_fname && apiReferral.patient_lname 
+      ? `${apiReferral.patient_fname} ${apiReferral.patient_lname}`
+      : apiReferral.patient_fname || apiReferral.patient_lname || 'Unknown Patient';
+    
+    const dateOfBirth = apiReferral.patient_dob 
+      ? new Date(apiReferral.patient_dob).toLocaleDateString()
+      : 'N/A';
+    
+    const phone = apiReferral.patient_contact_phone || 'N/A';
+    
+    // Determine status based on API data - map to valid ReferralStatus values
+    let status: ReferralStatus = apiReferral.referral_status as ReferralStatus;
+    
+    // Determine priority (you may need to adjust this based on your business logic)
+    const priority = 'normal'; // Default priority
+    
+    // Calculate age from date of birth
+    const age = apiReferral.patient_dob 
+      ? Math.floor((new Date().getTime() - new Date(apiReferral.patient_dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : 0;
+    
+    return {
+      id: parseInt(apiReferral.referral_id.replace(/-/g, '').substring(0, 8), 16) || 1, // Convert UUID to number
+      patientName,
+      age,
+      dateOfBirth,
+      phone,
+      referredBy: apiReferral.referral_doctor_name || 'Unknown Doctor',
+      practice: apiReferral.outbound_facility_name || 'Unknown Practice',
+      dateReceived: apiReferral.referral_scanned_date || apiReferral.referral_outbound_date || new Date().toISOString(),
+      status,
+      priority,
+      insurance: 'Unknown Insurance', // Default value since API doesn't provide this
+      memberId: apiReferral.patient_insurance_member_id || 'N/A',
+      reason: apiReferral.referral_remark || 'No reason provided',
+      hasXrays: false, // Default value since API doesn't provide this
+      hasInsurance: !!apiReferral.patient_insurance_member_id,
+      documents: apiReferral.documents || []
+    };
+  };
+  
+  // Transform all API referrals
+  const referrals = scannedReferrals.map(transformApiReferralToReferral);
+  
+  // Update loading state based on API loading
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500); // Simulate 1.5s loading time
-
-    return () => clearTimeout(timer);
-  }, []);
+    setIsLoading(isScannedReferralsLoading);
+  }, [isScannedReferralsLoading]);
+  
+  // Handle search changes
+  useEffect(() => {
+    // Reset to first page when search changes
+    setPage(1);
+  }, [searchQuery]);
   
   // Filter, search, and sort referrals
   const processedReferrals = React.useMemo(() => {
@@ -101,6 +177,8 @@ export const ReferralList = () => {
   const handleNewReferralSubmit = (formData: NewReferralFormData) => {
     console.log("New referral data:", formData);
     setIsNewReferralOpen(false);
+    // Refetch data after creating new referral
+    refetchScannedReferrals();
   };
 
   // Navigation handler
@@ -122,6 +200,16 @@ export const ReferralList = () => {
   // Sort handler
   const handleSortChange = (sort: ReferralSortOption) => {
     setSortBy(sort);
+  };
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(1); // Reset to first page when changing page size
   };
 
   // User menu handler
@@ -155,6 +243,12 @@ export const ReferralList = () => {
     console.log('Uploading files:', files);
     // Implement file upload logic here
   };
+  
+  // Handle API errors
+  if (scannedReferralsError) {
+    console.error('Error fetching scanned referrals:', scannedReferralsError);
+    // You might want to show an error message to the user here
+  }
   
   return (
     <div className="flex h-screen bg-gray-100">

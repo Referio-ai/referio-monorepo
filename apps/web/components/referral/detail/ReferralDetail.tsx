@@ -11,6 +11,7 @@ import { ReferralDetailSkeleton } from '../skeletons/ReferralSkeletons';
 import { PatientInfoTab } from './PatientInfoTab';
 import { CommunicationTab } from './CommunicationTab';
 import { ReportsTab } from './ReportsTab';
+import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 
 interface ReferralDetailProps {
   referral: Referral;
@@ -42,13 +43,48 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   if (!referral) return null;
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMM dd, yyyy');
+    } catch (error) {
+      return dateString; // Return original string if parsing fails
+    }
   };
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    try {
+      const date = new Date(dateString);
+      
+      // Show relative time for recent dates
+      if (isToday(date)) {
+        return `Today at ${format(date, 'h:mm a')}`;
+      } else if (isYesterday(date)) {
+        return `Yesterday at ${format(date, 'h:mm a')}`;
+      } else {
+        // For older dates, show full date and time
+        return format(date, 'MMM dd, yyyy \'at\' h:mm a');
+      }
+    } catch (error) {
+      return dateString; // Return original string if parsing fails
+    }
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch (error) {
+      return dateString; // Return original string if parsing fails
+    }
+  };
+
+  const formatTimeOnly = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'h:mm a');
+    } catch (error) {
+      return dateString; // Return original string if parsing fails
+    }
   };
 
   return (
@@ -60,12 +96,12 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             <h1 className="text-3xl font-bold text-gray-900">{referral.patientName}</h1>
             <div className="flex items-center text-gray-600 mt-1">
               <Calendar className="h-4 w-4 mr-1" />
-              <span>{referral.dateOfBirth}</span>
+              <span>{formatDate(referral.dateOfBirth)}</span>
             </div>
             <p className="text-blue-600 mt-2">
               Referred by{' '}
               <span className="text-blue-700 font-medium">{referral.practice}</span>
-              {' '}| {referral.referredBy} • {referral.dateReceived}
+              {' '}| {referral.referredBy} • {formatDateTime(referral.dateReceived)}
             </p>
           </div>
           <Button 
@@ -85,7 +121,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             </Badge>
           </div>
           <div className="text-sm text-gray-500">
-            <span className="font-medium">Last Update:</span> Initial referral received from Dr. Chen • {formatDateTime(referral.dateReceived)}
+            <span className="font-medium">Last Update:</span> Initial referral received from Dr. Chen • {formatDateTime(referral.dateReceived)} ({formatRelativeTime(referral.dateReceived)})
           </div>
         </div>
       </div>
