@@ -1,4 +1,4 @@
-from typing import ClassVar, Sequence, Optional, Dict, Any
+from typing import ClassVar, Sequence, Optional, Dict, Any, List
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
@@ -89,6 +89,10 @@ class ReferralWithDetails(BaseModel):
     patient_contact_email: Optional[str] = None
     patient_gender: Optional[str] = None
     patient_insurance_member_id: Optional[str] = None
+    
+    # Document details
+    documents: Optional[List[Dict[str, Any]]] = None
+    document_count: Optional[int] = 0
 
     @field_validator('referral_id', 'referral_outbound_facility_id', 'referral_inbound_facility_id', 'patient_id', mode='before')
     @classmethod

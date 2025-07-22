@@ -72,3 +72,15 @@ export const useUploadDocument = () => {
     },
   })
 } 
+
+export const useScannedReferralsCount = () => {
+  return useQuery({
+    queryKey: ["scanned-referrals-count"],
+    queryFn: () => ReferralService.getScannedReferralsCount(),
+  })
+}
+
+export const useScannedReferrals = ({ page, page_size, search, status }: { page: number, page_size: number, search: string, status: string }) => useQuery({ 
+  queryKey: ["scanned-referrals", page, page_size, search, status],
+  queryFn: () => ReferralService.getScannedReferrals({ page, page_size, search, status }),
+})

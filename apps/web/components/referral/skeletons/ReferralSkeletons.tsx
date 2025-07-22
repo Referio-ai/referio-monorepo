@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 export const ReferralListSkeleton = () => {
   return (
     <div className="w-96 border-r flex flex-col">
-      <div className="p-4 border-b">
+      {/* <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-4">
           <Skeleton className="h-6 w-24 bg-gray-500" />
           <Skeleton className="h-9 w-28 bg-gray-500" />
@@ -21,7 +21,7 @@ export const ReferralListSkeleton = () => {
           <Skeleton className="h-4 w-24 bg-gray-500" />
           <Skeleton className="h-8 w-32 bg-gray-500" />
         </div>
-      </div>
+      </div> */}
       
       <div className="flex-1 overflow-y-auto">
         {[...Array(5)].map((_, i) => (

@@ -111,6 +111,46 @@ export class ReferralService {
             mediaType: 'multipart/form-data',
         });
     }
+
+    public static getScannedReferralsCount(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/scanned/count',
+        });
+    }
+
+    //scanned referrals
+    public static getScannedReferrals({
+        page,
+        page_size,
+        search,
+        status,
+    }: {
+        page: number,   
+        page_size: number,
+        search: string,
+        status: string,
+    }): CancelablePromise<any> {
+
+        console.log("page", page);
+        console.log("page_size", page_size);
+        console.log("search", search);
+
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/scanned/',
+            query: {
+                page,
+                page_size,
+                search,
+                status,
+            },
+        });
+    }
+
+
+ 
 } 
+
 
 

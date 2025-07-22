@@ -16,6 +16,7 @@ from src.utils.supabase.supabase_utils import upload_file
 from src.schemas.fileresult import FileResult
 from src.crud.referrals import referrals_crud
 from src.services.referral_service import ReferralService
+from src.services.referral_management_service import ReferralManagementService
 
 router = APIRouter()
 
@@ -197,4 +198,59 @@ async def upload_document(
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred while uploading document. {str(e)}",
+        )
+
+
+@router.get("/scanned/", status_code=200)
+async def get_scanned_referrals(page: int = 1, page_size: int = 10, search: str = "") -> ReferralWithDetailsPagination:
+    """Get only scanned referrals with patient and facility details"""
+    try:
+        db = await get_supabase_client()
+        return await ReferralManagementService.get_scanned_referrals_paginated(
+            db=db, page=page, page_size=page_size, search=search
+        )
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"An error occurred while fetching scanned referrals. {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching scanned referrals. {str(e)}",
+        )
+
+
+@router.get("/scanned/count", status_code=200)
+async def get_scanned_referrals_count():
+    """Get count of scanned referrals"""
+    try:
+        db = await get_supabase_client()
+        return await ReferralManagementService.get_scanned_referrals_count(db=db)
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"An error occurred while getting scanned referrals count. {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting scanned referrals count. {str(e)}",
+        )
+
+
+@router.get("/scanned/batch/{batch_id}", status_code=200)
+async def get_scanned_referrals_by_batch(batch_id: UUID, page: int = 1, page_size: int = 10) -> ReferralWithDetailsPagination:
+    """Get scanned referrals for a specific batch"""
+    try:
+        db = await get_supabase_client()
+        return await ReferralManagementService.get_scanned_referrals_by_batch(
+            db=db, batch_id=batch_id, page=page, page_size=page_size
+        )
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"An error occurred while fetching scanned referrals by batch. {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching scanned referrals by batch. {str(e)}",
         )

@@ -3,6 +3,13 @@ export type ReferralStatus = 'new' | 'active' | 'archive';
 export type ReferralPriority = 'normal' | 'urgent' | 'overdue';
 export type ReferralSortOption = 'date-newest' | 'date-oldest' | 'patient-name' | 'priority';
 export type ReferralSearchFilter = 'patient' | 'dob' | 'phone' | 'doctor' | 'practice';
+export type ReferralDocument = {
+  document_id: string;
+  created_at: string;
+  source: string;
+  document_category: string;
+  signed_url: string;
+}
 
 export interface Referral {
   id: number;
@@ -23,6 +30,7 @@ export interface Referral {
   appointmentDate?: string;
   appointmentTime?: string;
   completedDate?: string;
+  documents: ReferralDocument[];
 }
 
 export interface NewReferralFormData {
@@ -43,13 +51,13 @@ export const REFERRAL_STATUSES: ReferralStatus[] = ['new', 'active', 'archive'];
 export const REFERRAL_PRIORITIES: ReferralPriority[] = ['normal', 'urgent', 'overdue'];
 
 export const STATUS_BADGE_STYLES = {
-  new: 'bg-slate-800 text-white',
+  new: 'bg-green-100 text-green-700',
   active: 'bg-blue-200 text-blue-700',
   archive: 'bg-gray-200 text-gray-700',
 } as const;
 
 export const PRIORITY_BADGE_STYLES = {
-  normal: 'bg-slate-800 text-white',
+  normal: 'bg-green-100 text-green-700',
   urgent: 'bg-orange-200 text-orange-700',
   overdue: 'bg-red-200 text-red-700',
 } as const;
@@ -111,7 +119,8 @@ export const SAMPLE_REFERRALS: Referral[] = [
     memberId: "DDP78923456",
     reason: "Impacted wisdom teeth extraction",
     hasXrays: true,
-    hasInsurance: true
+    hasInsurance: true,
+    documents: []
   },
   {
     id: 2,
@@ -128,7 +137,8 @@ export const SAMPLE_REFERRALS: Referral[] = [
     memberId: "CDP45678912",
     reason: "Root canal treatment",
     hasXrays: true,
-    hasInsurance: true
+    hasInsurance: true,
+    documents: []
   },
   {
     id: 3,
@@ -147,7 +157,8 @@ export const SAMPLE_REFERRALS: Referral[] = [
     hasXrays: true,
     hasInsurance: true,
     appointmentDate: "April 29, 2025",
-    appointmentTime: "2:30 PM"
+    appointmentTime: "2:30 PM",
+    documents: []
   },
   {
     id: 4,
@@ -165,7 +176,8 @@ export const SAMPLE_REFERRALS: Referral[] = [
     reason: "Implant consultation",
     hasXrays: true,
     hasInsurance: true,
-    completedDate: "April 21, 2025"
+    completedDate: "April 21, 2025",
+    documents: []
   },
   {
     id: 5,
@@ -182,6 +194,7 @@ export const SAMPLE_REFERRALS: Referral[] = [
     memberId: "GD24681357",
     reason: "Orthodontic evaluation",
     hasXrays: false,
-    hasInsurance: true
+    hasInsurance: true,
+    documents: []
   }
 ]; 
