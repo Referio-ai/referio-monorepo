@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, FileText, Trash2, Upload, AlertCircle, CheckCircle2, User, Calendar, Phone, MapPin, Building, Loader2, UserCheck } from 'lucide-react';
 import { FilePreview, ReferralFormUploadProps } from './types';
-import { useUploadReferralForm } from '@/lib/hooks/referrals';
+import { useUploadReferralForm, useUploadReferralFormAsync } from '@/lib/hooks/referrals';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 
@@ -37,7 +37,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
 
   // Use the upload hook
   const uploadMutation = useUploadReferralForm();
-
+  const uploadReferralFormAsyncMutation = useUploadReferralFormAsync();
   // Accepted file types specifically for referral forms
   const REFERRAL_FORM_TYPES = "image/*,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -48,10 +48,16 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
 
   // Initialize showUploadForm based on patient association
   useEffect(() => {
+    // Hide upload form if there's already a patient association
+    if (hasPatientAssociation) {
+      setShowUploadForm(false);
+    }
 
-    setShowUploadForm(false);
+    if (extractionResults) {
+      setShowUploadForm(false);
+    }
 
-  }, [extractionResults]);
+  }, [extractionResults, hasPatientAssociation]);
 
   useEffect(() => {
     if (existingFilesCount === 0 && selectedFiles.length > 0) {
@@ -64,15 +70,17 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
   }, [existingFilesCount]);
 
   useEffect(() => {
-    // Validate files whenever selection changes
-    validateFiles();
+    // Only validate files if there are actually files selected
+    if (selectedFiles.length > 0) {
+      validateFiles();
+    }
   }, [selectedFiles]);
 
   const validateFiles = () => {
     const newErrors: string[] = [];
 
-    // Check if required files are present
-    if (isRequired && selectedFiles.length === 0) {
+    // Check if required files are present (only show error if files were previously selected)
+    if (isRequired && selectedFiles.length === 0 && previews.length > 0) {
       newErrors.push('A referral form is required'); // Updated message for single file
     }
 
@@ -131,6 +139,11 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
     setPreviews(updatedPreviews);
 
     onFilesSelected(updatedFiles);
+    
+    // Reset file input value to allow re-selecting the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const clearAllFiles = () => {
@@ -142,6 +155,11 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
     onFilesSelected([]);
     setErrors([]);
     setIsValid(false);
+    
+    // Reset file input value to allow re-selecting the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleUploadToAPI = async () => {
@@ -155,14 +173,12 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       // Use the mutation to upload files
 
 
-      uploadMutation.mutateAsync({
+      uploadReferralFormAsyncMutation.mutateAsync({
         referralId,
         files: selectedFiles
       }, {
         onSuccess: (result) => {
-          setExtractionResults(result);
-
-          // Show success message with extraction details
+          console.log(result, 'result')
 
           Swal.fire({
             title: 'Referral Form Uploaded',
@@ -170,30 +186,40 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
             icon: 'success',
             confirmButtonText: 'Yes',
             confirmButtonColor: '#007bff',
-            showCloseButton: true,
-            showConfirmButton: true,
-            showCancelButton: true,
-            cancelButtonText: 'No',
-            cancelButtonColor: '#dc3545',
-          }).then((result) => {
-            if (result.isConfirmed) {
-              nextStep();
-            } else {
-              setShowUploadForm(false);
-            }
-          });
+          })
+
+          // setExtractionResults(result);
+
+          // Show success message with extraction details
+
+          // Swal.fire({
+          //   title: 'Referral Form Uploaded',
+          //   text: 'Would you like to continue adding information?',
+          //   icon: 'success',
+          //   confirmButtonText: 'Yes',
+          //   confirmButtonColor: '#007bff',
+          //   showCloseButton: true,
+          //   showConfirmButton: true,
+          //   showCancelButton: true,
+          //   cancelButtonText: 'No',
+          //   cancelButtonColor: '#dc3545',
+          // }).then((result) => {
+          //   if (result.isConfirmed) {
+          //     nextStep();
+          //   } else {
+          //     setShowUploadForm(false);
+          //   }
+          // });
 
           // Call the completion callback
           onUploadComplete?.(selectedFiles);
 
           setUploadProgress(100);
 
-          // Clear files after successful upload
-          setTimeout(() => {
-            clearAllFiles();
-            setIsUploading(false);
-            setUploadProgress(0);
-          }, 2000);
+          // Clear files immediately after successful upload
+          clearAllFiles();
+          setIsUploading(false);
+          setUploadProgress(0);
         }
       });
 
@@ -500,14 +526,14 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       {/* Extracted Data Display */}
       {extractionResults && (
         <div className="w-full max-w-4xl mb-8 space-y-6">
-          <div className="text-center mb-4">
+          {/* <div className="text-center mb-4">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               📋 Extracted Information
             </h3>
             <p className="text-sm text-gray-600">
               Here's the information we successfully extracted from your referral form
             </p>
-          </div>
+          </div> */}
 
           {/* Extraction Summary */}
           {/* {extractionResults.summary && renderExtractionSummary(extractionResults.summary)} */}
@@ -545,10 +571,13 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       )}
 
       {/* Upload Area */}
-      {!extractionResults && showUploadForm && (
+      {showUploadForm && (
         <div className="w-full max-w-md mb-8">
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              clearAllFiles();
+              fileInputRef.current?.click();
+            }}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${errors.length > 0
               ? 'border-red-300 bg-red-50 hover:border-red-400'
               : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
@@ -611,7 +640,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       )}
 
       {/* Error Messages */}
-      {!extractionResults && errors.length > 0 && showUploadForm && (
+      {!extractionResults && errors.length > 0 && showUploadForm && !hasPatientAssociation && (
         <div className="w-full max-w-md mb-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <div className="flex items-center mb-2">
@@ -706,16 +735,13 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
               <span className="text-sm font-medium text-blue-800">
                 Uploading referral form...
               </span>
-              <p className="text-xs text-blue-600 text-center">
-                Please wait while we process and extract information from your document
-              </p>
             </div>
           </div>
         </div>
       )}
 
       {/* Action Buttons */}
-      {!extractionResults && showUploadForm && (
+      {!extractionResults && showUploadForm  && (
         <div className="w-full max-w-md space-y-3">
           {/* Upload to API Button */}
           {referralId && isValid && !isUploading && (

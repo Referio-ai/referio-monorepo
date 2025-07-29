@@ -142,3 +142,107 @@ export const NewReferralFormSkeleton = () => {
     </div>
   );
 }; 
+
+export const ReferralManagementTableSkeleton = () => {
+  return (
+    <div>
+      {/* Filter by Batch Skeleton */}
+      <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-5 h-5 bg-gray-300" />
+            <Skeleton className="h-4 w-24 bg-gray-300" />
+            <Skeleton className="h-10 w-48 bg-gray-300 rounded-lg" />
+          </div>
+          <Skeleton className="h-10 w-40 bg-gray-300 rounded-lg" />
+        </div>
+      </div>
+
+      {/* Total Count & Pagination Controls Skeleton */}
+      <div className="px-6 py-4 bg-white border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="w-3 h-3 bg-gray-300 rounded-full" />
+              <Skeleton className="h-6 w-32 bg-gray-300" />
+            </div>
+            <Skeleton className="h-6 w-40 bg-gray-300 rounded-full" />
+          </div>
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-4 w-48 bg-gray-300" />
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-8 bg-gray-300" />
+              <Skeleton className="h-8 w-20 bg-gray-300 rounded-md" />
+              <Skeleton className="h-4 w-16 bg-gray-300" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-max">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 lg:px-6 py-4 text-left">
+                  <Skeleton className="h-4 w-24 bg-gray-300" />
+                </th>
+                <th className="px-4 lg:px-6 py-4 text-left hidden md:table-cell">
+                  <Skeleton className="h-4 w-20 bg-gray-300" />
+                </th>
+                <th className="px-4 lg:px-6 py-4 text-left">
+                  <Skeleton className="h-4 w-16 bg-gray-300" />
+                </th>
+                <th className="px-4 lg:px-6 py-4 text-left hidden lg:table-cell">
+                  <Skeleton className="h-4 w-16 bg-gray-300" />
+                </th>
+                <th className="px-4 lg:px-6 py-4 text-left">
+                  <Skeleton className="h-4 w-20 bg-gray-300" />
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {[...Array(5)].map((_, i) => (
+                <tr key={i}>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-24 bg-gray-300" />
+                        <Skeleton className="w-6 h-6 bg-gray-300 rounded-lg" />
+                      </div>
+                      <Skeleton className="h-3 w-20 bg-gray-300 mt-1 md:hidden" />
+                    </div>
+                  </td>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                    <Skeleton className="h-4 w-20 bg-gray-300" />
+                  </td>
+                  <td className="px-4 lg:px-6 py-4">
+                    <div className="text-sm min-w-0">
+                      <Skeleton className="h-4 w-32 bg-gray-300 mb-1" />
+                      <Skeleton className="h-4 w-28 bg-gray-300" />
+                    </div>
+                  </td>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                    <Skeleton className="h-6 w-16 bg-gray-300 rounded-full" />
+                  </td>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1 lg:gap-2">
+                      <Skeleton className="h-8 w-24 bg-gray-300 rounded-lg" />
+                      <Skeleton className="w-8 h-8 bg-gray-300 rounded-lg" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Pagination Skeleton */}
+        <div className="bg-white border-t border-gray-200 px-6 py-4 flex justify-end">
+          <Skeleton className="h-8 w-64 bg-gray-300" />
+        </div>
+      </div>
+    </div>
+  );
+}; 

@@ -12,7 +12,7 @@ import { GiftCardStep } from '@/components/GiftCardStep'
 import { AppHeader } from '@/components/AppHeader'
 import { ProgressBar } from '@/components/ProgressBar'
 import { NavigationFooter } from '@/components/NavigationFooter'
-import { useReferralBySlug, useMarkReferralAsScanned, useUploadDocument } from '@/lib/hooks/referrals';
+import { useReferralBySlug, useMarkReferralAsScanned, useUploadDocument, useUploadReferralFormAsync } from '@/lib/hooks/referrals';
 
 
 import {
@@ -120,6 +120,7 @@ export const QRScan = (props: { params: { slug: string } }) => {
 
   const markReferralAsScannedMutation = useMarkReferralAsScanned();
   const uploadDocumentMutation = useUploadDocument();
+  const uploadReferralFormAsyncMutation = useUploadReferralFormAsync();
   const cancelUploadRef = useRef(false);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -131,7 +132,6 @@ export const QRScan = (props: { params: { slug: string } }) => {
   const [insuranceCardFiles, setInsuranceCardFiles] = useState<File[]>([]);
   const [xrayFiles, setXrayFiles] = useState<File[]>([]);
   const [otherDocsFiles, setOtherDocsFiles] = useState<File[]>([]);
-  const [currentStepTitle, setCurrentStepTitle] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
