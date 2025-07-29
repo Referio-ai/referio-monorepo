@@ -11,7 +11,7 @@ interface Facility {
 interface Referral {
   id: string;
   url: string;
-  qrCode: string;
+  qrCode: React.ReactElement;
   status: string;
 }
 
@@ -46,6 +46,7 @@ interface BatchListProps {
   deleteBatch: (batchPrefix: string) => void;
   setActiveTab: (tab: string) => void;
   setSelectedBatchId: (id: string) => void;
+  setSelectedBatchPrefix: (prefix: string | null) => void;
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number) => void;
@@ -63,6 +64,7 @@ const BatchList: React.FC<BatchListProps> = ({
   deleteBatch,
   setActiveTab,
   setSelectedBatchId,
+  setSelectedBatchPrefix,
   currentPage,
   pageSize,
   onPageChange,
@@ -88,6 +90,7 @@ const BatchList: React.FC<BatchListProps> = ({
 
   const filteredBatches = getFilteredBatches();
   const paginatedBatches = getPaginatedBatches();
+  console.log(paginatedBatches)
   const totalPages = Math.ceil(filteredBatches.length / pageSize) || 1;
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -240,6 +243,8 @@ const BatchList: React.FC<BatchListProps> = ({
                           onClick={() => {
                             setActiveTab('referrals');
                             setSelectedBatchId(batch.referral_batch_id);
+                            // Automatically filter referrals by this batch
+                            setSelectedBatchPrefix(batch.referral_batch_prefix);
                           }}
                           className="px-2 lg:px-3 py-1.5 text-xs lg:text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium whitespace-nowrap"
                         >

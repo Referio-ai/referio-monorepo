@@ -17,6 +17,7 @@ class Referral(BaseModel):
     referral_submitted: bool
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    job_id: Optional[str] = None
     deleted: Optional[bool] = False
 
     @field_validator('referral_id', 'referral_outbound_facility_id', 'referral_inbound_facility_id', 'patient_id', mode='before')
@@ -41,6 +42,7 @@ class ReferralCreate(BaseModel):
     referral_submitted: bool = False
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    job_id: Optional[str] = None
     deleted: Optional[bool] = False
 
 
@@ -55,6 +57,7 @@ class ReferralUpdate(BaseModel):
     referral_submitted: Optional[bool] = None
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    job_id: Optional[str] = None
     deleted: Optional[bool] = None
 
 
@@ -74,6 +77,7 @@ class ReferralWithDetails(BaseModel):
     referral_status: Optional[str] = None
     referral_remark: Optional[str] = None
     referral_doctor_name: Optional[str] = None
+    job_id: Optional[str] = None
     deleted: Optional[bool] = False
     
     # Facility details

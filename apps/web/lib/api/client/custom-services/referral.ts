@@ -12,13 +12,16 @@ export class ReferralService {
      */
     public static apiV1GetReferralBySlug({
         slug,
+        batchPrefix,
     }: {
         slug: string,
+        batchPrefix: string,
     }): CancelablePromise<Referral> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/referrals/slug/{referral_id}',
+            url: '/api/v1/referrals/slug/{batch_prefix}/{referral_id}',
             path: {
+                'batch_prefix': batchPrefix,
                 'referral_id': slug,
             },
             errors: {
@@ -52,10 +55,12 @@ export class ReferralService {
         page,
         page_size,
         search,
+        batch_prefix,
     }: {
         page: number,
         page_size: number,
         search: string,
+        batch_prefix: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -64,6 +69,7 @@ export class ReferralService {
                 page,
                 page_size,
                 search,
+                batch_prefix,
             },
             errors: {
                 404: `Referral Endpoints`,
@@ -148,8 +154,40 @@ export class ReferralService {
         });
     }
 
+    public static getReferralsForQrPrinting({
+        batchPrefix,
+    }: {
+        batchPrefix: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/qr-print/{batch_prefix}',
+            path: {
+                'batch_prefix': batchPrefix,
+            },
+        });
+    }
 
- 
+    public static uploadReferralFormAsync({
+        referralId,
+        files,
+    }: {
+        referralId: string,
+        files: File[],
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/upload-form-async/{referral_id}',
+            path: {
+                'referral_id': referralId,
+            },
+            formData: {
+                files: files,
+            },
+            mediaType: 'multipart/form-data',
+        });
+    }
+
 } 
 
 

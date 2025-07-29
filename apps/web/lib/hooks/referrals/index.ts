@@ -9,9 +9,9 @@ export const useReferrals = ({ page, page_size, search }: { page: number, page_s
   queryFn: () => ReferralsService.apiV1GetReferrals({ page, page_size, search }),
 });
 
-export const useReferralsWithDetails = ({ page, page_size, search }: { page: number, page_size: number, search: string }) => useQuery({
-  queryKey: ["referrals-with-details", page, page_size, search],
-  queryFn: () => ReferralService.getReferralsWithDetails({ page, page_size, search }),
+export const useReferralsWithDetails = ({ page, page_size, search, batch_prefix }: { page: number, page_size: number, search: string, batch_prefix: string }) => useQuery({
+  queryKey: ["referrals-with-details", page, page_size, search, batch_prefix],
+  queryFn: () => ReferralService.getReferralsWithDetails({ page, page_size, search, batch_prefix }),
   staleTime: 1000 * 60 * 2, // Cache for 2 minutes
 });
 
@@ -29,7 +29,16 @@ export const useReferral = (referralId: string) => useQuery({
 
 export const useReferralBySlug = (slug: string) => useQuery({
   queryKey: ["referrals", "slug", slug],
-  queryFn: () => ReferralService.apiV1GetReferralBySlug({ slug }),
+  queryFn: () => {
+
+    //slug is the batch-prefix-referral-id
+    const batchPrefix = slug.split('-')[0]
+    const referralId = slug.split('-')[1]
+
+    const response = ReferralService.apiV1GetReferralBySlug({ slug: referralId, batchPrefix })
+    console.log(response)
+    return response
+  },
   enabled: !!slug,
 });
 
@@ -84,3 +93,17 @@ export const useScannedReferrals = ({ page, page_size, search, status }: { page:
   queryKey: ["scanned-referrals", page, page_size, search, status],
   queryFn: () => ReferralService.getScannedReferrals({ page, page_size, search, status }),
 })
+
+export const useReferralsForQrPrinting = ({ batchPrefix }: { batchPrefix: string }) => useQuery({
+  queryKey: ["referrals-for-qr-printing", batchPrefix],
+  queryFn: () => ReferralService.getReferralsForQrPrinting({ batchPrefix }),
+})
+
+export const useUploadReferralFormAsync = () => {
+  return useMutation({
+    mutationFn: async ({ referralId, files }: { referralId: string; files: File[] }) => {
+      const response = await ReferralService.uploadReferralFormAsync({ referralId, files })
+      return response
+    },
+  })
+}

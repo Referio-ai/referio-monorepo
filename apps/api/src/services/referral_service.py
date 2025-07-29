@@ -9,7 +9,7 @@ from src.crud.patients import patients_crud
 from src.schemas.referrals import Referral, ReferralWithDetails, ReferralUpdate, ReferralWithDetailsPagination
 from src.schemas.patients import PatientCreate, PatientUpdate
 from src.schemas.documents import DocumentCreate
-from src.utils.reducto.reducto_utils import reducto_referral_extraction
+from src.utils.reducto.reducto_utils import reducto_referral_extraction, reducto_referral_extraction_async
 
 
 class ReferralService:
@@ -51,7 +51,8 @@ class ReferralService:
     @staticmethod
     async def fetch_referral_by_slug(
         db: AsyncClient, 
-        referral_slug: str
+        referral_slug: str,
+        batch_prefix: str
     ) -> Optional[ReferralWithDetails]:
         """
         Fetch a referral by its slug with facility and patient details
@@ -65,7 +66,7 @@ class ReferralService:
         """
         try:
             # First, get the referral
-            referral_result = await db.table("referrals").select("*").eq("referral_slug", referral_slug).eq("deleted", False).execute()
+            referral_result = await db.table("referrals").select("*").eq("referral_slug", referral_slug).eq("referral_batch_prefix", batch_prefix).eq("deleted", False).execute()
             
             if not referral_result.data:
                 raise HTTPException(
@@ -131,7 +132,8 @@ class ReferralService:
         db: AsyncClient,
         page: int = 1,
         page_size: int = 10,
-        search: str = ""
+        search: str = "",
+        batch_prefix: Optional[str] = None
     ) -> ReferralWithDetailsPagination:
         """
         Get paginated referrals with patient and facility details using Supabase client functions
@@ -141,6 +143,7 @@ class ReferralService:
             page: Page number starting from 1
             page_size: Number of items per page
             search: Search term to filter referrals
+            batch_prefix: Optional batch prefix to filter referrals by batch
             
         Returns:
             ReferralWithDetailsPagination containing items and pagination metadata
@@ -155,6 +158,10 @@ class ReferralService:
                 .select("*")
                 .eq("deleted", False)
             )
+            
+            # Apply batch filter if provided
+            if batch_prefix:
+                base_query = base_query.eq("referral_batch_prefix", batch_prefix)
             
             # Handle search functionality
             if search:
@@ -172,6 +179,10 @@ class ReferralService:
                 .select("*", count='exact')
                 .eq("deleted", False)
             )
+            
+            # Apply same batch filter to count query
+            if batch_prefix:
+                count_query = count_query.eq("referral_batch_prefix", batch_prefix)
             
             # Apply same search conditions to count query
             if search:
@@ -284,7 +295,194 @@ class ReferralService:
                 detail=f"Failed to fetch referrals with details: {str(e)}"
             )
 
-# upload referral form 
+    @staticmethod
+    async def get_referrals_for_qr_printing(
+        db: AsyncClient,
+        batch_prefix: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all referrals for a specific branch (batch prefix) for QR code printing
+        
+        This function retrieves all referrals within a batch and formats them
+        with QR code URLs and essential information needed for printing.
+        
+        Args:
+            db: Database client
+            batch_prefix: Batch prefix to filter referrals by branch
+            
+        Returns:
+            List of referrals with QR code information for printing
+        """
+        try:
+            print(f"Getting referrals for QR printing with batch prefix: {batch_prefix}")
+            
+            # Get all referrals for the specified batch prefix
+            referrals_result = await (
+                db.table("referrals")
+                .select("*")
+                .eq("referral_batch_prefix", batch_prefix)
+                .eq("deleted", False)
+                .order("referral_slug.asc")
+                .execute()
+            )
+            
+            if not referrals_result.data:
+                print(f"No referrals found for batch prefix: {batch_prefix}")
+                return []
+            
+            print(f"Found {len(referrals_result.data)} referrals for batch prefix: {batch_prefix}")
+            
+            # Get batch information for additional context
+            batch_result = await (
+                db.table("referrals_batch")
+                .select("*")
+                .eq("referral_batch_prefix", batch_prefix)
+                .eq("deleted", False)
+                .execute()
+            )
+            
+            batch_info = batch_result.data[0] if batch_result.data else None
+            
+            # Get facility information for the batch
+            outbound_facility_name = None
+            inbound_facility_name = None
+            
+            if batch_info:
+                # Get outbound facility information
+                outbound_facility_result = await (
+                    db.table("facility_entity")
+                    .select("facility_name")
+                    .eq("facility_id", batch_info['referral_outbound_facility_id'])
+                    .execute()
+                )
+                outbound_facility_name = (
+                    outbound_facility_result.data[0]['facility_name'] 
+                    if outbound_facility_result.data else None
+                )
+                
+                # Get inbound facility information
+                inbound_facility_result = await (
+                    db.table("facility_entity")
+                    .select("facility_name")
+                    .eq("facility_id", batch_info['referral_inbound_facility_id'])
+                    .execute()
+                )
+                inbound_facility_name = (
+                    inbound_facility_result.data[0]['facility_name'] 
+                    if inbound_facility_result.data else None
+                )
+            
+            # Format referrals for QR printing
+            qr_referrals = []
+            base_url = "https://referio.app"  # This should be configurable
+            
+            for referral in referrals_result.data:
+                # Generate QR code URL
+                qr_url = f"{base_url}/r/{referral['referral_batch_prefix']}-{referral['referral_slug']}/"
+                
+                # Format referral for printing
+                qr_referral = {
+                    "referral_id": str(referral['referral_id']),
+                    "referral_slug": referral['referral_slug'],
+                    "referral_batch_prefix": referral['referral_batch_prefix'],
+                    "qr_code_url": qr_url,
+                    "qr_code_data": f"{referral['referral_batch_prefix']}-{referral['referral_slug']}",
+                    "status": referral.get('referral_status', 'active'),
+                    "scanned": referral['referral_scanned'],
+                    "submitted": referral['referral_submitted'],
+                    "scanned_date": referral.get('referral_scanned_date'),
+                    "submitted_date": referral.get('referral_submitted_date'),
+                    "outbound_facility_name": outbound_facility_name,
+                    "inbound_facility_name": inbound_facility_name,
+                    "batch_size": batch_info['referral_batch_size'] if batch_info else None,
+                    "created_at": referral.get('created_at'),
+                    "updated_at": referral.get('updated_at')
+                }
+                
+                qr_referrals.append(qr_referral)
+            
+            print(f"Formatted {len(qr_referrals)} referrals for QR printing")
+            
+            return {
+                "batch_prefix": batch_prefix,
+                "total_referrals": len(qr_referrals),
+                "outbound_facility_name": outbound_facility_name,
+                "inbound_facility_name": inbound_facility_name,
+                "batch_size": batch_info['referral_batch_size'] if batch_info else None,
+                "referrals": qr_referrals
+            }
+            
+        except Exception as e:
+            print(f"Error getting referrals for QR printing: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get referrals for QR printing: {str(e)}"
+            )
+
+
+    @staticmethod
+    async def upload_referral_form_async(
+        db: AsyncClient, 
+        referral_id: str,
+        form_data: dict
+    ) -> dict:
+        """
+        Upload a referral form and process it through Reducto for data extraction
+        
+        This method handles the complete flow of:
+        1. Uploading referral form files to Supabase storage
+        2. Getting signed URLs for the uploaded files
+        3. Processing each file through Reducto AI for data extraction
+        4. Extracting and saving patient information (including insurance)
+        5. Updating referral record with extracted data 
+
+        Args:
+            db: Supabase client
+            referral_id: ID of the referral to attach forms to
+            form_data: List of files to upload and process
+            
+        Returns:
+            Dict containing upload results, extraction results, patient data, and summary statistics
+        """
+        try:
+            # Step 1: Upload the files to Supabase storage
+            print(f"Uploading referral forms for referral ID: {referral_id}")
+            upload_results = await referrals_crud.upload_files( 
+                db=db, 
+                id=referral_id, 
+                files=form_data, 
+                type="referral_form",
+                bucket_name="referral-documents",
+                base_path="referrals",
+                document_category="referral_form"
+            )
+
+            # Step 2: Process uploaded files through Reducto for async extraction
+            for file in upload_results:
+                if hasattr(file, 'signed_url') and file.signed_url:
+                    try:
+                        print(f"Processing file {file.filename} through Reducto...")
+                        await reducto_referral_extraction_async(file.signed_url, referral_id)
+                    except Exception as reducto_error:
+                        print(f"Error processing file {file.filename} through Reducto: {str(reducto_error)}")
+                        continue
+                    
+
+            # Step 3: Return success message 
+            return {
+                "status": "success",
+                "message": "Referral form uploaded and processed successfully"
+            }
+        
+        except Exception as e:
+            print(f"Error uploading referral form: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload referral form: {str(e)}"
+            )
+
     @staticmethod
     async def upload_referral_form(
         db: AsyncClient, 
@@ -340,7 +538,7 @@ class ReferralService:
                             print(f"Processing file {file_result.filename} through Reducto...")
                             
                             # Extract data using Reducto AI
-                            extracted_data = await reducto_referral_extraction(file_result.signed_url)
+                            extracted_data = await reducto_referral_extraction(file_result.signed_url, referral_id)
                             
                             # Parse the extraction results
                             extraction_result = {
@@ -481,6 +679,129 @@ class ReferralService:
                 detail=f"Failed to upload referral form: {str(e)}"
             )
     
+    @staticmethod
+    async def process_extracted_referral_data(
+        db: AsyncClient,
+        job_id: str,
+        extracted_data: List[Dict[str, Any]]
+    ) -> dict:
+        """
+        Process extracted referral data from Reducto and save patient, provider, and other information
+        
+        This function handles the extracted data from the async upload process and:
+        1. Processes and saves patient information (including insurance)
+        2. Updates referral record with extracted information
+        3. Stores document records in documents table
+        4. Returns comprehensive processing results
+        
+        Args:
+            db: Database client
+            job_id: Job ID to find the referral
+            extracted_data: Extracted data from Reducto AI processing (list containing dict)
+            
+        Returns:
+            Dict containing processing results, patient data, referral updates, and summary statistics
+        """
+        try:
+            print(f"Processing extracted data for job ID: {job_id}")
+            print(f"Extracted data structure: {extracted_data}")
+
+            # get the referral by job_id
+            referral = await db.table("referrals").select("*").eq("job_id", job_id).execute()
+            if not referral.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with job ID {job_id} not found"
+                )   
+            
+            referral_id = referral.data[0]["referral_id"]
+
+            print(f"Referral ID: {referral_id}")
+            
+            # Initialize variables for extracted data
+            patient_data_extracted = None
+            referral_data_extracted = None
+            insurance_data_extracted = None
+            provider_data_extracted = None
+            
+            # Parse the extracted data structure - now it's a list containing a single dict
+            if extracted_data and isinstance(extracted_data, list) and len(extracted_data) > 0:
+                # Get the first (and only) item from the list
+                result_data = extracted_data[0]
+                print(f"Found result data: {result_data}")
+                
+                # Extract patient information for processing
+                if result_data.get("patient_information"):
+                    patient_data_extracted = result_data["patient_information"]
+                    print(f"Extracted patient information: {patient_data_extracted}")
+                
+                # Extract referral information for processing
+                if result_data.get("referral_information"):
+                    referral_data_extracted = result_data["referral_information"]
+                    print(f"Extracted referral information: {referral_data_extracted}")
+                
+                # Extract insurance information for processing
+                if result_data.get("insurance_information"):
+                    insurance_data_extracted = result_data["insurance_information"]
+                    print(f"Extracted insurance information: {insurance_data_extracted}")
+
+                # Extract provider information for processing
+                if result_data.get("referring_provider"):
+                    provider_data_extracted = result_data["referring_provider"]
+                    print(f"Extracted provider information: {provider_data_extracted}")
+            
+            # Step 1: Process and save patient information (including insurance)
+            patient_result = None
+            if patient_data_extracted:
+                try:
+                    patient_result = await ReferralService._process_patient_information(
+                        db, patient_data_extracted, insurance_data_extracted
+                    )
+                    print(f"Patient information processed: {patient_result}")
+                except Exception as patient_error:
+                    print(f"Warning: Failed to process patient information: {str(patient_error)}")
+            
+            # Step 2: Update referral record with extracted information
+            referral_updates = {}
+            if referral_data_extracted:
+                try:
+                    referral_updates = await ReferralService._process_referral_information(
+                        db, referral_id, referral_data_extracted, patient_result, provider_data_extracted
+                    )
+                    print(f"Referral information updated: {referral_updates}")
+                except Exception as referral_error:
+                    print(f"Warning: Failed to update referral information: {str(referral_error)}")
+            
+            # Step 3: Return comprehensive results
+            return {
+                "referral_id": referral_id,
+                "patient_data": patient_result,
+                "referral_updates": referral_updates,
+                "extracted_data_summary": {
+                    "has_patient_info": bool(patient_data_extracted),
+                    "has_referral_info": bool(referral_data_extracted),
+                    "has_provider_info": bool(provider_data_extracted),
+                    "has_insurance_info": bool(insurance_data_extracted),
+                    "patient_processed": bool(patient_result),
+                    "referral_updated": bool(referral_updates)
+                },
+                "summary": {
+                    "patient_processed": bool(patient_result),
+                    "referral_updated": bool(referral_updates),
+                    "extraction_success": bool(extracted_data),
+                    "processing_status": "completed"
+                }
+            }
+            
+        except Exception as e:
+            print(f"Error processing extracted referral data: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to process extracted referral data: {str(e)}"
+            )
+
     @staticmethod
     async def _process_patient_information(
         db: AsyncClient, 

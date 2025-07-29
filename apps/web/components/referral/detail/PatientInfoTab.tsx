@@ -84,6 +84,14 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
           </div>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Referral</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Image src={referral.documents[0].signed_url} width={400} height={400} alt="Patient Image" />
+        </CardContent>
+      </Card>
 
       {/* Insurance Information */}
       <Card>

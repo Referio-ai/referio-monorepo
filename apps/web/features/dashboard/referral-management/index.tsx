@@ -1,25 +1,28 @@
 "use client"
 
 import React, { useState, useRef } from 'react';
-import { 
-  QrCode, Download, Copy, Check, Plus, Trash2, Users, Building, Filter, Package, 
-  FileText, Calendar, ChevronRight, X, Printer, Eye, Sparkles, Menu, Bell, 
+import ReactDOMServer from 'react-dom/server';
+import {
+  QrCode, Download, Copy, Check, Plus, Trash2, Users, Building, Filter, Package,
+  FileText, Calendar, ChevronRight, Sparkles, Menu, Bell,
   Search, Home, BarChart3, Settings, LogOut, User, ChevronDown, LayoutDashboard,
   ClipboardList, MapPin, Activity, HelpCircle
 } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { CreateBatchModal, BatchList, ReferralList } from './components';
+import { QRCodeSVG } from 'qrcode.react';
+import { CreateBatchModal, BatchList, ReferralList, PrintPreviewModal } from './components';
 import { useGetFacilities } from '@/lib/hooks/facilities';
 import { useBatchesPaginated, useDeleteBatch } from '@/lib/hooks/batch';
 import { useReferrals, useReferralsByBatch, useReferralsWithDetails } from '@/lib/hooks/referrals';
 import { Facility as ApiFacility } from '@/lib/api/client/models/Facility';
 import { ReferralBatch } from '@/lib/api/client/models/ReferralBatch';
 import { Referral as ApiReferral } from '@/lib/api/client/models/Referral';
+import { BASE_URL } from '@/constants';
 
 interface Referral {
   id: string;
   url: string;
-  qrCode: string;
+  qrCode: React.ReactElement;
   status: string;
 }
 
@@ -47,6 +50,7 @@ interface Batch {
 const ReferralDashboard = () => {
   const [activeTab, setActiveTab] = useState('batches');
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [selectedBatchPrefix, setSelectedBatchPrefix] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [previewBatch, setPreviewBatch] = useState<Batch | null>(null);
@@ -83,11 +87,12 @@ const ReferralDashboard = () => {
     pageSize: 5,
     search: ''
   });
-  
+
   const { data: allReferralsData, isLoading: isReferralsLoading } = useReferralsWithDetails({
     page: referralPage,
     page_size: referralPageSize,
-    search: ''
+    search: '',
+    batch_prefix: selectedBatchPrefix || ''
   });
 
   // Delete batch mutation
@@ -102,7 +107,7 @@ const ReferralDashboard = () => {
   };
   const apiBatches = (batchesData as any)?.items || batchesData || [];
   const apiReferrals = (allReferralsData as any)?.items || allReferralsData || [];
-  
+
   // Transform API facilities for backward compatibility
   const facilities = apiFacilities.map((facility: ApiFacility) => ({
     id: facility.facility_id,
@@ -116,69 +121,22 @@ const ReferralDashboard = () => {
     return `REF-${timestamp}-${random}`.toUpperCase();
   };
 
-  // Generate QR code as SVG with enhanced design
+  // Generate QR code using qrcode.react
   const generateQRCode = (text) => {
-    const size = 256;
-    const modules = 25;
-    const moduleSize = size / modules;
-    const padding = moduleSize * 2;
-    const innerSize = size - (padding * 2);
-    const innerModuleSize = innerSize / modules;
-    
-    const pattern: boolean[][] = Array(modules).fill(null).map(() => Array(modules).fill(false));
-    for (let i = 0; i < modules; i++) {
-      for (let j = 0; j < modules; j++) {
-        const charCode = text.charCodeAt((i * modules + j) % text.length);
-        pattern[i][j] = (charCode * (i + 1) * (j + 1)) % 2 === 0;
-      }
-    }
-    
-    const addMarker = (row, col) => {
-      for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-          if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
-            pattern[row + i][col + j] = true;
-          } else {
-            pattern[row + i][col + j] = false;
-          }
-        }
-      }
-    };
-    
-    addMarker(0, 0);
-    addMarker(0, modules - 7);
-    addMarker(modules - 7, 0);
-    
-    let svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">`;
-    
-    // Add gradient definitions
-    svg += `<defs>
-      <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#f0f9ff;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#e0f2fe;stop-opacity:1" />
-      </linearGradient>
-      <filter id="shadow">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
-      </filter>
-    </defs>`;
-    
-    // Background with gradient
-    svg += `<rect width="${size}" height="${size}" fill="url(#bgGradient)" rx="16"/>`;
-    
-    // White inner background
-    svg += `<rect x="${padding}" y="${padding}" width="${innerSize}" height="${innerSize}" fill="white" rx="8" filter="url(#shadow)"/>`;
-    
-    // QR pattern
-    for (let i = 0; i < modules; i++) {
-      for (let j = 0; j < modules; j++) {
-        if (pattern[i][j]) {
-          svg += `<rect x="${padding + j * innerModuleSize}" y="${padding + i * innerModuleSize}" width="${innerModuleSize}" height="${innerModuleSize}" fill="#1e293b" rx="1"/>`;
-        }
-      }
-    }
-    
-    svg += '</svg>';
-    return svg;
+    return (
+      <QRCodeSVG
+        value={text}
+        size={256}
+        level="M"
+        bgColor="#ffffff"
+        fgColor="#1e293b"
+        includeMargin={true}
+        style={{
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+        }}
+      />
+    );
   };
 
   // Helper functions for patient information
@@ -202,14 +160,14 @@ const ReferralDashboard = () => {
 
   const formatSubmissionDisplay = (referral: any): string => {
     if (!referral.referral_submitted) return '';
-    
+
     const initials = formatPatientInitials(
-      referral.patient_fname, 
-      referral.patient_mname, 
+      referral.patient_fname,
+      referral.patient_mname,
       referral.patient_lname
     );
     const year = formatSubmissionYear(referral.referral_submitted_date);
-    
+
     if (initials && year) {
       return `${initials} (${year})`;
     } else if (initials) {
@@ -222,11 +180,11 @@ const ReferralDashboard = () => {
 
   // Transform API referrals to component format
   const transformReferral = (apiReferral: ApiReferral): Referral => {
-    const referralUrl = `${window.location.origin}/qr-scan?id=${apiReferral.referral_slug}`;
+    const referralUrl = `${BASE_URL}/r/${apiReferral.referral_batch_prefix}-${apiReferral.referral_slug}/`;
     const submissionDisplay = formatSubmissionDisplay(apiReferral);
     const baseStatus = apiReferral.referral_status || (apiReferral.referral_submitted ? 'Submitted' : apiReferral.referral_scanned ? 'Scanned' : 'Active');
     const statusWithSubmission = submissionDisplay ? `${baseStatus} - ${submissionDisplay}` : baseStatus;
-    
+
     return {
       id: apiReferral.referral_slug,
       url: referralUrl,
@@ -251,7 +209,7 @@ const ReferralDashboard = () => {
     const inboundFacility = facilities.find(f => f.id === batch.referral_inbound_facility_id);
     const batchReferrals = referralsByBatch[batch.referral_batch_prefix] || [];
     const usedReferrals = batchReferrals.filter(r => r.status !== 'Active').length;
-    
+
     return {
       ...batch,
       id: batch.referral_batch_id,
@@ -271,10 +229,10 @@ const ReferralDashboard = () => {
       alert('Please select both outbound and inbound facilities');
       return;
     }
-    
+
     const outboundFacility = facilities.find(f => f.id === batchForm.outboundFacility);
     const inboundFacility = facilities.find(f => f.id === batchForm.inboundFacility);
-    
+
     if (!outboundFacility || !inboundFacility) {
       alert('Invalid facility selection');
       return;
@@ -305,15 +263,15 @@ const ReferralDashboard = () => {
   };
 
   // Print from preview
-  const printFromPreview = () => {
+  const printFromPreview = (qrPrintData: any) => {
     const printWindow = window.open('', 'PRINT', 'height=600,width=800');
-    const htmlContent = generatePrintHTML(previewBatch);
-    
+    const htmlContent = generatePrintHTML(previewBatch, qrPrintData);
+
     printWindow?.document.write(htmlContent);
     printWindow?.document.close();
-    
+
     printWindow?.focus();
-    
+
     // Wait for content to load, then print
     if (printWindow) {
       printWindow.onload = () => {
@@ -326,20 +284,48 @@ const ReferralDashboard = () => {
   };
 
   // Generate HTML for printing
-  const generatePrintHTML = (batch) => {
-    if (!batch?.outboundFacility || !batch?.inboundFacility || !batch?.referrals) {
+  const generatePrintHTML = (batch: any, qrPrintData: any) => {
+    // Get QR print data for the batch
+    const batchPrefix = batch?.referral_batch_prefix;
+    if (!batchPrefix) {
       return '<html><body><p>Invalid batch data</p></body></html>';
     }
-    
+
+    // Generate QR codes for printing using the API data structure
+    const generateQRCodeSVG = (qrCodeUrl: string) => {
+      // Create QR code SVG using qrcode.react
+      const QRCode = require('qrcode.react').QRCodeSVG;
+      const React = require('react');
+      const ReactDOMServer = require('react-dom/server');
+      
+      const qrCodeElement = React.createElement(QRCode, {
+        value: qrCodeUrl,
+        size: 200,
+        level: "M",
+        bgColor: "#ffffff",
+        fgColor: "#1e293b",
+        includeMargin: true
+      });
+      
+      return ReactDOMServer.renderToString(qrCodeElement);
+    };
+
+    // Extract data from QR print data
+    const referrals = qrPrintData?.referrals || [];
+    const totalReferrals = qrPrintData?.total_referrals || 0;
+    const outboundFacilityName = qrPrintData?.outbound_facility_name || batch.outboundFacility?.name;
+    const inboundFacilityName = qrPrintData?.inbound_facility_name || batch.inboundFacility?.name;
+    const batchSize = qrPrintData?.batch_size || 0;
+
     return `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QR Codes - ${batch.referral_batch_prefix}</title>
+          <title>QR Codes - ${batchPrefix}</title>
           <style>
             @page {
               size: A4;
-              margin: 0.5in;
+              margin: 0.25in;
             }
             * {
               box-sizing: border-box;
@@ -352,38 +338,38 @@ const ReferralDashboard = () => {
             }
             .header {
               text-align: center;
-              margin-bottom: 30px;
-              padding-bottom: 20px;
+              margin-bottom: 20px;
+              padding-bottom: 10px;
               border-bottom: 2px solid #333;
             }
             .header h1 {
               margin: 0 0 10px 0;
-              font-size: 28px;
+              font-size: 24px;
               color: #333;
             }
-            .header p {
-              margin: 5px 0;
+            .header-info {
               color: #666;
               font-size: 14px;
+              line-height: 1.4;
             }
             .qr-grid {
               display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 20px;
+              grid-template-columns: repeat(6, 1fr);
+              gap: 8px;
               page-break-inside: avoid;
             }
             .qr-item {
-              border: 2px solid #ddd;
-              border-radius: 8px;
-              padding: 20px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              padding: 8px;
               text-align: center;
               page-break-inside: avoid;
               background: #fff;
             }
             .qr-code {
-              width: 150px;
-              height: 150px;
-              margin: 0 auto 15px;
+              width: 80px;
+              height: 80px;
+              margin: 0 auto;
               display: flex;
               align-items: center;
               justify-content: center;
@@ -392,41 +378,26 @@ const ReferralDashboard = () => {
               width: 100% !important;
               height: 100% !important;
             }
-            .qr-id {
-              font-size: 12px;
-              font-family: 'Courier New', monospace;
-              color: #333;
-              margin-bottom: 10px;
-              font-weight: bold;
-              word-break: break-all;
-            }
-            .facility-info {
-              font-size: 11px;
-              color: #555;
-              margin-top: 10px;
-              line-height: 1.5;
-            }
-            .facility-info strong {
-              color: #333;
+            .qr-info {
+              font-size: 10px;
+              color: #666;
+              margin-top: 4px;
             }
             .footer {
-              margin-top: 40px;
               text-align: center;
+              margin-top: 20px;
+              padding-top: 10px;
+              border-top: 1px solid #ddd;
               font-size: 12px;
               color: #999;
-              padding-top: 20px;
-              border-top: 1px solid #ddd;
             }
             @media print {
               body {
                 background: white;
               }
               .qr-item {
-                border: 2px solid #333;
+                border: 1px solid #333;
                 break-inside: avoid;
-              }
-              .header {
-                break-after: avoid;
               }
             }
           </style>
@@ -434,25 +405,36 @@ const ReferralDashboard = () => {
         <body>
           <div class="header">
             <h1>Referral QR Codes</h1>
-            <p><strong>Batch Prefix:</strong> ${batch.referral_batch_prefix}</p>
-            ${batch.description ? `<p><strong>Description:</strong> ${batch.description}</p>` : ''}
-            <p><strong>Route:</strong> ${batch.outboundFacility.name} → ${batch.inboundFacility.name}</p>
-            <p><strong>Generated:</strong> ${batch.createdAt ? new Date(batch.createdAt).toLocaleString() : 'Unknown'}</p>
+            <div class="header-info">
+              <p><strong>Batch ID:</strong> ${batch.id}</p>
+              <p><strong>Batch Prefix:</strong> ${batchPrefix}</p>
+              ${batch.description ? `<p><strong>Description:</strong> ${batch.description}</p>` : ''}
+              <p><strong>Route:</strong> ${outboundFacilityName || 'Unknown'} → ${inboundFacilityName || 'Unknown'}</p>
+              <p><strong>Generated:</strong> ${batch.createdAt ? new Date(batch.createdAt).toLocaleString() : 'Unknown'}</p>
+              <p><strong>Total QR Codes:</strong> ${totalReferrals}</p>
+              <p><strong>Batch Size:</strong> ${batchSize}</p>
+            </div>
           </div>
+          
           <div class="qr-grid">
-            ${batch.referrals.map(referral => `
-              <div class="qr-item">
-                <div class="qr-code">${referral.qrCode}</div>
-                <div class="qr-id">${referral.id}</div>
-                <div class="facility-info">
-                  <strong>From:</strong> ${batch.outboundFacility.name}<br>
-                  <strong>To:</strong> ${batch.inboundFacility.name}
+            ${referrals.map((referral: any) => {
+              const qrCodeString = generateQRCodeSVG(referral.qr_code_url);
+              return `
+                <div class="qr-item">
+                  <div class="qr-code">${qrCodeString}</div>
+                  <div class="qr-info">
+                    <div>ID: ${referral.referral_slug}</div>
+                    <div>Status: ${referral.status || 'Pending'}</div>
+                    ${referral.scanned ? '<div style="color: #059669;">✓ Scanned</div>' : ''}
+                    ${referral.submitted ? '<div style="color: #2563eb;">✓ Submitted</div>' : ''}
+                  </div>
                 </div>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
+          
           <div class="footer">
-            <p>Generated on ${new Date().toLocaleString()} | Total QR Codes: ${batch.referrals.length}</p>
+            <p>Generated on ${new Date().toLocaleString()} | Total QR Codes: ${totalReferrals} | Batch Size: ${batchSize}</p>
           </div>
         </body>
       </html>
@@ -467,11 +449,29 @@ const ReferralDashboard = () => {
   };
 
   // Download QR code as image
-  const downloadQRCode = (qrCode, id) => {
+  const downloadQRCode = (qrCodeElement, id) => {
+    // Convert React element to SVG string
+    const svgString = qrCodeElement.props.value;
+
+    // Create a new QR code SVG for download
+    const downloadQR = (
+      <QRCodeSVG
+        value={svgString}
+        size={256}
+        level="M"
+        bgColor="#ffffff"
+        fgColor="#1e293b"
+        includeMargin={true}
+      />
+    );
+
+    // Convert React element to string
+    const svgStringForDownload = ReactDOMServer.renderToString(downloadQR);
+
     // Create a Blob from the SVG
-    const blob = new Blob([qrCode], { type: 'image/svg+xml' });
+    const blob = new Blob([svgStringForDownload], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
-    
+
     // Create download link
     const a = document.createElement('a');
     a.href = url;
@@ -479,7 +479,7 @@ const ReferralDashboard = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
+
     // Cleanup
     URL.revokeObjectURL(url);
   };
@@ -487,7 +487,7 @@ const ReferralDashboard = () => {
   // Delete batch - Updated with API call using SweetAlert2
   const deleteBatch = async (batchId: string) => {
     try {
-      
+
       // Find the batch to get its name for the confirmation dialog
       const batch = batches.find(b => b.id === batchId);
       const batchName = batch?.referral_batch_prefix || 'this batch';
@@ -501,7 +501,7 @@ const ReferralDashboard = () => {
         confirmButtonText: 'Yes, delete it!',
         cancelButtonText: 'Cancel',
       });
-      
+
       if (!result.isConfirmed) {
         return;
       }
@@ -541,7 +541,7 @@ const ReferralDashboard = () => {
           });
         }
       });
-      
+
       // Clear selected batch if it was deleted
       if (selectedBatchId === batchId) {
         setSelectedBatchId(null);
@@ -552,7 +552,7 @@ const ReferralDashboard = () => {
     } catch (error) {
       // Close loading dialog and show error
       Swal.close();
-      
+
       // Error is already handled by the mutation hook, but we can show additional feedback
       console.error('Failed to delete batch:', error);
     }
@@ -582,7 +582,7 @@ const ReferralDashboard = () => {
                 </div>
                 <Package className="w-10 h-10 opacity-80" />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex-1 min-w-[160px] text-white">
                 <div>
                   <p className="text-xs font-medium opacity-90 whitespace-nowrap">Total Referrals</p>
@@ -590,7 +590,7 @@ const ReferralDashboard = () => {
                 </div>
                 <QrCode className="w-10 h-10 opacity-80" />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex-1 min-w-[160px] text-white">
                 <div>
                   <p className="text-xs font-medium opacity-90 whitespace-nowrap">Active Facilities</p>
@@ -598,7 +598,7 @@ const ReferralDashboard = () => {
                 </div>
                 <Building className="w-10 h-10 opacity-80" />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex-1 min-w-[160px] text-white">
                 <div>
                   <p className="text-xs font-medium opacity-90 whitespace-nowrap">Today's Batches</p>
@@ -620,116 +620,15 @@ const ReferralDashboard = () => {
         />
 
         {/* Print Preview Modal */}
-        {showPrintPreview && previewBatch && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full h-[90vh] overflow-hidden flex flex-col">
-              <div className="p-6 bg-gradient-to-r from-green-500 to-blue-600 text-white flex items-center justify-between flex-shrink-0">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Eye className="w-6 h-6" />
-                  Print Preview - {previewBatch.id}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowPrintPreview(false);
-                    setPreviewBatch(null);
-                  }}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-hidden bg-gray-100 p-4">
-                <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
-                  <div className="bg-white shadow-xl mx-auto rounded-lg max-w-5xl">
-                    <div className="sticky top-0 bg-white z-10 px-12 pt-12 pb-8 rounded-t-lg">
-                      <div className="text-center pb-8 border-b-2 border-gray-200">
-                        <h1 className="text-3xl font-bold mb-4 text-gray-800">Referral QR Codes</h1>
-                        <div className="space-y-2 text-gray-600">
-                          <p className="text-lg"><strong className="font-semibold">Batch ID:</strong> {previewBatch.id}</p>
-                          {previewBatch.description && (
-                            <p className="text-lg"><strong className="font-semibold">Description:</strong> {previewBatch.description}</p>
-                          )}
-                          <p className="text-lg"><strong className="font-semibold">Route:</strong> {previewBatch.outboundFacility?.name || 'Unknown'} → {previewBatch.inboundFacility?.name || 'Unknown'}</p>
-                          <p className="text-lg"><strong className="font-semibold">Generated:</strong> {previewBatch.createdAt ? new Date(previewBatch.createdAt).toLocaleString() : 'Unknown'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="px-12 py-8">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {(previewBatch.referrals || []).map(referral => (
-                          <div key={referral.id} className="group relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                            <div className="relative bg-white border-2 border-gray-200 p-6 text-center rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
-                              <div className="w-48 h-48 mx-auto mb-4 bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl">
-                                <div 
-                                  className="w-full h-full [&>svg]:w-full [&>svg]:h-full"
-                                  dangerouslySetInnerHTML={{ __html: referral.qrCode }}
-                                />
-                              </div>
-                              <p className="text-sm font-mono font-bold text-gray-800 break-all mb-3 bg-gray-100 px-3 py-2 rounded-lg">{referral.id}</p>
-                              <div className="text-sm text-gray-600 space-y-1">
-                                <p><strong className="font-semibold text-blue-600">From:</strong> {previewBatch.outboundFacility?.name || 'Unknown'}</p>
-                                <p><strong className="font-semibold text-purple-600">To:</strong> {previewBatch.inboundFacility?.name || 'Unknown'}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="sticky bottom-0 bg-white px-12 pt-8 pb-12 rounded-b-lg">
-                      <div className="text-center pt-8 border-t border-gray-200">
-                        <p className="text-gray-500">
-                          Generated on {new Date().toLocaleString()} | Total QR Codes: {previewBatch.referrals?.length || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-6 border-t border-gray-200 flex justify-between bg-gray-50 flex-shrink-0">
-                <button
-                  onClick={() => {
-                    setShowPrintPreview(false);
-                    setPreviewBatch(null);
-                  }}
-                  className="px-6 py-3 text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg transition-all font-medium"
-                >
-                  Close
-                </button>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([generatePrintHTML(previewBatch)], { type: 'text/html' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `QR-Codes-${previewBatch.id}.html`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all flex items-center gap-2"
-                  >
-                    <Download className="w-5 h-5" />
-                    Download HTML
-                  </button>
-                  <button
-                    onClick={printFromPreview}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transform hover:scale-105 transition-all flex items-center gap-2"
-                  >
-                    <Printer className="w-5 h-5" />
-                    Print QR Codes
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <PrintPreviewModal
+          isOpen={showPrintPreview}
+          onClose={() => {
+            setShowPrintPreview(false);
+            setPreviewBatch(null);
+          }}
+          onPrint={printFromPreview}
+          batch={previewBatch}
+        />
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
@@ -738,11 +637,10 @@ const ReferralDashboard = () => {
               <div className="flex">
                 <button
                   onClick={() => setActiveTab('batches')}
-                  className={`px-6 py-4 text-sm font-semibold transition-all relative ${
-                    activeTab === 'batches'
+                  className={`px-6 py-4 text-sm font-semibold transition-all relative ${activeTab === 'batches'
                       ? 'text-blue-600'
                       : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
@@ -754,11 +652,10 @@ const ReferralDashboard = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('referrals')}
-                  className={`px-6 py-4 text-sm font-semibold transition-all relative ${
-                    activeTab === 'referrals'
+                  className={`px-6 py-4 text-sm font-semibold transition-all relative ${activeTab === 'referrals'
                       ? 'text-blue-600'
                       : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
@@ -791,6 +688,7 @@ const ReferralDashboard = () => {
               deleteBatch={deleteBatch}
               setActiveTab={setActiveTab}
               setSelectedBatchId={setSelectedBatchId}
+              setSelectedBatchPrefix={setSelectedBatchPrefix}
               currentPage={batchPage}
               pageSize={batchPageSize}
               onPageChange={setBatchPage}
@@ -803,8 +701,8 @@ const ReferralDashboard = () => {
           {activeTab === 'referrals' && (
             <ReferralList
               batches={batches}
-              selectedBatchId={selectedBatchId}
-              setSelectedBatchId={setSelectedBatchId}
+              selectedBatchPrefix={selectedBatchPrefix}
+              setSelectedBatchPrefix={setSelectedBatchPrefix}
               copiedId={copiedId}
               copyToClipboard={copyToClipboard}
               downloadQRCode={downloadQRCode}
@@ -815,6 +713,7 @@ const ReferralDashboard = () => {
               onPageChange={setReferralPage}
               totalItems={pagination.total_count}
               onPageSizeChange={handleReferralPageSizeChange}
+              isLoading={isReferralsLoading}
             />
           )}
         </div>
