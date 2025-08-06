@@ -184,7 +184,7 @@ export const Dashboard = () => {
                 </thead>
                 <tbody>
                   {SAMPLE_REFERRALS.slice(0, 5).map((referral) => (
-                    <tr key={referral.id} className="border-b hover:bg-gray-50">
+                    <tr key={referral.referral_id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">{referral.patientName}</td>
                       <td className="py-3 px-4">{referral.referredBy}</td>
                       <td className="py-3 px-4">{referral.practice}</td>
