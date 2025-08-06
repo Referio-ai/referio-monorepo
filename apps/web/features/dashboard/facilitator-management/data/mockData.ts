@@ -50,6 +50,7 @@ export const mockFacilitators: Facilitator[] = [
     facilitator_email: 'john.doe@downtownmedical.com',
     facilitator_phone_number: '+1-555-0123',
     facilitator_status: 'active',
+    password: 'password',
   },
   {
     facilitator_id: '2',
@@ -61,6 +62,7 @@ export const mockFacilitators: Facilitator[] = [
     facilitator_email: 'jane.smith@downtownmedical.com',
     facilitator_phone_number: '+1-555-0124',
     facilitator_status: 'active',
+    password: 'password',
   },
   {
     facilitator_id: '3',
@@ -72,5 +74,6 @@ export const mockFacilitators: Facilitator[] = [
     facilitator_email: 'mike.johnson@westsideclinic.com',
     facilitator_phone_number: '+1-555-0125',
     facilitator_status: 'inactive',
+    password: 'password',
   },
 ]; 
