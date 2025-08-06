@@ -12,7 +12,8 @@ export type ReferralDocument = {
 }
 
 export interface Referral {
-  id: number;
+  referral_id: string;
+  patientId?: string; // Add patientId for API integration
   patientName: string;
   age: number;
   dateOfBirth: string;
@@ -29,8 +30,12 @@ export interface Referral {
   hasInsurance: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
+  appointmentType?: string;
   completedDate?: string;
   documents: ReferralDocument[];
+  // Status details for archived referrals
+  referral_status_type?: string; // The specific status type (Scheduled, Declined Services, etc.)
+  referral_status_notes?: string; // Notes about the status
 }
 
 export interface NewReferralFormData {
@@ -77,8 +82,6 @@ export const PRIORITY_LABELS = {
 export const SORT_OPTIONS = [
   { value: 'date-newest', label: 'Date (Newest)' },
   { value: 'date-oldest', label: 'Date (Oldest)' },
-  { value: 'patient-name', label: 'Patient Name' },
-  { value: 'priority', label: 'Priority' },
 ] as const;
 
 export const SEARCH_FILTER_OPTIONS = [
@@ -105,7 +108,7 @@ export const DEFAULT_FORM_DATA: NewReferralFormData = {
 // Sample data (in a real app, this would come from an API)
 export const SAMPLE_REFERRALS: Referral[] = [
   {
-    id: 1,
+    referral_id: "1",
     patientName: "Sarah Johnson",
     age: 32,
     dateOfBirth: "January 15, 1993",
@@ -123,7 +126,7 @@ export const SAMPLE_REFERRALS: Referral[] = [
     documents: []
   },
   {
-    id: 2,
+    referral_id: "2",
     patientName: "Robert Williams",
     age: 45,
     dateOfBirth: "March 8, 1980",
@@ -141,7 +144,7 @@ export const SAMPLE_REFERRALS: Referral[] = [
     documents: []
   },
   {
-    id: 3,
+    referral_id: "3",
     patientName: "Emily Rodriguez",
     age: 28,
     dateOfBirth: "September 12, 1997",
@@ -158,10 +161,11 @@ export const SAMPLE_REFERRALS: Referral[] = [
     hasInsurance: true,
     appointmentDate: "April 29, 2025",
     appointmentTime: "2:30 PM",
+    appointmentType: "Consultation",
     documents: []
   },
   {
-    id: 4,
+    referral_id: "4",
     patientName: "David Thompson",
     age: 52,
     dateOfBirth: "November 5, 1972",
@@ -180,7 +184,7 @@ export const SAMPLE_REFERRALS: Referral[] = [
     documents: []
   },
   {
-    id: 5,
+    referral_id: "5",
     patientName: "Jessica Martinez",
     age: 19,
     dateOfBirth: "April 23, 2006",

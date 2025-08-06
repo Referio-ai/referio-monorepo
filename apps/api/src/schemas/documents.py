@@ -10,8 +10,9 @@ class Document(BaseModel):
     source: str
     patient_id: UUID
     referral_id: UUID
-    type: str
+    type: Optional[str] = None
     document_category: Optional[str] = None
+    referrals_messages_id: Optional[str] = None
     table_name: ClassVar[str] = "documents"
 
 
@@ -21,6 +22,7 @@ class DocumentCreate(BaseModel):
     referral_id: UUID
     type: str
     document_category: Optional[str] = None
+    referrals_messages_id: Optional[str] = None
 
 
 class DocumentUpdate(BaseModel):
@@ -29,6 +31,7 @@ class DocumentUpdate(BaseModel):
     referral_id: Optional[UUID] = None
     type: Optional[str] = None
     document_category: Optional[str] = None #referral_form, insurance_card, xray, other_docs
+    referrals_messages_id: Optional[str] = None
 
 
 class DocumentSearchResults(BaseModel):

@@ -6,11 +6,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, totalStep
   const progressPercentage = currentStep === totalSteps ? 100 : ((currentStep - 1) / totalSteps) * 100;
 
   let stepDescription = "";
-  if (currentStep === 1) stepDescription = ": Referral Form(s)";
+  if (currentStep === 1) stepDescription = ": Referral Form";
   else if (currentStep === 2) stepDescription = ": Insurance Card(s)";
   else if (currentStep === 3) stepDescription = ": X-Ray(s)";
   else if (currentStep === 4) stepDescription = ": Other Document(s)";
-  else if (currentStep === 5) stepDescription = ": Review & Submit";
+  else if (currentStep === 5) stepDescription = ": Your Referral is being processed";
 
   return (
     <div className="px-6 pt-4">

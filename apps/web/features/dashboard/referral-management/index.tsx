@@ -564,6 +564,156 @@ const ReferralDashboard = () => {
     alert('Referral deletion will be implemented with API integration');
   };
 
+  // Print single QR code for a referral
+  const printSingleQRCode = (referral: Referral, batchPrefix: string) => {
+    const generateSingleQRHTML = (referral: Referral, batchPrefix: string) => {
+      const generateQRCodeSVG = (qrCodeUrl: string) => {
+        return ReactDOMServer.renderToString(
+          <QRCodeSVG
+            value={qrCodeUrl}
+            size={200}
+            level="M"
+            bgColor="#ffffff"
+            fgColor="#1e293b"
+            includeMargin={true}
+          />
+        );
+      };
+
+      const qrCodeUrl = `${BASE_URL}/r/${batchPrefix}-${referral.id}/`;
+      const qrCodeSVG = generateQRCodeSVG(qrCodeUrl);
+
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Referral QR Code - ${referral.id}</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 20px; }
+              .qr-container { page-break-inside: avoid; }
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: #f8fafc;
+            }
+            .qr-container {
+              max-width: 400px;
+              margin: 0 auto;
+              background: white;
+              border-radius: 12px;
+              padding: 30px;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              text-align: center;
+            }
+            .qr-code {
+              margin: 20px 0;
+              display: flex;
+              justify-content: center;
+            }
+            .qr-code svg {
+              border: 2px solid #e2e8f0;
+              border-radius: 8px;
+              background: white;
+            }
+            .referral-info {
+              margin-top: 20px;
+              padding: 15px;
+              background: #f8fafc;
+              border-radius: 8px;
+              border-left: 4px solid #3b82f6;
+            }
+            .referral-id {
+              font-size: 18px;
+              font-weight: 600;
+              color: #1e293b;
+              margin-bottom: 8px;
+              font-family: 'Courier New', monospace;
+            }
+            .batch-id {
+              font-size: 14px;
+              color: #64748b;
+              margin-bottom: 10px;
+            }
+            .url-info {
+              font-size: 12px;
+              color: #64748b;
+              word-break: break-all;
+              margin-top: 10px;
+              padding: 8px;
+              background: #f1f5f9;
+              border-radius: 4px;
+            }
+            .print-header {
+              text-align: center;
+              margin-bottom: 20px;
+              padding-bottom: 15px;
+              border-bottom: 2px solid #e2e8f0;
+            }
+            .print-title {
+              font-size: 24px;
+              font-weight: 700;
+              color: #1e293b;
+              margin-bottom: 5px;
+            }
+            .print-subtitle {
+              font-size: 14px;
+              color: #64748b;
+            }
+            .timestamp {
+              font-size: 12px;
+              color: #94a3b8;
+              margin-top: 15px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <div class="print-header">
+              <div class="print-title">Referral QR Code</div>
+              <div class="print-subtitle">Scan to view referral details</div>
+            </div>
+            
+            <div class="qr-code">
+              ${qrCodeSVG}
+            </div>
+            
+            <div class="referral-info">
+              <div class="referral-id">${referral.id}</div>
+              <div class="batch-id">Batch: ${batchPrefix}</div>
+              <div class="url-info">
+                <strong>URL:</strong> ${qrCodeUrl}
+              </div>
+            </div>
+            
+            <div class="timestamp">
+              Generated on ${new Date().toLocaleString()}
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    };
+
+    const printHTML = generateSingleQRHTML(referral, batchPrefix);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+    }
+  };
+
   const totalReferrals = batches.reduce((sum, batch) => sum + (batch.totalReferrals || 0), 0);
   const todaysBatches = batches.filter(b => b.createdAt && new Date(b.createdAt).toDateString() === new Date().toDateString());
 
@@ -708,6 +858,7 @@ const ReferralDashboard = () => {
               downloadQRCode={downloadQRCode}
               deleteReferral={deleteReferral}
               showPrintPreviewModal={showPrintPreviewModal}
+              printSingleQRCode={printSingleQRCode}
               currentPage={referralPage}
               pageSize={referralPageSize}
               onPageChange={setReferralPage}

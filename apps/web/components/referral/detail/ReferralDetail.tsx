@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { ReferralDetailSkeleton } from '../skeletons/ReferralSkeletons';
 import { PatientInfoTab } from './PatientInfoTab';
 import { CommunicationTab } from './CommunicationTab';
 import { ReportsTab } from './ReportsTab';
+import { UpdateStatusModal } from './UpdateStatusModal';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 
 interface ReferralDetailProps {
@@ -21,7 +22,14 @@ interface ReferralDetailProps {
   onSendMessage?: (message: string) => void;
   onUploadFiles?: (files: File[]) => void;
   onUpdateStatus?: () => void;
+  onStatusUpdate?: () => void; // Callback to refresh referral data after status update
+  onReferralRefresh?: (referralId: string) => void; // Callback to refresh individual referral data
+  onReferralDataUpdate?: (updatedReferral: Referral) => void; // Callback to update referral data directly
   isLoading?: boolean;
+  // Add new props for refresh functionality
+  activeTab?: string;
+  searchQuery?: string;
+  sortBy?: string;
 }
 
 export const ReferralDetail: React.FC<ReferralDetailProps> = ({
@@ -32,15 +40,44 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   onSendMessage,
   onUploadFiles,
   onUpdateStatus,
-  isLoading = false
+  onStatusUpdate,
+  onReferralRefresh,
+  onReferralDataUpdate,
+  isLoading = false,
+  activeTab,
+  searchQuery,
+  sortBy
 }) => {
   const [activeDetailTab, setActiveDetailTab] = useState('info');
+  const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
+  const [currentReferral, setCurrentReferral] = useState<Referral>(referral);
+
+  // Update current referral when prop changes
+  useEffect(() => {
+    setCurrentReferral(referral);
+  }, [referral]);
+
+  // Reset active detail tab when referral changes
+  useEffect(() => {
+    setActiveDetailTab('info');
+  }, [currentReferral?.referral_id]);
+
+  // Handle referral data update from modal
+  const handleReferralDataUpdate = (updatedReferral: Referral) => {
+    setCurrentReferral(updatedReferral);
+    if (onReferralDataUpdate) {
+      onReferralDataUpdate(updatedReferral);
+    }
+  };
+
+  console.log(currentReferral,'42323232----');
 
   if (isLoading) {
     return <ReferralDetailSkeleton />;
   }
 
-  if (!referral) return null;
+  if (!currentReferral) return null;
+  
 
   const formatDate = (dateString: string) => {
     try {
@@ -90,62 +127,98 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{referral.patientName}</h1>
-            <div className="flex items-center text-gray-600 mt-1">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>{formatDate(referral.dateOfBirth)}</span>
-            </div>
-            <p className="text-blue-600 mt-2">
-              Referred by{' '}
-              <span className="text-blue-700 font-medium">{referral.practice}</span>
-              {' '}| {referral.referredBy} • {formatDateTime(referral.dateReceived)}
-            </p>
-          </div>
-          <Button 
-            onClick={onUpdateStatus}
-            className="bg-gray-900 hover:bg-gray-800 text-white"
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Referral Details</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Referral ID: {currentReferral.referral_id}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge 
+            variant={currentReferral.status === 'active' ? 'default' : 'secondary'}
+            className="text-xs"
           >
-            <Edit className="mr-2 h-4 w-4" />
+            {STATUS_LABELS[currentReferral.status] || currentReferral.status}
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsUpdateStatusModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Edit className="h-4 w-4" />
             Update Status
           </Button>
         </div>
+      </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">Current Status:</span>
-            <Badge className="bg-gray-900 text-white">
-              {STATUS_LABELS[referral.status]}
-            </Badge>
-          </div>
-          <div className="text-sm text-gray-500">
-            <span className="font-medium">Last Update:</span> Initial referral received from Dr. Chen • {formatDateTime(referral.dateReceived)} ({formatRelativeTime(referral.dateReceived)})
+      {/* Status and Action Buttons */}
+      <div className="bg-white rounded-lg border p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 justify-between flex-1">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Status</p>
+              <p className="text-sm text-gray-600">{STATUS_LABELS[currentReferral.status] || currentReferral.status}</p>
+              {/* Show status type and notes for archived referrals */}
+              {currentReferral.status === 'archive' && currentReferral.referral_status_type && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-700">Reason for Archiving</p>
+                  <p className="text-xs text-gray-600">{currentReferral.referral_status_type}</p>
+                  {currentReferral.referral_status_notes && (
+                    <p className="text-xs text-gray-500 mt-1 italic">"{currentReferral.referral_status_notes}"</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Received</p>
+              <p className="text-sm text-gray-600">{formatDateTime(currentReferral.dateReceived)}</p>
+            </div>
+            {/* Show appointment information if referral has appointment details */}
+            {(currentReferral.appointmentDate || currentReferral.appointmentType) && (
+              <>
+                {currentReferral.appointmentDate && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Appointment Date</p>
+                    <p className="text-sm text-gray-600">{formatDate(currentReferral.appointmentDate)}</p>
+                  </div>
+                )}
+                {currentReferral.appointmentType && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Appointment Type</p>
+                    <p className="text-sm text-gray-600">{currentReferral.appointmentType}</p>
+                  </div>
+                )}
+                {currentReferral.appointmentTime && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Appointment Time</p>
+                    <p className="text-sm text-gray-600">{formatTimeOnly(currentReferral.appointmentTime)}</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="info" className="flex-1 flex flex-col">
+      <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="flex-1 flex flex-col">
         <TabsList className="mb-6 bg-gray-50">
           <TabsTrigger 
             value="info" 
-            onClick={() => setActiveDetailTab('info')} 
             className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
           >
             Patient Info
           </TabsTrigger>
           <TabsTrigger 
             value="communication" 
-            onClick={() => setActiveDetailTab('communication')} 
             className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm relative"
           >
             Communication
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            {/* <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div> */}
           </TabsTrigger>
           <TabsTrigger 
             value="reports" 
-            onClick={() => setActiveDetailTab('reports')} 
             className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
           >
             Reports
@@ -153,14 +226,15 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
         </TabsList>
 
         <TabsContent value="info" className="flex-1">
-          <PatientInfoTab referral={referral} onUploadFiles={onUploadFiles} />
+          <PatientInfoTab referral={currentReferral} onUploadFiles={onUploadFiles} />
         </TabsContent>
 
         <TabsContent value="communication" className="flex-1">
           <CommunicationTab 
-            referral={referral} 
+            referral={currentReferral} 
             onSendMessage={onSendMessage} 
-            onUploadFiles={onUploadFiles} 
+            onUploadFiles={onUploadFiles}
+            isActive={activeDetailTab === 'communication'}
           />
         </TabsContent>
 
@@ -168,6 +242,16 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
           <ReportsTab />
         </TabsContent>
       </Tabs>
+
+      {/* Update Status Modal */}
+      <UpdateStatusModal
+        isOpen={isUpdateStatusModalOpen}
+        onClose={() => setIsUpdateStatusModalOpen(false)}
+        referral={currentReferral}
+        onStatusUpdate={onStatusUpdate}
+        onReferralRefresh={onReferralRefresh}
+        onReferralDataUpdate={handleReferralDataUpdate}
+      />
     </div>
   );
 };

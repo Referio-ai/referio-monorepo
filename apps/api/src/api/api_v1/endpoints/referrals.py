@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 import json
 
-from fastapi import APIRouter, HTTPException, UploadFile, Form, Request
+from fastapi import APIRouter, HTTPException, UploadFile, Form, Request, Query
 from src.schemas.referrals import (
     Referral, 
     ReferralCreate,
@@ -27,7 +27,8 @@ from src.utils.reducto.reducto_utils import (
     get_reducto_job_status
 )
 from src.config.infisical import REDUCTO_WEBHOOK_SECRET
-
+from src.services.referral_message_service import ReferralMessageService
+    
 router = APIRouter()
 
 
@@ -47,14 +48,14 @@ async def get_referrals(page: int = 1, page_size: int = 10, search: str = "") ->
         )
 
 
-@router.get("/{referral_id}", status_code=200)
-async def get_referral(referral_id: str) -> Referral:
-    """Get a specific referral by ID"""
-    db = await get_supabase_client()
-    referral = await referrals_crud.get(db=db, id=referral_id)
-    if not referral:
-        raise HTTPException(status_code=404, detail="Referral not found")
-    return referral
+# @router.get("/{referral_id}", status_code=200)
+# async def get_referral(referral_id: str) -> Referral:
+#     """Get a specific referral by ID"""
+#     db = await get_supabase_client()
+#     referral = await referrals_crud.get(db=db, id=referral_id)
+#     if not referral:
+#         raise HTTPException(status_code=404, detail="Referral not found")
+#     return referral
 
 
 @router.post("/", status_code=201)
@@ -72,11 +73,57 @@ async def update_referral(referral_id: str, referral: ReferralUpdate) -> Referra
     return await referrals_crud.update(db=db, obj_in=referral)
 
 @router.put("/status/{referral_id}", status_code=200)
-async def update_referral_status(referral_id: str, referral: ReferralStatusUpdate) -> Referral:
-    """Update a referral"""
-    db = await get_supabase_client()
-    referral.id = referral_id
-    return await referrals_crud.update_status(db=db, obj_in=referral)
+async def update_referral_status(referral_id: str, request: Request) -> dict:
+    """Update referral status with status type and notes"""
+    try:
+        db = await get_supabase_client()
+        # get the payload 
+        payload = await request.json()
+
+        print(payload, 'payload')
+
+        # Extract appointment fields from payload
+        appointment_date = payload.get("referral", {}).get("appointment_date")
+        appointment_type = payload.get("referral", {}).get("appointment_type")
+
+        return await ReferralService.update_referral_status(
+            db=db, 
+            referral_id=referral_id, 
+            status_type=payload.get("referral", {}).get("status_type"), 
+            notes=payload.get("referral", {}).get("notes"),
+            appointment_date=appointment_date,
+            appointment_type=appointment_type
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while updating referral status. {str(e)}",
+        )
+
+
+@router.get("/status-history/{referral_id}", status_code=200)
+async def get_referral_status_history(
+    referral_id: str, 
+    limit: Optional[int] = Query(None, description="Number of entries to return"),
+    offset: Optional[int] = Query(None, description="Offset for pagination")
+) -> dict:
+    """Get status history for a specific referral"""
+    try:
+        db = await get_supabase_client()
+        
+        return await ReferralService.get_referral_status_history(
+            db=db,
+            referral_id=referral_id,
+            limit=limit,
+            offset=offset
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting referral status history. {str(e)}",
+        )
 
 
 @router.delete("/{referral_id}", status_code=200)
@@ -377,6 +424,7 @@ async def handle_reducto_webhook(request: Request):
         error = webhook_data.get("error")
         
         print(f"Received webhook for job {job_id} with status: {status}")
+        print(f"Result: {result}")
         
         if status == "Completed":
 
@@ -389,9 +437,12 @@ async def handle_reducto_webhook(request: Request):
             extracted_data = extraction_data.get("result").get("result")
             db = await get_supabase_client()    
             await ReferralService.process_extracted_referral_data(db=db, job_id=job_id, extracted_data=extracted_data)
+            await db.table("referrals").update({
+                "job_status": "completed"
+            }).eq("job_id", job_id).execute()   
 
             # save the extraction data to the database
-  
+
             return {
                 "status": "success",
                 "job_id": job_id,
@@ -402,6 +453,10 @@ async def handle_reducto_webhook(request: Request):
         elif status == "failed":
             # Handle failed extraction
             print(f"Extraction failed for job {job_id}: {error}")
+
+            await db.table("referrals").update({
+                "job_status": "failed"
+            }).eq("job_id", job_id).execute()   
             
             return {
                 "status": "failed",
@@ -525,3 +580,77 @@ async def configure_reducto_webhook_endpoint(
     except Exception as e:
         print(f"Error configuring webhook: {e}")
         raise HTTPException(status_code=500, detail=f"Webhook configuration error: {str(e)}")
+    
+@router.get("/facilitator-inbound-referrals", status_code=200)
+async def get_facilitator_inbound_referrals(
+    page: int = 1,
+    page_size: int = 10,
+    search: str = "",
+    status: str = "",
+    facilitator_facility_id: str = "",
+    sort_by: Optional[str] = None
+) -> ReferralWithDetailsPagination:
+    """Get inbound referrals for the current facilitator"""
+    try:
+        # Clean up status parameter - treat empty string as no filter
+        clean_status = status.strip() if status and status.strip() else None
+        
+        # Debug logging
+        print(f"🔍 ENDPOINT DEBUG: Received status='{status}', cleaned to '{clean_status}'")
+        
+        db = await get_supabase_client()
+        return await ReferralService.get_facilitator_inbound_referrals(
+            db=db, 
+            facilitator_facility_id=facilitator_facility_id,
+            page=page,
+            page_size=page_size,
+            search=search,
+            status=clean_status,
+            sort_by=sort_by
+        )
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"An error occurred while fetching inbound referrals for the current facilitator. {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching inbound referrals for the current facilitator. {str(e)}",
+        )
+
+@router.get("/facilitator-outbound-referrals", status_code=200)
+async def get_facilitator_outbound_referrals(
+    page: int = 1,
+    page_size: int = 10,
+    search: str = "",
+    status: str = "",
+    facilitator_facility_id: str = "",
+    sort_by: Optional[str] = None
+) -> ReferralWithDetailsPagination:
+    
+    try:
+        # Clean up status parameter - treat empty string as no filter
+        clean_status = status.strip() if status and status.strip() else None
+        
+        # Debug logging
+        print(f"🔍 ENDPOINT DEBUG (OUTBOUND): Received status='{status}', cleaned to '{clean_status}'")
+        
+        db = await get_supabase_client()
+        return await ReferralService.get_facilitator_outbound_referrals(
+            db=db, 
+            facilitator_facility_id=facilitator_facility_id,
+            page=page,
+            page_size=page_size,
+            search=search,
+            status=clean_status,
+            sort_by=sort_by
+        )
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"An error occurred while fetching outbound referrals for the current facilitator. {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching outbound referrals for the current facilitator. {str(e)}",
+        )

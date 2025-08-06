@@ -188,6 +188,119 @@ export class ReferralService {
         });
     }
 
+    public static updateReferralStatus({
+        referralId,
+        status,
+        notes,
+        appointmentDate,
+        appointmentType,
+    }: {
+        referralId: string,
+        status: string,
+        notes: string,
+        appointmentDate?: string,
+        appointmentType?: string,
+    }): CancelablePromise<any> {
+        const requestBody: any = {
+            referral: {
+                status_type: status,
+                notes,
+            }
+        };
+
+        // Only include appointment fields if they are provided
+        if (appointmentDate) {
+            requestBody.referral.appointment_date = appointmentDate;
+        }
+        if (appointmentType) {
+            requestBody.referral.appointment_type = appointmentType;
+        }
+
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/referrals/status/{referral_id}',
+            path: {
+                'referral_id': referralId,
+            },
+            body: requestBody,
+        });
+    }
+
+    public static getFacilitatorInboundReferrals({
+        page,
+        facilitator_facility_id,
+        page_size,
+        search,
+        status,
+        sort_by,
+    }: {
+        page: number,
+        facilitator_facility_id: string,
+        page_size: number,
+        search: string,
+        status: string,
+        sort_by?: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/facilitator-inbound-referrals',
+            query: {
+                page,
+                facilitator_facility_id,
+                page_size,
+                search,
+                status,
+                sort_by,
+            },
+        });
+    }
+
+    public static getFacilitatorOutboundReferrals({
+        page,
+        facilitator_facility_id,
+        page_size,
+        search,
+        status,
+        sort_by,
+    }: {
+        page: number,
+        facilitator_facility_id: string,
+        page_size: number,
+        search: string,
+        status: string,
+        sort_by?: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/facilitator-outbound-referrals',
+            query: {
+                page,
+                facilitator_facility_id,
+                page_size,
+                search,
+                status,
+                sort_by,
+            },
+        });
+    }
+
+    public static getReferralStatusHistory({
+        referralId,
+    }: {
+        referralId: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/status-history/{referral_id}',
+            path: {
+                'referral_id': referralId,
+            },
+            errors: {
+                404: `Referral not found`,
+                422: `Validation Error`,
+            },
+        });
+    }
 } 
 
 

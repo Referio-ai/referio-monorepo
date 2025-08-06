@@ -77,7 +77,7 @@ async def reducto_referral_extraction_async(document_url: str, referral_id: str 
             },
             "webhook":{
                 "mode": "direct",
-                "url": f"https://ad673489d44e.ngrok-free.app/api/v1/referrals/webhook/reducto",
+                "url": f"https://c939ec394085.ngrok-free.app/api/v1/referrals/webhook/reducto",
                 "channels": ['referio_referal']
             }
         }
@@ -99,6 +99,7 @@ async def reducto_referral_extraction_async(document_url: str, referral_id: str 
                     raise Exception("No job_id returned from Reducto API")
                 
                 job_id = job_response["job_id"]
+                job_status = 'processing'
                 print(f"Reducto async job submitted with ID: {job_id}")
                 
                 # Save job_id to referral if referral_id is provided
@@ -109,7 +110,8 @@ async def reducto_referral_extraction_async(document_url: str, referral_id: str 
                         
                         # Update the referral with the job_id
                         update_result = await db.table("referrals").update({
-                            "job_id": job_id
+                            "job_id": job_id,
+                            "job_status": job_status
                         }).eq("referral_id", referral_id).execute()
                         
                         if update_result.data:
@@ -367,12 +369,11 @@ async def get_reducto_job_status(job_id: str) -> Dict:
     try:
         url = f"https://platform.reducto.ai/job/{job_id}"
         headers = {
-            "Authorization": f"Bearer {REDUCTO_API_KEY}",
+            "Authorization": f"Bearer ee8312e40b736d594c6072e76891a613ba1bdd083abb4875065bc6083b3e1149ee8ff345265b8c534aade5c0661c2ed5",
         }
         
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers, verify_ssl=False) as response:
-                response.raise_for_status()
                 job_status = await response.json()
                 return job_status
             

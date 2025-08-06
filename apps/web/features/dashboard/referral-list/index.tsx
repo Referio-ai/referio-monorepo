@@ -83,7 +83,8 @@ export const ReferralList = () => {
       : 0;
     
     return {
-      id: parseInt(apiReferral.referral_id.replace(/-/g, '').substring(0, 8), 16) || 1, // Convert UUID to number
+      referral_id: apiReferral.referral_id,
+      patientId: apiReferral.patient_id || undefined, // Add patientId from API response
       patientName,
       age,
       dateOfBirth,
@@ -98,6 +99,9 @@ export const ReferralList = () => {
       reason: apiReferral.referral_remark || 'No reason provided',
       hasXrays: false, // Default value since API doesn't provide this
       hasInsurance: !!apiReferral.patient_insurance_member_id,
+      appointmentDate: apiReferral.appointment_date || undefined,
+      appointmentTime: apiReferral.appointment_time || undefined,
+      appointmentType: apiReferral.appointment_type || undefined,
       documents: apiReferral.documents || []
     };
   };
@@ -243,6 +247,24 @@ export const ReferralList = () => {
     console.log('Uploading files:', files);
     // Implement file upload logic here
   };
+
+  // Handle status update and refresh referral data
+  const handleStatusUpdate = () => {
+    // Refresh the scanned referrals data
+    refetchScannedReferrals();
+  };
+
+  // Handle individual referral refresh
+  const handleReferralRefresh = (referralId: string) => {
+    // Refresh the scanned referrals data
+    refetchScannedReferrals();
+    
+    // Update the selected referral with the latest data from the refreshed list
+    const updatedReferral = referrals.find(r => r.referral_id === referralId);
+    if (updatedReferral) {
+      setSelectedReferral(updatedReferral);
+    }
+  };
   
   // Handle API errors
   if (scannedReferralsError) {
@@ -257,7 +279,7 @@ export const ReferralList = () => {
           {/* Referral list */}
           <ReferralListComponent 
             referrals={processedReferrals}
-            selectedReferralId={selectedReferral?.id}
+            selectedReferralId={selectedReferral?.referral_id}
             activeTab={activeTab}
             searchFilter={searchFilter}
             sortBy={sortBy}
@@ -276,13 +298,19 @@ export const ReferralList = () => {
           <div className="flex-1 p-6 bg-white overflow-y-auto">
             {selectedReferral ? (
               <ReferralDetail 
+                key={`${selectedReferral.referral_id}-${activeTab}-${searchQuery}-${sortBy}`}
                 referral={selectedReferral}
                 onScheduleAppointment={handleScheduleAppointment}
                 onAcceptReferral={handleAcceptReferral}
                 onVerifyBenefits={handleVerifyBenefits}
                 onSendMessage={handleSendMessage}
                 onUploadFiles={handleUploadFiles}
+                onStatusUpdate={handleStatusUpdate}
+                onReferralRefresh={handleReferralRefresh}
                 isLoading={isLoading}
+                activeTab={activeTab}
+                searchQuery={searchQuery}
+                sortBy={sortBy}
               />
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">

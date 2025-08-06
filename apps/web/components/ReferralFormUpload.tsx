@@ -22,7 +22,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
   isPreviouslyScanned = false,
   scannedPatientInfo = null,
   lastScannedDate = null,
-  nextStep,
+  nextStep = (n: number | null = null) => {},
   documentType = 'referral_form'
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -43,8 +43,6 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
 
   // Check if patient is already associated with the referral
   const hasPatientAssociation = scannedPatientInfo !== null;
-
-  console.log(hasPatientAssociation, 'ss')
 
   // Initialize showUploadForm based on patient association
   useEffect(() => {
@@ -180,13 +178,27 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
         onSuccess: (result) => {
           console.log(result, 'result')
 
-          Swal.fire({
-            title: 'Referral Form Uploaded',
-            text: 'Would you like to continue adding information?',
-            icon: 'success',
-            confirmButtonText: 'Yes',
-            confirmButtonColor: '#007bff',
-          })
+          nextStep(2);
+
+          // Swal.fire({
+          //   title: 'Referral Form Uploaded',
+          //   text: 'Would you like to continue adding information?',
+          //   icon: 'success',
+          //   showCloseButton: true,
+          //   showConfirmButton: true,
+          //   showCancelButton: true,
+          //   cancelButtonText: 'No',
+          //   cancelButtonColor: '#dc3545',
+          //   confirmButtonText: 'Yes',
+          //   confirmButtonColor: '#007bff',
+          // }).then((result) => {
+          //   if (result.isConfirmed) {
+       
+          //   } else {
+          //     //fetch the referral by slug
+          //     nextStep(5);
+          //   }
+          // })
 
           // setExtractionResults(result);
 
@@ -212,7 +224,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
           // });
 
           // Call the completion callback
-          onUploadComplete?.(selectedFiles);
+          onUploadComplete?.();
 
           setUploadProgress(100);
 
@@ -640,7 +652,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       )}
 
       {/* Error Messages */}
-      {!extractionResults && errors.length > 0 && showUploadForm && !hasPatientAssociation && (
+      {errors.length > 0 && showUploadForm && (
         <div className="w-full max-w-md mb-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <div className="flex items-center mb-2">
@@ -659,7 +671,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       )}
 
       {/* File Previews */}
-      {!extractionResults && previews.length > 0 && showUploadForm && (
+      {previews.length > 0 && showUploadForm && (
         <div className="w-full max-w-md mb-8">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-gray-700">
@@ -763,7 +775,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
             type="button"
             onClick={() => {
               // This could trigger next step or some other action
-              nextStep();
+              nextStep(2);
             }}
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >

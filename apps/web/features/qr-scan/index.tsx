@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, FileText, Shield, Image as ImageIcon, UploadCloud, CheckCircle, XCircle } from 'lucide-react';
 
 import { Modal } from '@/components/Modal';
@@ -8,6 +8,7 @@ import { FileUpload } from '@/components/FileUpload'
 import { ReferralFormUpload } from '@/components/ReferralFormUpload'
 import { StartScreenStep } from '@/components/StartScreenStep'
 import { ReviewSubmitStep } from '@/components/ReviewSubmitStep'
+import { ThankYouStep } from '@/components/ThankYouStep'
 import { GiftCardStep } from '@/components/GiftCardStep'
 import { AppHeader } from '@/components/AppHeader'
 import { ProgressBar } from '@/components/ProgressBar'
@@ -134,6 +135,7 @@ export const QRScan = (props: { params: { slug: string } }) => {
   const [otherDocsFiles, setOtherDocsFiles] = useState<File[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
     total: 0,
     completed: 0,
@@ -227,13 +229,13 @@ export const QRScan = (props: { params: { slug: string } }) => {
 
     // Prepare all files with their metadata
     let allFilesWithMetadata: FileWithType[];
-    
+
     if (retryFailedOnly) {
       // Only retry failed files
       const failedFiles = uploadProgress.results
         .filter(result => !result.success && result.canRetry)
         .map(result => result.fileName);
-      
+
       allFilesWithMetadata = [
         ...referralFormFiles.filter(file => failedFiles.includes(file.name)),
         ...insuranceCardFiles.filter(file => failedFiles.includes(file.name)),
@@ -244,29 +246,29 @@ export const QRScan = (props: { params: { slug: string } }) => {
         if (referralFormFiles.includes(file)) documentType = 'referral_form';
         else if (insuranceCardFiles.includes(file)) documentType = 'insurance_card';
         else if (xrayFiles.includes(file)) documentType = 'xray_radiograph';
-        
-        return Object.assign(file, { 
-          documentType, 
-          documentCategory: documentType 
+
+        return Object.assign(file, {
+          documentType,
+          documentCategory: documentType
         });
       });
     } else {
       allFilesWithMetadata = [
-        ...referralFormFiles.map(file => Object.assign(file, { 
-          documentType: 'referral_form', 
-          documentCategory: 'referral_form' 
+        ...referralFormFiles.map(file => Object.assign(file, {
+          documentType: 'referral_form',
+          documentCategory: 'referral_form'
         })),
-        ...insuranceCardFiles.map(file => Object.assign(file, { 
-          documentType: 'insurance_card', 
-          documentCategory: 'insurance_card' 
+        ...insuranceCardFiles.map(file => Object.assign(file, {
+          documentType: 'insurance_card',
+          documentCategory: 'insurance_card'
         })),
-        ...xrayFiles.map(file => Object.assign(file, { 
-          documentType: 'xray_radiograph', 
-          documentCategory: 'xray_radiograph' 
+        ...xrayFiles.map(file => Object.assign(file, {
+          documentType: 'xray_radiograph',
+          documentCategory: 'xray_radiograph'
         })),
-        ...otherDocsFiles.map(file => Object.assign(file, { 
-          documentType: 'other_documentation', 
-          documentCategory: 'other_documentation' 
+        ...otherDocsFiles.map(file => Object.assign(file, {
+          documentType: 'other_documentation',
+          documentCategory: 'other_documentation'
         }))
       ];
     }
@@ -300,8 +302,8 @@ export const QRScan = (props: { params: { slug: string } }) => {
         ...prev,
         isUploading: true,
         isCancelled: false,
-        results: prev.results.map(result => 
-          allFilesWithMetadata.some(file => file.name === result.fileName) 
+        results: prev.results.map(result =>
+          allFilesWithMetadata.some(file => file.name === result.fileName)
             ? { ...result, canRetry: false } // Mark as being retried
             : result
         )
@@ -320,24 +322,24 @@ export const QRScan = (props: { params: { slug: string } }) => {
       }
 
       const fileWithMeta = allFilesWithMetadata[i];
-      
+
       try {
         console.log(`Uploading file ${i + 1}/${allFilesWithMetadata.length}: ${fileWithMeta.name}`);
-        
+
         const result = await uploadDocumentMutation.mutateAsync({
           referralId: referralId,
           formData: [fileWithMeta],
           documentType: fileWithMeta.documentType,
           documentCategory: fileWithMeta.documentCategory
         });
-        
-        const successResult: UploadResult = { 
-          fileName: fileWithMeta.name, 
-          success: true, 
+
+        const successResult: UploadResult = {
+          fileName: fileWithMeta.name,
+          success: true,
           result,
           canRetry: false
         };
-        
+
         if (retryFailedOnly) {
           // Update existing result
           const resultIndex = results.findIndex(r => r.fileName === fileWithMeta.name);
@@ -347,23 +349,23 @@ export const QRScan = (props: { params: { slug: string } }) => {
         } else {
           results.push(successResult);
         }
-        
+
         setUploadProgress(prev => ({
           ...prev,
           completed: retryFailedOnly ? prev.completed + 1 : i + 1,
           results: [...results]
         }));
-        
+
         console.log(`Successfully uploaded: ${fileWithMeta.name}`);
-        
+
       } catch (error) {
-        const errorResult: UploadResult = { 
-          fileName: fileWithMeta.name, 
-          success: false, 
+        const errorResult: UploadResult = {
+          fileName: fileWithMeta.name,
+          success: false,
           error,
           canRetry: true
         };
-        
+
         if (retryFailedOnly) {
           // Update existing result
           const resultIndex = results.findIndex(r => r.fileName === fileWithMeta.name);
@@ -373,19 +375,19 @@ export const QRScan = (props: { params: { slug: string } }) => {
         } else {
           results.push(errorResult);
         }
-        
+
         setUploadProgress(prev => ({
           ...prev,
           completed: retryFailedOnly ? prev.completed : i + 1,
           results: [...results]
         }));
-        
+
         console.error(`Failed to upload: ${fileWithMeta.name}`, error);
       }
     }
 
-    setUploadProgress(prev => ({ 
-      ...prev, 
+    setUploadProgress(prev => ({
+      ...prev,
       isUploading: false,
       canCancel: false
     }));
@@ -422,7 +424,7 @@ export const QRScan = (props: { params: { slug: string } }) => {
     // Find the file to retry
     const allFiles = [...referralFormFiles, ...insuranceCardFiles, ...xrayFiles, ...otherDocsFiles];
     const fileToRetry = allFiles.find(file => file.name === fileName);
-    
+
     if (!fileToRetry) return;
 
     // Determine document type
@@ -431,17 +433,17 @@ export const QRScan = (props: { params: { slug: string } }) => {
     else if (insuranceCardFiles.includes(fileToRetry)) documentType = 'insurance_card';
     else if (xrayFiles.includes(fileToRetry)) documentType = 'xray_radiograph';
 
-    const fileWithMeta = Object.assign(fileToRetry, { 
-      documentType, 
-      documentCategory: documentType 
+    const fileWithMeta = Object.assign(fileToRetry, {
+      documentType,
+      documentCategory: documentType
     });
 
     // Update the specific result to show retrying
     setUploadProgress(prev => ({
       ...prev,
-      results: prev.results.map(result => 
-        result.fileName === fileName 
-          ? { ...result, canRetry: false } 
+      results: prev.results.map(result =>
+        result.fileName === fileName
+          ? { ...result, canRetry: false }
           : result
       )
     }));
@@ -457,8 +459,8 @@ export const QRScan = (props: { params: { slug: string } }) => {
       // Update result with success
       setUploadProgress(prev => ({
         ...prev,
-        results: prev.results.map(result => 
-          result.fileName === fileName 
+        results: prev.results.map(result =>
+          result.fileName === fileName
             ? { fileName, success: true, result, canRetry: false }
             : result
         )
@@ -468,8 +470,8 @@ export const QRScan = (props: { params: { slug: string } }) => {
       // Update result with new error
       setUploadProgress(prev => ({
         ...prev,
-        results: prev.results.map(result => 
-          result.fileName === fileName 
+        results: prev.results.map(result =>
+          result.fileName === fileName
             ? { fileName, success: false, error, canRetry: true }
             : result
         )
@@ -495,16 +497,16 @@ export const QRScan = (props: { params: { slug: string } }) => {
     setIsLoading(true);
     try {
       const uploadResults = await uploadFilesOneByOne();
-      
+
       const successfulUploads = uploadResults.filter(result => result.success);
       const failedUploads = uploadResults.filter(result => !result.success);
-      
+
       if (failedUploads.length > 0) {
         setModal({
           isOpen: true,
           title: 'Upload Complete with Errors',
           message: `${successfulUploads.length} files uploaded successfully, ${failedUploads.length} files failed. Please check the results below.`,
-                     type: 'error'
+          type: 'error'
         });
       } else {
         setModal({
@@ -513,14 +515,14 @@ export const QRScan = (props: { params: { slug: string } }) => {
           message: `All ${successfulUploads.length} files have been uploaded successfully!`,
           type: 'success'
         });
-        
+
         // Auto-proceed to gift card step after success
         setTimeout(() => {
           setShowGiftCard(true);
           setCurrentStep(6);
         }, 2000);
       }
-      
+
     } catch (error) {
       console.error('Upload failed:', error);
       setModal({
@@ -574,23 +576,18 @@ export const QRScan = (props: { params: { slug: string } }) => {
       canCancel: false,
       isCancelled: false
     });
+    
+    // Refetch referral data to get updated patient info
+    setIsRefetching(true);
+    refetchReferral().finally(() => {
+      setIsRefetching(false);
+    });
   };
 
   // Validation function to check if user can proceed to next step
   const canProceedToNextStep = (): boolean => {
     // For step 0 (start screen), check if we have scanned QR and patient info
     if (currentStep === 1) {
-  
-      if (!scannedPatientInfo) {
-        setModal({
-          isOpen: true,
-          title: 'Patient Information Required',
-          message: 'No patient information found for this referral. Please ensure the QR code contains valid patient data.',
-          type: 'error'
-        });
-        return false;
-      }
-
       if (!referralId) {
         setModal({
           isOpen: true,
@@ -601,26 +598,43 @@ export const QRScan = (props: { params: { slug: string } }) => {
         return false;
       }
     }
-    
+
     return true;
   };
 
-  const nextStep = () => {
+  const nextStep = useCallback((step: number | null = null) => {
     if (canProceedToNextStep()) {
-      setCurrentStep(prev => prev + 1);
+      if (step) {
+        setCurrentStep(step);
+      } else {
+        setCurrentStep(prev => prev + 1);
+      }
+    }   
+  }, [canProceedToNextStep, currentStep, referralId]);
+
+  const prevStep = () => {
+    const newStep = currentStep - 1;
+    setCurrentStep(newStep);
+    
+    // If going back to step 0, refetch referral data to get updated patient info
+    if (newStep === 0) {
+      setIsRefetching(true);
+      refetchReferral().finally(() => {
+        setIsRefetching(false);
+      });
     }
   };
 
-  const prevStep = () => setCurrentStep(prev => prev - 1);
-
   // Show loading state while fetching referral data
-  if (isReferralLoading) {
+  if (isReferralLoading || isRefetching) {
     return (
       <div className="flex flex-col items-center justify-center p-2 sm:p-4 font-sans min-h-screen">
         <div className="w-full max-w-sm sm:max-w-2xl bg-gray-50 shadow-2xl rounded-xl overflow-hidden p-4 sm:p-8">
           <div className="flex flex-col sm:flex-row items-center justify-center">
             <Loader2 size={32} className="text-blue-500 animate-spin sm:mr-4 mb-2 sm:mb-0" />
-            <span className="text-base sm:text-lg text-gray-600 text-center">Loading referral data...</span>
+            <span className="text-base sm:text-lg text-gray-600 text-center">
+              {isRefetching ? 'Updating referral data...' : 'Loading referral data...'}
+            </span>
           </div>
         </div>
       </div>
@@ -646,7 +660,8 @@ export const QRScan = (props: { params: { slug: string } }) => {
     if (currentStep === 2) return 'Upload Insurance Card';
     if (currentStep === 3) return 'Upload X-ray Radiograph';
     if (currentStep === 4) return 'Upload Other Documentation';
-    if (currentStep === 5) return 'Review & Submit';
+    if (currentStep === 5) return 'Upload Summary';
+    if (currentStep === 6) return 'Thank You';
   };
 
   const renderUploadProgress = () => {
@@ -675,13 +690,12 @@ export const QRScan = (props: { params: { slug: string } }) => {
             )}
           </div>
         </div>
-        
+
         {/* Progress bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-          <div 
-            className={`h-2 rounded-full transition-all duration-300 ${
-              uploadProgress.isCancelled ? 'bg-red-500' : 'bg-blue-600'
-            }`}
+          <div
+            className={`h-2 rounded-full transition-all duration-300 ${uploadProgress.isCancelled ? 'bg-red-500' : 'bg-blue-600'
+              }`}
             style={{ width: `${(uploadProgress.completed / uploadProgress.total) * 100}%` }}
           ></div>
         </div>
@@ -750,7 +764,6 @@ export const QRScan = (props: { params: { slug: string } }) => {
           referringToOffice={referringToOffice}
           referringFromOffice={referringFromOffice}
           isPreviouslyScanned={isPreviouslyScanned}
-
           scannedPatientInfo={scannedPatientInfo}
           userId={userId}
           isLoading={isLoading}
@@ -759,50 +772,98 @@ export const QRScan = (props: { params: { slug: string } }) => {
         />;
       case 1:
         return <ReferralFormUpload
-          nextStep={nextStep}
           onFilesSelected={setReferralFormFiles}
-          referralId={referralId || undefined}
+          onUploadComplete={() => {
+            console.log('Referral form upload completed');
+          }}
+          referralId={referralId || ''}
           existingFilesCount={referralFormFiles.length}
+          isRequired={true}
+          maxFiles={1}
+          maxFileSize={10}
           isPreviouslyScanned={isPreviouslyScanned}
           scannedPatientInfo={scannedPatientInfo}
-          isRequired={true}
-          lastScannedDate={referral?.referral_scanned_date}
-          maxFiles={5}
-          maxFileSize={10}
+          lastScannedDate={(referral as ReferralApiResponse)?.referral_scanned_date || null}
+          nextStep={nextStep}
           documentType="referral_form"
-          onUploadComplete={(uploadedFiles) => {
-            console.log('Referral forms uploaded successfully:', uploadedFiles);
-            refetchReferral();
-            // Handle successful upload - could trigger next step or show success message
-          }}
         />;
       case 2:
         return <FileUpload
-          title="Step 2: Upload Insurance Card(s) (Optional)"
-          description="Take a picture or upload images of the patient's insurance member ID card(s)."
-          icon={<Shield size={20} className="text-green-500" />}
+          title="Step 2: Upload Insurance Card"
+          description="Required • Take a photo or select from gallery"
+          icon={<FileText size={20} className="text-green-500" />}
           onFilesSelected={setInsuranceCardFiles}
           acceptedFileTypes={ACCEPTED_FILE_TYPES.IMAGES}
           multiple={true}
-          actionButtonText="Continue"
-          actionButtonOnClick={nextStep}
           existingFilesCount={insuranceCardFiles.length}
           files={insuranceCardFiles}
+          actionButtonText="Continue"
+          actionButtonOnClick={() => nextStep(3)}
           documentType="insurance_card"
+          uploadFilesImmediately={true}
+          uploadFunction={async (files) => {
+            if (!referralId) return [];
+            const results: UploadResult[] = [];
+            for (const file of files) {
+              try {
+                const result = await uploadDocumentMutation.mutateAsync({
+                  referralId: referralId,
+                  formData: [file],
+                  documentType: 'insurance_card',
+                  documentCategory: 'insurance_card'
+                });
+                results.push({ fileName: file.name, success: true, result, canRetry: false });
+              } catch (error) {
+                results.push({ fileName: file.name, success: false, error, canRetry: true });
+              }
+            }
+            return results;
+          }}
+          onUploadProgress={(progress) => {
+            setUploadProgress(progress);
+          }}
+          onUploadComplete={(results) => {
+            console.log('Upload completed:', results);
+          }}
         />;
       case 3:
         return <FileUpload
-          title="Step 3: Upload X-ray Radiograph(s) (Optional)"
-          description="Take a picture or upload X-ray images."
-          icon={<ImageIcon size={20} className="text-purple-500" />}
+          title="Step 3: Upload X-Ray/Radiograph (Optional)"
+          description="Upload X-ray images or radiographs (JPG, PNG, PDF)."
+          icon={<FileText size={20} className="text-purple-500" />}
           onFilesSelected={setXrayFiles}
           acceptedFileTypes={ACCEPTED_FILE_TYPES.IMAGES}
           multiple={true}
           existingFilesCount={xrayFiles.length}
           files={xrayFiles}
           actionButtonText="Continue"
-          actionButtonOnClick={nextStep}
+          actionButtonOnClick={() => nextStep(4)}
           documentType="xray_radiograph"
+          uploadFilesImmediately={true}
+          uploadFunction={async (files) => {
+            if (!referralId) return [];
+            const results: UploadResult[] = [];
+            for (const file of files) {
+              try {
+                const result = await uploadDocumentMutation.mutateAsync({
+                  referralId: referralId,
+                  formData: [file],
+                  documentType: 'xray_radiograph',
+                  documentCategory: 'xray_radiograph'
+                });
+                results.push({ fileName: file.name, success: true, result, canRetry: false });
+              } catch (error) {
+                results.push({ fileName: file.name, success: false, error, canRetry: true });
+              }
+            }
+            return results;
+          }}
+          onUploadProgress={(progress) => {
+            setUploadProgress(progress);
+          }}
+          onUploadComplete={(results) => {
+            console.log('Upload completed:', results);
+          }}
         />;
       case 4:
         return <FileUpload
@@ -815,8 +876,33 @@ export const QRScan = (props: { params: { slug: string } }) => {
           existingFilesCount={otherDocsFiles.length}
           files={otherDocsFiles}
           actionButtonText="Continue"
-          actionButtonOnClick={nextStep}
+          actionButtonOnClick={() => nextStep(5)}
           documentType="other_documentation"
+          uploadFilesImmediately={true}
+          uploadFunction={async (files) => {
+            if (!referralId) return [];
+            const results: UploadResult[] = [];
+            for (const file of files) {
+              try {
+                const result = await uploadDocumentMutation.mutateAsync({
+                  referralId: referralId,
+                  formData: [file],
+                  documentType: 'other_documentation',
+                  documentCategory: 'other_documentation'
+                });
+                results.push({ fileName: file.name, success: true, result, canRetry: false });
+              } catch (error) {
+                results.push({ fileName: file.name, success: false, error, canRetry: true });
+              }
+            }
+            return results;
+          }}
+          onUploadProgress={(progress) => {
+            setUploadProgress(progress);
+          }}
+          onUploadComplete={(results) => {
+            console.log('Upload completed:', results);
+          }}
         />;
       case 5:
         return (
@@ -826,20 +912,16 @@ export const QRScan = (props: { params: { slug: string } }) => {
               insuranceCardData={insuranceCardFiles}
               xrayData={xrayFiles}
               otherDocsData={otherDocsFiles}
-              onSubmitReferral={handleSubmitReferral}
+              onSubmitReferral={() => nextStep(6)}
             />
-            {renderUploadProgress()}
           </div>
         );
       case 6:
-        if (!showGiftCard) return null;
-        return <GiftCardStep
-          giftCardRecipient={giftCardRecipient}
-          setGiftCardRecipient={setGiftCardRecipient}
-          giftCardContactType={giftCardContactType}
-          setGiftCardContactType={setGiftCardContactType}
-          isLoading={isLoading}
-          onGiftCardSubmit={handleGiftCardSubmit}
+        const totalFilesUploaded = referralFormFiles.length + insuranceCardFiles.length + xrayFiles.length + otherDocsFiles.length;
+        return <ThankYouStep
+          onReturnToStart={resetFormStateAndReturnToStart}
+          referralId={referralId}
+          totalFilesUploaded={totalFilesUploaded}
         />;
       default:
         return <p>Unknown step.</p>;
@@ -849,13 +931,12 @@ export const QRScan = (props: { params: { slug: string } }) => {
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 font-sans min-h-screen">
       <div className="w-full max-w-sm sm:max-w-2xl bg-gray-50 shadow-2xl border border-gray-200 rounded-xl overflow-hidden p-1 sm:p-2">
-        {currentStep > 1 && <AppHeader currentStep={currentStep} referralId={referralId} prevStep={prevStep} showBackButton={true} title={getCurrentStepTitle()}/>}
-        {currentStep > 1 && <ProgressBar currentStep={currentStep} totalSteps={TOTAL_UPLOAD_STEPS} />}
+        {currentStep > 0 && <AppHeader currentStep={currentStep} referralId={referralId} prevStep={prevStep} showBackButton={true} title={getCurrentStepTitle()} />}
+        {currentStep > 0 && <ProgressBar currentStep={currentStep} totalSteps={TOTAL_UPLOAD_STEPS} />}
 
         <main className="p-3 sm:p-4 md:p-8">
           {renderCurrentStepComponent()}
         </main>
-
         {/* <NavigationFooter
           currentStep={currentStep}
           totalSteps={TOTAL_UPLOAD_STEPS}
@@ -876,21 +957,7 @@ export const QRScan = (props: { params: { slug: string } }) => {
       >
         <p>{modal.message}</p>
       </Modal>
-      {(isLoading || uploadProgress.isUploading) && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <div className="flex items-center">
-              <Loader2 size={24} className="text-blue-500 animate-spin mr-3" />
-              <span className="text-gray-700">
-                {uploadProgress.isUploading 
-                  ? `Uploading files... ${uploadProgress.completed}/${uploadProgress.total}`
-                  : 'Loading...'
-                }
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );

@@ -48,6 +48,7 @@ interface ReferralListProps {
   downloadQRCode: (qrCode: React.ReactElement, id: string) => void;
   deleteReferral: (batchPrefix: string, referralId: string) => void;
   showPrintPreviewModal: (batch: Batch) => void;
+  printSingleQRCode: (referral: Referral, batchPrefix: string) => void;
   currentPage: number;
   pageSize: number;
   onPageChange: (page: number) => void;
@@ -65,6 +66,7 @@ const ReferralList: React.FC<ReferralListProps> = ({
   downloadQRCode,
   deleteReferral,
   showPrintPreviewModal,
+  printSingleQRCode,
   currentPage,
   pageSize,
   onPageChange,
@@ -294,6 +296,13 @@ const ReferralList: React.FC<ReferralListProps> = ({
                           title="View Referral"
                         >
                           <Eye className="w-3 h-3 lg:w-4 lg:h-4" /> go to referral
+                        </button>
+                        <button
+                          onClick={() => printSingleQRCode(referral, referral.batchId)}
+                          className="p-1.5 lg:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Print QR Code"
+                        >
+                          <Printer className="w-3 h-3 lg:w-4 lg:h-4" />
                         </button>
                         <button
                           onClick={() => deleteReferral(referral.batchId, referral.id)}

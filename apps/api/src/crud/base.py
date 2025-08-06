@@ -18,12 +18,32 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
+    async def _has_deleted_column(self, db: AsyncClient, table_name: str) -> bool:
+        """Check if the table has a deleted column"""
+        try:
+            # Try to query the deleted column to see if it exists
+            result = await db.table(table_name).select("deleted").limit(1).execute()
+            return True
+        except Exception:
+            # If the query fails, the column doesn't exist
+            return False
+
     async def get(self, table_name: str, db: AsyncClient, *, id: str, include_deleted: bool = False) -> Optional[ModelType]:
         """get by table_name by id"""
-        query = db.table(table_name).select("*").eq("id", id)
+        # Determine the primary key column based on table name
+        if table_name == "patients":
+            primary_key = "patient_id"
+        elif table_name == "facility_entity":
+            primary_key = "facility_id"
+        elif table_name == "referrals":
+            primary_key = "referral_id"
+        else:
+            primary_key = "id"  # Default fallback
+            
+        query = db.table(table_name).select("*").eq(primary_key, id)
         
         # Filter out deleted records unless explicitly requested
-        if not include_deleted:
+        if not include_deleted and await self._has_deleted_column(db, table_name):
             query = query.neq("deleted", True)
             
         result = await query.execute()
@@ -35,7 +55,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         query = db.table(table_name).select("*")
         
         # Filter out deleted records unless explicitly requested
-        if not include_deleted:
+        if not include_deleted and await self._has_deleted_column(db, table_name):
             query = query.neq("deleted", True)
             
         result = await query.execute()
@@ -54,7 +74,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         )
         
         # Filter out deleted records unless explicitly requested
-        if not include_deleted:
+        if not include_deleted and await self._has_deleted_column(db, table_name):
             query = query.neq("deleted", True)
             
         result = await query.execute()
@@ -69,7 +89,17 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def update(self, table_name: str, db: AsyncClient, *, obj_in: UpdateSchemaType) -> ModelType:
         """update by UpdateSchemaType"""
-        result = await db.table(table_name).update(obj_in.model_dump()).eq("id", obj_in.id).execute()
+        # Determine the primary key column based on table name
+        if table_name == "patients":
+            primary_key = "patient_id"
+        elif table_name == "facility_entity":
+            primary_key = "facility_id"
+        elif table_name == "referrals":
+            primary_key = "referral_id"
+        else:
+            primary_key = "id"  # Default fallback
+            
+        result = await db.table(table_name).update(obj_in.model_dump()).eq(primary_key, obj_in.id).execute()
         data = result.data
         return self.model(**data[0])
     
@@ -81,7 +111,17 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     async def delete(self, table_name: str, db: AsyncClient, *, id: str) -> ModelType:
         """remove by UpdateSchemaType"""
-        result = await db.table(table_name).delete().eq("id", id).execute()
+        # Determine the primary key column based on table name
+        if table_name == "patients":
+            primary_key = "patient_id"
+        elif table_name == "facility_entity":
+            primary_key = "facility_id"
+        elif table_name == "referrals":
+            primary_key = "referral_id"
+        else:
+            primary_key = "id"  # Default fallback
+            
+        result = await db.table(table_name).delete().eq(primary_key, id).execute()
         data = result.data
         return self.model(**data[0])
 
@@ -102,6 +142,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db (AsyncClient): Database client
             page (int, optional): Page number starting from 1. Defaults to 1.
             page_size (int, optional): Number of items per page. Defaults to 10.
+            search (str, optional): Search term to filter results. Defaults to "".
+            include_deleted (bool, optional): Whether to include deleted records. Defaults to False.
             
         Returns:
             Tuple[list[ModelType], dict]: Tuple containing:
@@ -113,20 +155,40 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         
         # Get total count with filtering
         count_query = db.table(table_name).select("*", count="exact")
-        if not include_deleted:
+        if not include_deleted and await self._has_deleted_column(db, table_name):
             count_query = count_query.neq("deleted", True)
+        
+        # Add search filter if provided
+        if search:
+            count_query = count_query.or_(
+                f"facility_name.ilike.%{search}%,"
+                f"facility_primary_contact_fname.ilike.%{search}%,"
+                f"facility_primary_contact_lname.ilike.%{search}%,"
+                f"facility_primary_contact_email.ilike.%{search}%"
+            )
+        
         count_result = await count_query.execute()
         total_count = count_result.count if count_result.count is not None else 0
         
         # Get paginated data with filtering
         data_query = db.table(table_name).select("*").range(offset, offset + page_size - 1)
-        if not include_deleted:
+        if not include_deleted and await self._has_deleted_column(db, table_name):
             data_query = data_query.neq("deleted", True)
+        
+        # Add search filter if provided
+        if search:
+            data_query = data_query.or_(
+                f"facility_name.ilike.%{search}%,"
+                f"facility_primary_contact_fname.ilike.%{search}%,"
+                f"facility_primary_contact_lname.ilike.%{search}%,"
+                f"facility_primary_contact_email.ilike.%{search}%"
+            )
+        
         data_result = await data_query.execute()
         items = data_result.data
         
         # Calculate total pages
-        total_pages = 5
+        total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
         
         # Prepare pagination metadata
         pagination_metadata = {

@@ -23,7 +23,8 @@ import {
 } from '@/components/ui/pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PatientsService, Patient } from '@/lib/api/client';
+import { Patient } from '@/lib/api/client';
+import { useGetPatients } from '@/lib/hooks/patients';
 import { format } from 'date-fns';
 
 interface PatientWithReferral extends Patient {
@@ -40,34 +41,16 @@ const ITEMS_PER_PAGE = 10;
 
 export default function PatientsPage() {
   const router = useRouter();
-  const [patients, setPatients] = useState<PatientWithReferral[]>([]);
+  const { data: patients = [], isLoading, error, isFetching } = useGetPatients();
   const [filteredPatients, setFilteredPatients] = useState<PatientWithReferral[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortField, setSortField] = useState<keyof Patient>('patient_lname');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    fetchPatients();
-  }, []);
-
-  const fetchPatients = async () => {
-    try {
-      setIsLoading(true);
-      const response = await PatientsService.apiV1GetPatients();
-      setPatients(response);
-      setFilteredPatients(response);
-    } catch (error) {
-      console.error('Error fetching patients:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let result = [...patients];
+    let result = [...patients] as PatientWithReferral[];
 
     // Apply search filter
     if (searchQuery) {
@@ -134,6 +117,19 @@ export default function PatientsPage() {
     );
   };
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <h3 className="text-red-800 font-medium">Error loading patients</h3>
+          <p className="text-red-600 text-sm mt-1">
+            {error instanceof Error ? error.message : 'An unexpected error occurred'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-4">
@@ -142,6 +138,64 @@ export default function PatientsPage() {
           <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
         </div>
         <div className="h-[600px] bg-gray-100 rounded animate-pulse" />
+      </div>
+    );
+  }
+
+  // Show loading indicator during background refetch
+  if (isFetching && !isLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div/>
+          <Button 
+            onClick={() => router.push('/dashboard/patients/new')}
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled
+          >
+            Add New Patient
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Patient List</CardTitle>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search patients..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 w-64"
+                    disabled
+                  />
+                </div>
+                <Select value={filterStatus} onValueChange={setFilterStatus} disabled>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span>Refreshing data...</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -158,10 +212,21 @@ export default function PatientsPage() {
         </Button>
       </div>
 
+      {patients.length > 500 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            <p className="text-yellow-800 text-sm">
+              Loading {patients.length} patients. Consider using search or filters to improve performance.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Patient List</CardTitle>
+            <CardTitle>Patient List ({patients.length} patients)</CardTitle>
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />

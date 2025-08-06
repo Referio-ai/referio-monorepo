@@ -111,4 +111,27 @@ export class FacilitiesService {
             },
         });
     }
+    /**
+     * Delete Facility
+     * Delete a facility (soft delete)
+     * @returns Facility Successful Response
+     * @throws ApiError
+     */
+    public static apiV1DeleteFacility({
+        facilityId,
+    }: {
+        facilityId: string,
+    }): CancelablePromise<Facility> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/facilities/{facility_id}',
+            path: {
+                'facility_id': facilityId,
+            },
+            errors: {
+                404: `Facilities Endpoints`,
+                422: `Validation Error`,
+            },
+        });
+    }
 }
