@@ -13,7 +13,7 @@ interface FacilitatorFiltersProps {
   facilities: Facility[];
 }
 
-const FacilitatorFilters: React.FC<FacilitatorFiltersProps> = ({
+const FacilitatorFiltersComponent: React.FC<FacilitatorFiltersProps> = ({
   filters,
   onFiltersChange,
   facilities,
@@ -73,4 +73,4 @@ const FacilitatorFilters: React.FC<FacilitatorFiltersProps> = ({
   );
 };
 
-export default FacilitatorFilters; 
+export default FacilitatorFiltersComponent; 
