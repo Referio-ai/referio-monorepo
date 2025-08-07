@@ -77,7 +77,7 @@ async def reducto_referral_extraction_async(document_url: str, referral_id: str 
             },
             "webhook":{
                 "mode": "direct",
-                "url": f"https://api.referio.ai/api/v1/referrals/webhook/reducto",
+                "url": f"https://7baa796969df.ngrok-free.app/api/v1/referrals/webhook/reducto",
                 "channels": ['referio_referal']
             }
         }

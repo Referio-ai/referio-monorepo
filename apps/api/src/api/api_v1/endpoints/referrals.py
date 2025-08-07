@@ -28,6 +28,8 @@ from src.utils.reducto.reducto_utils import (
 )
 from src.config.infisical import REDUCTO_WEBHOOK_SECRET
 from src.services.referral_message_service import ReferralMessageService
+from src.services.notification_service import NotificationService
+from src.schemas.notifications import NotificationCreate
     
 router = APIRouter()
 
@@ -440,6 +442,9 @@ async def handle_reducto_webhook(request: Request):
             await db.table("referrals").update({
                 "job_status": "completed"
             }).eq("job_id", job_id).execute()   
+
+
+      
 
             # save the extraction data to the database
 

@@ -8,22 +8,22 @@ class ReferralMessages(BaseModel):
     created_at: str
     message: str
     sender: str
-    referral_id: UUID
-    sender_id: Optional[UUID] = None
+    referral_id: str
+    sender_id: Optional[str] = None
     attachments: Optional[List[Dict[str, Any]]] = None
 
 
 class ReferralMessagesCreate(BaseModel):
     message: str
     sender: str
-    referral_id: UUID
-    sender_id: Optional[UUID] = None
+    referral_id: str
+    sender_id: Optional[str] = None
 
 class ReferralMessagesUpdate(BaseModel):
     message: str
     sender: str
-    referral_id: UUID
-    sender_id: Optional[UUID] = None
+    referral_id: str
+    sender_id: Optional[str] = None
 
 
 # New request schemas for API endpoints

@@ -10,15 +10,15 @@ origins = []
 
 dev_origins = [
     "http://localhost:8000",
-    "https://my.kaylie.ai",
-    "https://staging.kaylie.ai",
-    "https://dev.staging.kaylie.ai",
+    "https://my.referio.ai",
+    "https://staging.referio.ai",
+    "https://dev.staging.referio.ai",
     "http://localhost:3000",
 ]
 
 prod_origins = [
-    "https://my.kaylie.ai",
-    "https://staging.kaylie.ai",
+    "https://my.referio.ai",
+    "https://staging.referio.ai",
 ]
 
 payload = {

@@ -42,3 +42,9 @@ async def update_facility(facility_id: str, facility: FacilityUpdate) -> Facilit
 async def delete_facility(facility_id: str) -> Facility:
     """Delete a facility (soft delete)"""
     return await facilities_service.delete_facility(facility_id)
+
+
+@router.get("/by-user/{user_id}", status_code=200)
+async def get_facilities_by_user(user_id: str) -> List[Facility]:
+    """Get all facilities for a user"""
+    return await facilities_service.get_facilities_by_user(user_id) 

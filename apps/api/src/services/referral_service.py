@@ -14,6 +14,8 @@ from src.utils.reducto.reducto_utils import reducto_referral_extraction, reducto
 from src.utils.supabase.supabase_utils import generate_signed_url
 from src.services.referral_message_service import ReferralMessageService
 from src.schemas.referral_messages import ReferralMessagesCreate
+from src.services.notification_service import NotificationService
+from src.schemas.notifications import NotificationCreate
 
 
 class ReferralService:
@@ -839,6 +841,20 @@ class ReferralService:
                     sender_id="system"
                 )
             
+
+
+            # create a notification for the user
+            await NotificationService.create_notification(
+                db=db,
+                notification_data=NotificationCreate(
+                    title="Referral Extraction Completed",
+                    message="Your referral has been extracted successfully",
+                    type="facility",
+                    value=referral.data[0]["referral_inbound_facility_id"],
+                )
+            );           
+
+
             # Step 3: Return comprehensive results
             return {
                 "referral_id": referral_id,
