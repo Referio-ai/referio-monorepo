@@ -173,13 +173,22 @@ export const CreateBatchModal: React.FC<CreateBatchModalProps> = ({
               </label>
               <input
                 type="number"
-                min="1"
+                min="0"
                 max="100"
                 value={form.numberOfReferrals}
-                onChange={(e) => onFormChange({...form, numberOfReferrals: parseInt(e.target.value) || 1})}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const numValue = value === '' ? 0 : parseInt(value);
+                  onFormChange({...form, numberOfReferrals: isNaN(numValue) ? 0 : numValue});
+                }}
                 disabled={createBatchMutation.isPending}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
+              {form.numberOfReferrals === 0 && (
+                <p className="text-red-500 text-sm mt-1">
+                  Number of referrals must be greater than 0
+                </p>
+              )}
               <p className="text-gray-500 text-sm mt-1">
                 Maximum 100 referrals per batch
               </p>

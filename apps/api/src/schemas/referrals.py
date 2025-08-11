@@ -12,12 +12,14 @@ class Referral(BaseModel):
     referral_batch_prefix: str
     referral_slug: str
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_scanned: bool
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: bool
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
     job_id: Optional[str] = None
+    job_status: Optional[str] = None
     deleted: Optional[bool] = False
 
     @field_validator('referral_id', 'referral_outbound_facility_id', 'referral_inbound_facility_id', 'patient_id', mode='before')
@@ -36,6 +38,7 @@ class ReferralCreate(BaseModel):
     referral_inbound_facility_id: UUID
     referral_batch_prefix: Optional[str] = None
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_slug: Optional[str] = None
     referral_scanned: bool = False
     referral_scanned_date: Optional[datetime] = None
@@ -52,6 +55,7 @@ class ReferralUpdate(BaseModel):
     referral_inbound_facility_id: Optional[UUID] = None
     referral_outbound_date: Optional[datetime] = None   
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_scanned: Optional[bool] = None
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: Optional[bool] = None
@@ -59,6 +63,8 @@ class ReferralUpdate(BaseModel):
     referral_status: Optional[str] = None
     job_id: Optional[str] = None
     deleted: Optional[bool] = None
+    appointment_date: Optional[datetime] = None
+    appointment_type: Optional[str] = None
 
 
 class ReferralWithDetails(BaseModel):
@@ -70,15 +76,22 @@ class ReferralWithDetails(BaseModel):
     referral_batch_prefix: str
     referral_slug: str
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_scanned: bool
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: bool
     referral_submitted_date: Optional[datetime] = None
     referral_status: Optional[str] = None
+    referral_status_type: Optional[str] = None  # The specific status type (Scheduled, Declined Services, etc.)
+    referral_status_notes: Optional[str] = None  # Notes about the status
     referral_remark: Optional[str] = None
     referral_doctor_name: Optional[str] = None
     job_id: Optional[str] = None
     deleted: Optional[bool] = False
+    
+    # Appointment details
+    appointment_date: Optional[str] = None
+    appointment_type: Optional[str] = None
     
     # Facility details
     outbound_facility_name: Optional[str] = None
@@ -110,8 +123,8 @@ class ReferralWithDetails(BaseModel):
 
 
 class ReferralStatusUpdate(BaseModel):
-    id: str
-    referral_status: Optional[str] = None
+    status_type: Optional[str] = None  # The specific status type (Scheduled, Declined Services, etc.)
+    notes: Optional[str] = None  # Notes about the status update
 
 class ReferralSearchResults(BaseModel):
     results: Sequence[Referral]
@@ -123,5 +136,6 @@ class ReferralPagination(BaseModel):
 
 
 class ReferralWithDetailsPagination(BaseModel):
+    facilitator_facility_id: Optional[str] = None
     items: Sequence[ReferralWithDetails]
     pagination: Dict[str, Any]

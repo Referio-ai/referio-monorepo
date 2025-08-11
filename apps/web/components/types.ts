@@ -11,6 +11,23 @@ export interface FileMetadata {
   uploadedAt: Date;
 }
 
+export interface UploadResult {
+  fileName: string;
+  success: boolean;
+  error?: any;
+  result?: any;
+  canRetry?: boolean;
+}
+
+export interface UploadProgress {
+  total: number;
+  completed: number;
+  isUploading: boolean;
+  results: UploadResult[];
+  canCancel: boolean;
+  isCancelled: boolean;
+}
+
 export interface PatientInfo {
   firstNameInitial: string;
   lastNameInitial: string;
@@ -43,6 +60,11 @@ export interface FileUploadProps {
   actionButtonText?: string;
   actionButtonOnClick?: () => void;
   documentType?: string;
+  // New props for immediate upload
+  onUploadProgress?: (progress: UploadProgress) => void;
+  onUploadComplete?: (results: UploadResult[]) => void;
+  uploadFilesImmediately?: boolean;
+  uploadFunction?: (files: File[]) => Promise<UploadResult[]>;
 }
 
 export interface StartScreenStepProps {
@@ -98,7 +120,7 @@ export interface NavigationFooterProps {
 
 export interface ReferralFormUploadProps {
   onFilesSelected: (files: File[]) => void;
-  onUploadComplete?: (uploadedFiles: File[]) => void;
+  onUploadComplete?: () => void;
   referralId?: string;
   existingFilesCount?: number;
   isRequired?: boolean;

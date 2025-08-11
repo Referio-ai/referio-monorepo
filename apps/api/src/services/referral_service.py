@@ -3,6 +3,7 @@ from uuid import UUID
 from datetime import datetime, date
 from supabase import AsyncClient
 from fastapi import HTTPException
+import asyncio
 
 from src.crud.referrals import referrals_crud
 from src.crud.patients import patients_crud
@@ -10,6 +11,11 @@ from src.schemas.referrals import Referral, ReferralWithDetails, ReferralUpdate,
 from src.schemas.patients import PatientCreate, PatientUpdate
 from src.schemas.documents import DocumentCreate
 from src.utils.reducto.reducto_utils import reducto_referral_extraction, reducto_referral_extraction_async
+from src.utils.supabase.supabase_utils import generate_signed_url
+from src.services.referral_message_service import ReferralMessageService
+from src.schemas.referral_messages import ReferralMessagesCreate
+from src.services.notification_service import NotificationService
+from src.schemas.notifications import NotificationCreate
 
 
 class ReferralService:
@@ -105,6 +111,8 @@ class ReferralService:
                 referral_submitted=referral_data['referral_submitted'],
                 referral_submitted_date=referral_data.get('referral_submitted_date'),
                 referral_status=referral_data.get('referral_status'),
+                referral_status_type=referral_data.get('referral_status_type'),
+                referral_status_notes=referral_data.get('referral_status_notes'),
                 deleted=referral_data.get('deleted', False),
                 outbound_facility_name=outbound_facility_name,
                 inbound_facility_name=inbound_facility_name,
@@ -226,6 +234,8 @@ class ReferralService:
                         referral_submitted=row['referral_submitted'],
                         referral_submitted_date=row.get('referral_submitted_date'),
                         referral_status=row.get('referral_status'),
+                        referral_status_type=row.get('referral_status_type'),
+                        referral_status_notes=row.get('referral_status_notes'),
                         deleted=row.get('deleted', False),
                         outbound_facility_name=outbound_facility[0]['facility_name'] if outbound_facility and len(outbound_facility) > 0 else None,
                         inbound_facility_name=inbound_facility[0]['facility_name'] if inbound_facility and len(inbound_facility) > 0 else None,
@@ -273,6 +283,13 @@ class ReferralService:
             total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
             has_next = page < total_pages
             has_previous = page > 1
+            
+            # Log summary of filtering results
+            print(f"✅ Filtering Summary:")
+            print(f"   - Total filtered referrals: {total_count}")
+            print(f"   - Current page items: {len(items)}")
+            print(f"   - All referrals are scanned: {all(item.referral_scanned for item in items) if items else 'N/A'}")
+            print(f"   - All referrals have patients: {all(item.patient_id is not None for item in items) if items else 'N/A'}")
             
             return ReferralWithDetailsPagination(
                 items=items,
@@ -468,12 +485,42 @@ class ReferralService:
                     except Exception as reducto_error:
                         print(f"Error processing file {file.filename} through Reducto: {str(reducto_error)}")
                         continue
-                    
 
-            # Step 3: Return success message 
+
+            # Step 3: Store document records in documents table
+            document_records = []
+            deletion_results = None
+            if upload_results:
+                try:
+                    document_records, deletion_results = await ReferralService._store_document_records(
+                        db=db, 
+                        referral_id=referral_id, 
+                        upload_results=upload_results,
+                        patient_result=None  # No patient data available in async flow
+                    )
+                    print(f"Stored {len(document_records)} document records for referral {referral_id}")
+                except Exception as doc_error:
+                    print(f"Warning: Failed to store document records: {str(doc_error)}")
+
+
+    
+            # Step 4: Return comprehensive results    
             return {
                 "status": "success",
-                "message": "Referral form uploaded and processed successfully"
+                "message": "Referral form uploaded and processed successfully",
+                "referral_id": referral_id,
+                "upload_results": upload_results,
+                "document_records": document_records,
+                "processed_files": len(upload_results) if upload_results else 0,
+                "stored_documents": len(document_records) if document_records else 0,
+                "summary": {
+                    "total_files": len(upload_results) if upload_results else 0,
+                    "documents_stored": len(document_records) if document_records else 0,
+                    "upload_success": len(upload_results) > 0 if upload_results else False,
+                    "storage_success": len(document_records) == len(upload_results) if upload_results and document_records else False,
+                    "existing_documents_deleted": deletion_results.get("deleted_count", 0) if deletion_results else 0,
+                    "storage_files_deleted": deletion_results.get("storage_deletions", 0) if deletion_results else 0
+                }
             }
         
         except Exception as e:
@@ -715,8 +762,6 @@ class ReferralService:
                 )   
             
             referral_id = referral.data[0]["referral_id"]
-
-            print(f"Referral ID: {referral_id}")
             
             # Initialize variables for extracted data
             patient_data_extracted = None
@@ -771,7 +816,43 @@ class ReferralService:
                     print(f"Referral information updated: {referral_updates}")
                 except Exception as referral_error:
                     print(f"Warning: Failed to update referral information: {str(referral_error)}")
+
+
+                    #create a system message for the referral base on the extracted data
+                # Create a system message for the referral based on the extracted data.
+                # This message logs the creation of a new patient from the extracted referral information,
+                # and includes any notes that were extracted in the process.
+                notes = None
+                if referral_data_extracted and isinstance(referral_data_extracted, dict):
+                    notes = referral_data_extracted.get("notes")
+                message = (
+                    f"New patient created: {patient_result.get('patient_fname')} {patient_result.get('patient_lname')} "
+                    f"with DOB {patient_result.get('patient_dob')}"
+                )
+                if notes:
+                    message += f". Notes: {notes}"
+                await ReferralMessageService.add_message_to_referral(
+                    db=db,
+                    referral_id=referral_id,
+                    message=message,
+                    sender="System",
+                    sender_id="system"
+                )
             
+
+
+            # create a notification for the user
+            await NotificationService.create_notification(
+                db=db,
+                notification_data=NotificationCreate(
+                    title="Referral Extraction Completed",
+                    message="Your referral has been extracted successfully",
+                    type="facility",
+                    value=referral.data[0]["referral_inbound_facility_id"],
+                )
+            );           
+
+
             # Step 3: Return comprehensive results
             return {
                 "referral_id": referral_id,
@@ -878,21 +959,30 @@ class ReferralService:
             print(f"Mapped patient data: {patient_create_data}")
             
             # Try to find existing patient by name and DOB (only if we have these fields)
-            print(f"Searching for existing patient...")
+            print(f"🔍 DUPLICATE CHECK: Searching for existing patient...")
             existing_patient = None
             
             # Only search for existing patient if we have enough identifying information
             if (patient_create_data.get("patient_fname") and 
                 patient_create_data.get("patient_lname") and 
                 patient_create_data.get("patient_dob")):
+                print(f"✅ Sufficient data for patient matching:")
+                print(f"   - First Name: {patient_create_data.get('patient_fname')}")
+                print(f"   - Last Name: {patient_create_data.get('patient_lname')}")
+                print(f"   - Date of Birth: {patient_create_data.get('patient_dob')}")
+                
                 existing_patient = await ReferralService._find_existing_patient(
                     db, patient_create_data
                 )
             else:
-                print(f"Insufficient data for patient matching, will create new patient")
+                print(f"❌ Insufficient data for patient matching, will create new patient")
+                print(f"   Missing: First Name={bool(patient_create_data.get('patient_fname'))}, Last Name={bool(patient_create_data.get('patient_lname'))}, DOB={bool(patient_create_data.get('patient_dob'))}")
             
             if existing_patient:
-                print(f"Found existing patient with ID: {existing_patient.patient_id}")
+                print(f"✅ DUPLICATE FOUND: Existing patient with ID: {existing_patient.patient_id}")
+                print(f"   - Name: {existing_patient.patient_fname} {existing_patient.patient_lname}")
+                print(f"   - DOB: {existing_patient.patient_dob}")
+                
                 # Update existing patient with new information using direct database update
                 update_data = {
                     k: v for k, v in patient_create_data.items() 
@@ -900,7 +990,7 @@ class ReferralService:
                 }
                 
                 if update_data:
-                    print(f"Updating patient with data: {update_data}")
+                    print(f"🔄 Updating existing patient with new data: {update_data}")
                     # Use direct database update since PatientUpdate schema doesn't have id field
                     result = await db.table("patients").update(update_data).eq("patient_id", str(existing_patient.patient_id)).execute()
                     print(f"Patient update result: {result}")
@@ -908,7 +998,7 @@ class ReferralService:
                     if result.data:
                         from src.schemas.patients import Patient
                         updated_patient = Patient(**result.data[0])
-                        print(f"Successfully updated patient: {updated_patient.patient_id}")
+                        print(f"✅ Successfully updated existing patient: {updated_patient.patient_id}")
                         
                         return {
                             "status": "updated",
@@ -919,7 +1009,7 @@ class ReferralService:
                             "insurance_data": insurance_data
                         }
                     else:
-                        print(f"Patient update failed - no data returned")
+                        print(f"❌ Patient update failed - no data returned")
                         return {
                             "status": "update_failed",
                             "patient_id": str(existing_patient.patient_id),
@@ -927,7 +1017,7 @@ class ReferralService:
                             "action": "error"
                         }
                 else:
-                    print(f"No updates needed for existing patient")
+                    print(f"ℹ️ No updates needed for existing patient")
                     return {
                         "status": "found_existing",
                         "patient_id": str(existing_patient.patient_id),
@@ -937,7 +1027,7 @@ class ReferralService:
                         "insurance_data": insurance_data
                     }
             else:
-                print(f"No existing patient found, creating new patient...")
+                print(f"🆕 NO DUPLICATE FOUND: Creating new patient...")
                 # Create new patient with whatever data we have
                 # Set intelligent defaults for missing required fields
                 if not patient_create_data.get("patient_fname"):
@@ -963,6 +1053,9 @@ class ReferralService:
                 patient_create = PatientCreate(**patient_create_data)
                 new_patient = await patients_crud.create(db, obj_in=patient_create)
                 print(f"Successfully created new patient: {new_patient.patient_id}")
+
+
+           
                 
                 return {
                     "status": "created",
@@ -990,25 +1083,48 @@ class ReferralService:
         patient_data: Dict[str, Any]
     ) -> Optional[Any]:
         """
-        Find existing patient by name and date of birth
+        Find existing patient by name and date of birth with case-insensitive matching
         """
         try:
-            # Search for patient by first name, last name, and DOB using correct field names
-            result = await db.table("patients").select("*").match({
-                "patient_fname": patient_data.get("patient_fname"),
-                "patient_lname": patient_data.get("patient_lname"),
-                "patient_dob": patient_data.get("patient_dob")
-            }).execute()
+            print(f"Searching for existing patient with criteria:")
+            print(f"  First Name: {patient_data.get('patient_fname')}")
+            print(f"  Last Name: {patient_data.get('patient_lname')}")
+            print(f"  Date of Birth: {patient_data.get('patient_dob')}")
+            
+            # Search for patient by first name, last name, and DOB using case-insensitive matching
+            # Use ilike for case-insensitive matching in Supabase
+            result = await db.table("patients").select("*").or_(
+                f"patient_fname.ilike.{patient_data.get('patient_fname')},"
+                f"patient_lname.ilike.{patient_data.get('patient_lname')},"
+                f"patient_dob.eq.{patient_data.get('patient_dob')}"
+            ).execute()
             
             if result.data:
-                # Convert to Patient object for type consistency
-                from src.schemas.patients import Patient
-                return Patient(**result.data[0])
+                print(f"Found {len(result.data)} potential matches")
+                # Filter for exact DOB match since the OR query might return partial matches
+                exact_matches = [
+                    patient for patient in result.data 
+                    if (patient.get('patient_fname', '').lower() == patient_data.get('patient_fname', '').lower() and
+                        patient.get('patient_lname', '').lower() == patient_data.get('patient_lname', '').lower() and
+                        patient.get('patient_dob') == patient_data.get('patient_dob'))
+                ]
+                
+                if exact_matches:
+                    # Convert to Patient object for type consistency
+                    from src.schemas.patients import Patient
+                    matched_patient = Patient(**exact_matches[0])
+                    print(f"Found exact match: Patient ID {matched_patient.patient_id}")
+                    return matched_patient
+                else:
+                    print("No exact matches found after filtering")
             
+            print("No existing patient found with matching criteria")
             return None
             
         except Exception as e:
             print(f"Error finding existing patient: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
             return None
 
     @staticmethod
@@ -1033,6 +1149,16 @@ class ReferralService:
             if patient_result and patient_result.get("patient_id"):
                 referral_updates["patient_id"] = patient_result["patient_id"]
                 print(f"Setting patient_id: {patient_result['patient_id']}")
+                
+                # Add patient name for filtering purposes
+                patient_fname = patient_result['patient_data'].get("patient_fname", "")
+                patient_lname = patient_result['patient_data'].get("patient_lname", "")
+                print(f"referral_updates: {patient_fname}")
+                print(f"Patient lname: {patient_lname}")
+                if patient_fname or patient_lname:
+                    patient_name = f"{patient_fname} {patient_lname}".strip()
+                    referral_updates["patient_name"] = patient_name
+                    print(f"Setting patient_name: {patient_name}")
             
             # Update referral date if available
             if referral_data.get("referral_date"):
@@ -1280,6 +1406,192 @@ class ReferralService:
             }
 
 
+    @staticmethod
+    async def update_referral_status(
+        db: AsyncClient,
+        referral_id: str,
+        status_type: str,
+        notes: Optional[str] = None,
+        appointment_date: Optional[str] = None,
+        appointment_type: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Update referral status based on the status type and add notes
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral to update
+            status_type: The specific status type (Scheduled, Declined Services, Unable to Reach, Report Sent)
+            notes: Optional notes about the status update
+            appointment_date: Optional appointment date (only for Scheduled status)
+            appointment_type: Optional appointment type (only for Scheduled status)
+            
+        Returns:
+            Dict containing update results and status information
+        """
+        try:
+            print(f"Updating referral status for ID: {referral_id}")
+            print(f"Status type: {status_type}")
+            print(f"Notes: {notes}")
+            print(f"Appointment date: {appointment_date}")
+            print(f"Appointment type: {appointment_type}")
+            
+            # Import constants
+            from src.config.constants import REFERRAL_STATUS_MAPPING
+            
+            # Map the status type to the database status
+            if status_type not in REFERRAL_STATUS_MAPPING:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid status type: {status_type}. Valid options are: {list(REFERRAL_STATUS_MAPPING.keys())}"
+                )
+            
+            database_status = REFERRAL_STATUS_MAPPING[status_type]
+            print(f"Mapped status type '{status_type}' to database status '{database_status}'")
+            
+            # Prepare update data
+            update_data = {
+                "referral_status_notes": notes,
+                "referral_status_type": status_type,
+                "referral_status": database_status,
+                "updated_at": datetime.now().isoformat()
+            }
+            
+            # Add appointment fields if status is "Scheduled" and fields are provided
+            if status_type == "Scheduled":
+                if appointment_date:
+                    update_data["appointment_date"] = appointment_date
+                if appointment_type:
+                    update_data["appointment_type"] = appointment_type
+            
+            # Update the referral in the database
+            result = await db.table("referrals").update(update_data).eq("referral_id", referral_id).execute()
+            
+            if not result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            updated_referral = result.data[0]
+            print(f"Successfully updated referral status to: {database_status}")
+            
+            # Store status history for all status updates
+            status_history_record = None
+            try:
+                from src.crud.referral_status_history import referral_status_history_crud
+                from src.schemas.referral_status_history import ReferralStatusHistoryCreate
+                
+                # Create status history record
+                history_data = ReferralStatusHistoryCreate(
+                    referral_id=referral_id,
+                    status_type=status_type,
+                    database_status=database_status,
+                    notes=notes,
+                    updated_by_id=None,  # TODO: Get from authentication context
+                    updated_by_name="System",  # TODO: Get from authentication context
+                    appointment_date=appointment_date,
+                    appointment_type=appointment_type
+                )
+                
+                # Insert into referral_status_history table
+                status_history_record = await referral_status_history_crud.create_status_history(
+                    db=db, 
+                    obj_in=history_data
+                )
+                
+                print(f"Status history recorded successfully: {status_history_record.status_history_id}")
+                
+            except Exception as history_error:
+                print(f"Warning: Failed to store status history: {str(history_error)}")
+                # Don't fail the main operation if status history fails
+            
+            return {
+                "status": "success",
+                "referral_id": referral_id,
+                "status_type": status_type,
+                "database_status": database_status,
+                "notes": notes,
+                "appointment_date": appointment_date,
+                "appointment_type": appointment_type,
+                "updated_referral": updated_referral,
+                "status_history": status_history_record,
+                "message": f"Referral status updated to {status_type}"
+            }
+            
+        except HTTPException:
+            # Re-raise HTTPException
+            raise
+        except Exception as e:
+            print(f"Error updating referral status: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to update referral status: {str(e)}"
+            )
+
+    @staticmethod
+    async def get_referral_status_history(
+        db: AsyncClient,
+        referral_id: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Get status history for a specific referral
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral to get history for
+            limit: Optional limit for number of entries to return
+            offset: Optional offset for pagination
+            
+        Returns:
+            Dictionary containing status history and metadata
+        """
+        try:
+            from src.crud.referral_status_history import referral_status_history_crud
+            
+            # Validate referral exists
+            referral_result = await db.table("referrals").select("referral_id").eq("referral_id", referral_id).eq("deleted", False).execute()
+            
+            if not referral_result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            # Get status history
+            history_result = await referral_status_history_crud.get_status_history_by_referral(
+                db=db,
+                referral_id=referral_id,
+                limit=limit,
+                offset=offset
+            )
+            
+            return {
+                "status": "success",
+                "referral_id": referral_id,
+                "history": history_result.results,
+                "total_count": history_result.total_count,
+                "page": history_result.page,
+                "page_size": history_result.page_size
+            }
+            
+        except HTTPException:
+            # Re-raise HTTPException
+            raise
+        except Exception as e:
+            print(f"Error getting referral status history: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get referral status history: {str(e)}"
+            )
+
+
 #mark the referral as scanned
     async def mark_referral_as_scanned(db: AsyncClient, slug: str) -> Referral:
         """
@@ -1415,6 +1727,509 @@ class ReferralService:
                 status_code=500,
                 detail=f"Failed to upload document: {str(e)}"
             )
+        
+    @staticmethod
+    async def get_facilitator_inbound_referrals(
+        db: AsyncClient,
+        facilitator_facility_id: str,
+        page: int = 1,
+        page_size: int = 10,
+        search: str = "",
+        status: Optional[str] = None,
+        sort_by: Optional[str] = None
+    ) -> ReferralWithDetailsPagination:
+        """
+        Get inbound referrals for a facilitator based on their facility_id
+        
+        This method fetches referrals where:
+        1. The facilitator's facility is the inbound facility (referral_inbound_facility_id)
+        2. The referrals are scanned (referral_scanned = True)
+        3. The referrals have patient information (patient_id is not null)
+        4. The referrals are not deleted (deleted = False)
+        
+        Args:
+            db: Database client
+            facilitator_facility_id: Facility ID of the facilitator
+            page: Page number starting from 1
+            page_size: Number of items per page
+            search: Search term to filter referrals
+            status: Optional status filter for referrals
+            sort_by: Optional sorting parameter. Valid options:
+                - "date_oldest": Sort by referral_scanned_date ascending
+                - "date_newest": Sort by referral_scanned_date descending
+                - None: Default sorting (referral_scanned_date.desc.nullslast)
+            
+        Returns:
+            ReferralWithDetailsPagination containing items and pagination metadata
+        """
+        try:
+            # Calculate offset
+            offset = (page - 1) * page_size
+            
+            # Debug logging for sorting
+            print(f"🔍 SORTING DEBUG: sort_by parameter received: {sort_by}")
+            print(f"🔍 SORTING DEBUG: page={page}, page_size={page_size}, search='{search}', status='{status}'")
+            
+            # Cache facility names to avoid repeated queries
+            facility_cache = {}
+            
+            # Get inbound facility name once (this is the facilitator's facility)
+            inbound_facility_result = await db.table("facility_entity").select("facility_name").eq("facility_id", facilitator_facility_id).execute()
+            inbound_facility_name = inbound_facility_result.data[0]['facility_name'] if inbound_facility_result.data else None
+            facility_cache[facilitator_facility_id] = inbound_facility_name
+            
+            # Build base query with optimized filtering
+            base_query = (
+                db.table("referrals")
+                .select("*")
+                .eq("referral_inbound_facility_id", facilitator_facility_id)
+                .eq("referral_scanned", True)
+                .not_.is_("patient_id", "null")
+                .eq("deleted", False)
+            )
+            
+            # Apply status filter if provided and valid
+            if status and status.strip():
+                # Debug logging for status filtering
+                print(f"🔍 STATUS DEBUG: Applying status filter: '{status}'")
+                base_query = base_query.eq("referral_status", status.strip())
+            else:
+                print(f"🔍 STATUS DEBUG: No status filter applied (status: '{status}')")
+            
+            # Handle search functionality at database level
+            if search:
+                # Search across referral fields including patient_name directly on referrals table
+                search_query = base_query.or_(
+                    f"referral_slug.ilike.%{search}%,"
+                    f"referral_batch_prefix.ilike.%{search}%,"
+                    f"patient_name.ilike.%{search}%"
+                )
+            else:
+                search_query = base_query
+            
+            # Apply sorting based on sort_by parameter
+            print(f"🔍 SORTING DEBUG: Applying sorting with sort_by='{sort_by}'")
+            if sort_by == "date_oldest":
+                search_query = search_query.order("referral_scanned_date.asc.nullslast")
+                print(f"🔍 SORTING DEBUG: Applied date_oldest sorting")
+            elif sort_by == "date_newest":
+                search_query = search_query.order("referral_scanned_date.desc.nullslast")
+                print(f"🔍 SORTING DEBUG: Applied date_newest sorting")
+            else:
+                # Default sorting
+                search_query = search_query.order("referral_scanned_date.desc.nullslast")
+                print(f"🔍 SORTING DEBUG: Applied default sorting")
+            
+            # Get total count with same filters
+            count_query = (
+                db.table("referrals")
+                .select("*", count='exact')
+                .eq("referral_inbound_facility_id", facilitator_facility_id)
+                .eq("referral_scanned", True)
+                .not_.is_("patient_id", "null")
+                .eq("deleted", False)
+            )
+            
+            if status and status.strip():
+                count_query = count_query.eq("referral_status", status.strip())
+            
+            if search:
+                # Search across referral fields including patient_name directly on referrals table
+                count_query = count_query.or_(
+                    f"referral_slug.ilike.%{search}%,"
+                    f"referral_batch_prefix.ilike.%{search}%,"
+                    f"patient_name.ilike.%{search}%"
+                )
+            
+            # Execute count and data queries concurrently
+            count_result, data_result = await asyncio.gather(
+                count_query.execute(),
+                search_query.range(offset, offset + page_size - 1).execute()
+            )
+            
+            total_count = count_result.count if count_result.count is not None else 0
+            
+            # Transform results to ReferralWithDetails objects
+            items = []
+            if data_result.data:
+                # Get all unique IDs for batch fetching
+                referral_ids = [str(row['referral_id']) for row in data_result.data]
+                patient_ids = [str(row['patient_id']) for row in data_result.data if row.get('patient_id')]
+                outbound_facility_ids = [str(row['referral_outbound_facility_id']) for row in data_result.data if row.get('referral_outbound_facility_id')]
+                
+                # Batch fetch all related data concurrently
+                batch_tasks = []
+                
+                if patient_ids:
+                    batch_tasks.append(
+                        db.table("patients").select("patient_id, patient_fname, patient_mname, patient_lname, patient_dob, patient_contact_phone, patient_contact_email, patient_gender, patient_insurance_member_id").in_("patient_id", patient_ids).execute()
+                    )
+                else:
+                    batch_tasks.append(None)
+                
+                if outbound_facility_ids:
+                    batch_tasks.append(
+                        db.table("facility_entity").select("facility_id, facility_name").in_("facility_id", outbound_facility_ids).execute()
+                    )
+                else:
+                    batch_tasks.append(None)
+                
+                if referral_ids:
+                    batch_tasks.append(
+                        db.table("documents").select("document_id, created_at, source, document_category, referral_id").in_("referral_id", referral_ids).execute()
+                    )
+                else:
+                    batch_tasks.append(None)
+                
+                # Execute all batch queries concurrently
+                batch_results = await asyncio.gather(*[task for task in batch_tasks if task is not None])
+                
+                # Process batch results
+                patients_data = batch_results[0].data if len(batch_results) > 0 and batch_results[0] else []
+                outbound_facilities_data = batch_results[1].data if len(batch_results) > 1 and batch_results[1] else []
+                documents_data = batch_results[2].data if len(batch_results) > 2 and batch_results[2] else []
+                
+                # Create lookup dictionaries for O(1) access
+                patients_lookup = {str(p['patient_id']): p for p in patients_data}
+                outbound_facilities_lookup = {str(f['facility_id']): f for f in outbound_facilities_data}
+                documents_lookup = {}
+                for doc in documents_data:
+                    referral_id = str(doc['referral_id'])
+                    if referral_id not in documents_lookup:
+                        documents_lookup[referral_id] = []
+                    documents_lookup[referral_id].append(doc)
+                
+                # Process each referral
+                for row in data_result.data:
+                    # Get patient information
+                    patient_data = patients_lookup.get(str(row.get('patient_id')), {})
+                    
+                    # Get outbound facility information
+                    outbound_facility_data = outbound_facilities_lookup.get(str(row.get('referral_outbound_facility_id')), {})
+                    outbound_facility_name = outbound_facility_data.get('facility_name') if outbound_facility_data else None
+                    
+                    # Get documents for this referral
+                    referral_documents = documents_lookup.get(str(row['referral_id']), [])
+                    
+                    # Optimize document processing - only generate signed URLs if needed
+                    updated_documents = []
+                    for doc in referral_documents:
+                        updated_doc = doc.copy()
+                        # Use the stored source URL directly for now
+                        # Signed URL generation can be done on-demand in the frontend
+                        updated_doc['signed_url'] = doc.get('source', '')
+                        updated_documents.append(updated_doc)
+                    
+                    # Create ReferralWithDetails object
+                    referral_item = ReferralWithDetails(
+                        referral_id=row['referral_id'],
+                        referral_outbound_facility_id=row['referral_outbound_facility_id'],
+                        referral_inbound_facility_id=row['referral_inbound_facility_id'],
+                        referral_outbound_date=row.get('referral_outbound_date'),
+                        referral_batch_prefix=row['referral_batch_prefix'],
+                        referral_slug=row['referral_slug'],
+                        patient_id=row.get('patient_id'),
+                        referral_scanned=row['referral_scanned'],
+                        referral_scanned_date=row.get('referral_scanned_date'),
+                        referral_submitted=row['referral_submitted'],
+                        referral_submitted_date=row.get('referral_submitted_date'),
+                        referral_status=row.get('referral_status'),
+                        referral_remark=row.get('referral_remark'),
+                        referral_doctor_name=row.get('referral_doctor_name'),
+                        deleted=row.get('deleted', False),
+                        appointment_date=row.get('appointment_date'),
+                        appointment_type=row.get('appointment_type'),
+                        outbound_facility_name=outbound_facility_name,
+                        inbound_facility_name=inbound_facility_name,
+                        patient_fname=patient_data.get('patient_fname'),
+                        patient_mname=patient_data.get('patient_mname'),
+                        patient_lname=patient_data.get('patient_lname'),
+                        patient_dob=patient_data.get('patient_dob'),
+                        patient_contact_phone=patient_data.get('patient_contact_phone'),
+                        patient_contact_email=patient_data.get('patient_contact_email'),
+                        patient_gender=patient_data.get('patient_gender'),
+                        patient_insurance_member_id=patient_data.get('patient_insurance_member_id'),
+                        documents=updated_documents,
+                        document_count=len(updated_documents)
+                    )
+                    
+                    items.append(referral_item)
+            
+            # Calculate pagination metadata
+            total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+            has_next = page < total_pages
+            has_previous = page > 1
+            
+            return ReferralWithDetailsPagination(
+                items=items,
+                pagination={
+                    "total_count": total_count,
+                    "total_pages": total_pages,
+                    "current_page": page,
+                    "page_size": page_size,
+                    "has_next": has_next,
+                    "has_previous": has_previous
+                }
+            )
+            
+        except Exception as e:
+            print(f"Error getting facilitator inbound referrals: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch facilitator inbound referrals: {str(e)}"
+            )
+        
+    @staticmethod
+    async def get_facilitator_outbound_referrals(
+        db: AsyncClient,
+        facilitator_facility_id: str,
+        page: int = 1,
+        page_size: int = 10,
+        search: str = "",
+        status: Optional[str] = None,
+        sort_by: Optional[str] = None
+    ) -> ReferralWithDetailsPagination:
+        """
+        Get outbound referrals for a facilitator based on their facility_id
+        
+        This method fetches referrals where:
+        1. The facilitator's facility is the outbound facility (referral_outbound_facility_id)
+        2. The referrals are scanned (referral_scanned = True)
+        3. The referrals have patient information (patient_id is not null)
+        4. The referrals are not deleted (deleted = False)
+        
+        Args:
+            db: Database client
+            facilitator_facility_id: Facility ID of the facilitator
+            page: Page number starting from 1
+            page_size: Number of items per page
+            search: Search term to filter referrals
+            status: Optional status filter for referrals
+            sort_by: Optional sorting parameter. Valid options:
+                - "date_oldest": Sort by referral_scanned_date ascending
+                - "date_newest": Sort by referral_scanned_date descending
+                - None: Default sorting (referral_scanned_date.desc.nullslast)
+            
+        Returns:
+            ReferralWithDetailsPagination containing items and pagination metadata
+        """
+        try:
+            # Calculate offset
+            offset = (page - 1) * page_size
+            
+            # Debug logging for sorting
+            print(f"🔍 SORTING DEBUG (OUTBOUND): sort_by parameter received: {sort_by}")
+            print(f"🔍 SORTING DEBUG (OUTBOUND): page={page}, page_size={page_size}, search='{search}', status='{status}'")
+            
+            # Cache facility names to avoid repeated queries
+            facility_cache = {}
+            
+            # Get outbound facility name once (this is the facilitator's facility)
+            outbound_facility_result = await db.table("facility_entity").select("facility_name").eq("facility_id", facilitator_facility_id).execute()
+            outbound_facility_name = outbound_facility_result.data[0]['facility_name'] if outbound_facility_result.data else None
+            facility_cache[facilitator_facility_id] = outbound_facility_name
+            
+            # Build base query with optimized filtering
+            base_query = (
+                db.table("referrals")
+                .select("*")
+                .eq("referral_outbound_facility_id", facilitator_facility_id)
+                .eq("referral_scanned", True)
+                .not_.is_("patient_id", "null")
+                .eq("deleted", False)
+            )
+            
+            # Apply status filter if provided and valid
+            if status and status.strip():
+                # Debug logging for status filtering
+                print(f"🔍 STATUS DEBUG (OUTBOUND): Applying status filter: '{status}'")
+                base_query = base_query.eq("referral_status", status.strip())
+            else:
+                print(f"🔍 STATUS DEBUG (OUTBOUND): No status filter applied (status: '{status}')")
+            
+            # Handle search functionality at database level
+            if search:
+                search_query = base_query.or_(
+                    f"referral_slug.ilike.%{search}%,"
+                    f"referral_batch_prefix.ilike.%{search}%"
+                )
+            else:
+                search_query = base_query
+            
+            # Apply sorting based on sort_by parameter
+            print(f"🔍 SORTING DEBUG (OUTBOUND): Applying sorting with sort_by='{sort_by}'")
+            if sort_by == "date_oldest":
+                search_query = search_query.order("referral_scanned_date.asc.nullslast")
+                print(f"🔍 SORTING DEBUG (OUTBOUND): Applied date_oldest sorting")
+            elif sort_by == "date_newest":
+                search_query = search_query.order("referral_scanned_date.desc.nullslast")
+                print(f"🔍 SORTING DEBUG (OUTBOUND): Applied date_newest sorting")
+            else:
+                # Default sorting
+                search_query = search_query.order("referral_scanned_date.desc.nullslast")
+                print(f"🔍 SORTING DEBUG (OUTBOUND): Applied default sorting")
+            
+            # Get total count with same filters
+            count_query = (
+                db.table("referrals")
+                .select("*", count='exact')
+                .eq("referral_outbound_facility_id", facilitator_facility_id)
+                .eq("referral_scanned", True)
+                .not_.is_("patient_id", "null")
+                .eq("deleted", False)
+            )
+            
+            if status and status.strip():
+                count_query = count_query.eq("referral_status", status.strip())
+            
+            if search:
+                count_query = count_query.or_(
+                    f"referral_slug.ilike.%{search}%,"
+                    f"referral_batch_prefix.ilike.%{search}%"
+                )
+            
+            # Execute count and data queries concurrently
+            count_result, data_result = await asyncio.gather(
+                count_query.execute(),
+                search_query.range(offset, offset + page_size - 1).execute()
+            )
+            
+            total_count = count_result.count if count_result.count is not None else 0
+            
+            # Transform results to ReferralWithDetails objects
+            items = []
+            if data_result.data:
+                # Get all unique IDs for batch fetching
+                referral_ids = [str(row['referral_id']) for row in data_result.data]
+                patient_ids = [str(row['patient_id']) for row in data_result.data if row.get('patient_id')]
+                inbound_facility_ids = [str(row['referral_inbound_facility_id']) for row in data_result.data if row.get('referral_inbound_facility_id')]
+                
+                # Batch fetch all related data concurrently
+                batch_tasks = []
+                
+                if patient_ids:
+                    batch_tasks.append(
+                        db.table("patients").select("patient_id, patient_fname, patient_mname, patient_lname, patient_dob, patient_contact_phone, patient_contact_email, patient_gender, patient_insurance_member_id").in_("patient_id", patient_ids).execute()
+                    )
+                else:
+                    batch_tasks.append(None)
+                
+                if inbound_facility_ids:
+                    batch_tasks.append(
+                        db.table("facility_entity").select("facility_id, facility_name").in_("facility_id", inbound_facility_ids).execute()
+                    )
+                else:
+                    batch_tasks.append(None)
+                
+                if referral_ids:
+                    batch_tasks.append(
+                        db.table("documents").select("document_id, created_at, source, document_category, referral_id").in_("referral_id", referral_ids).execute()
+                    )
+                else:
+                    batch_tasks.append(None)
+                
+                # Execute all batch queries concurrently
+                batch_results = await asyncio.gather(*[task for task in batch_tasks if task is not None])
+                
+                # Process batch results
+                patients_data = batch_results[0].data if len(batch_results) > 0 and batch_results[0] else []
+                inbound_facilities_data = batch_results[1].data if len(batch_results) > 1 and batch_results[1] else []
+                documents_data = batch_results[2].data if len(batch_results) > 2 and batch_results[2] else []
+                
+                # Create lookup dictionaries for O(1) access
+                patients_lookup = {str(p['patient_id']): p for p in patients_data}
+                inbound_facilities_lookup = {str(f['facility_id']): f for f in inbound_facilities_data}
+                documents_lookup = {}
+                for doc in documents_data:
+                    referral_id = str(doc['referral_id'])
+                    if referral_id not in documents_lookup:
+                        documents_lookup[referral_id] = []
+                    documents_lookup[referral_id].append(doc)
+                
+                # Process each referral
+                for row in data_result.data:
+                    # Get patient information
+                    patient_data = patients_lookup.get(str(row.get('patient_id')), {})
+                    
+                    # Get inbound facility information
+                    inbound_facility_data = inbound_facilities_lookup.get(str(row.get('referral_inbound_facility_id')), {})
+                    inbound_facility_name = inbound_facility_data.get('facility_name') if inbound_facility_data else None
+                    
+                    # Get documents for this referral
+                    referral_documents = documents_lookup.get(str(row['referral_id']), [])
+                    
+                    # Optimize document processing - only generate signed URLs if needed
+                    updated_documents = []
+                    for doc in referral_documents:
+                        updated_doc = doc.copy()
+                        # Use the stored source URL directly for now
+                        # Signed URL generation can be done on-demand in the frontend
+                        updated_doc['signed_url'] = doc.get('source', '')
+                        updated_documents.append(updated_doc)
+                    
+                    # Create ReferralWithDetails object
+                    referral_item = ReferralWithDetails(
+                        referral_id=row['referral_id'],
+                        referral_outbound_facility_id=row['referral_outbound_facility_id'],
+                        referral_inbound_facility_id=row['referral_inbound_facility_id'],
+                        referral_outbound_date=row.get('referral_outbound_date'),
+                        referral_batch_prefix=row['referral_batch_prefix'],
+                        referral_slug=row['referral_slug'],
+                        patient_id=row.get('patient_id'),
+                        referral_scanned=row['referral_scanned'],
+                        referral_scanned_date=row.get('referral_scanned_date'),
+                        referral_submitted=row['referral_submitted'],
+                        referral_submitted_date=row.get('referral_submitted_date'),
+                        referral_status=row.get('referral_status'),
+                        referral_remark=row.get('referral_remark'),
+                        referral_doctor_name=row.get('referral_doctor_name'),
+                        deleted=row.get('deleted', False),
+                        outbound_facility_name=outbound_facility_name,
+                        inbound_facility_name=inbound_facility_name,
+                        patient_fname=patient_data.get('patient_fname'),
+                        patient_mname=patient_data.get('patient_mname'),
+                        patient_lname=patient_data.get('patient_lname'),
+                        patient_dob=patient_data.get('patient_dob'),
+                        patient_contact_phone=patient_data.get('patient_contact_phone'),
+                        patient_contact_email=patient_data.get('patient_contact_email'),
+                        patient_gender=patient_data.get('patient_gender'),
+                        patient_insurance_member_id=patient_data.get('patient_insurance_member_id'),
+                        documents=updated_documents,
+                        document_count=len(updated_documents)
+                    )
+                    
+                    items.append(referral_item)
+            
+            # Calculate pagination metadata
+            total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+            has_next = page < total_pages
+            has_previous = page > 1
+            
+            return ReferralWithDetailsPagination(
+                items=items,
+                pagination={
+                    "total_count": total_count,
+                    "total_pages": total_pages,
+                    "current_page": page,
+                    "page_size": page_size,
+                    "has_next": has_next,
+                    "has_previous": has_previous
+                }
+            )
+            
+        except Exception as e:
+            print(f"Error getting facilitator outbound referrals: {str(e)}")
+            import traceback
+            print(f"Full traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch facilitator outbound referrals: {str(e)}"
+            )
+
+
+
 
 
 

@@ -8,7 +8,7 @@ from src.schemas.patients import (
     PatientUpdate,
 )
 from src.config.supabase_config import get_supabase_client
-from src.crud.patients.patients_crud import patients_crud
+from src.services.patient_service import patient_service
 
 router = APIRouter()
 
@@ -34,7 +34,7 @@ async def get_patients() -> List[Patient]:
             - patient_insurance_member_id: Optional[str] - Insurance member ID of the patient
     """
     db = await get_supabase_client()
-    return await patients_crud.get_all(db=db)
+    return await patient_service.get_all_patients(db=db)
 
 @router.get("/{patient_id}", status_code=200, response_model=Patient)
 async def get_patient(patient_id: str) -> Patient:
@@ -59,10 +59,7 @@ async def get_patient(patient_id: str) -> Patient:
         HTTPException: 404 if the patient is not found
     """
     db = await get_supabase_client()
-    patient = await patients_crud.get(db=db, id=patient_id)
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-    return patient
+    return await patient_service.get_patient_by_id(db=db, patient_id=patient_id)
 
 
 @router.post("/", status_code=201, response_model=Patient)
@@ -89,7 +86,7 @@ async def create_patient(patient: PatientCreate) -> Patient:
     """
     try:
         db = await get_supabase_client()
-        return await patients_crud.create(db=db, obj_in=patient)
+        return await patient_service.create_patient(db=db, patient_data=patient)
     except Exception as e:
         raise HTTPException(
             status_code=400,
@@ -122,8 +119,7 @@ async def update_patient(patient_id: str, patient: PatientUpdate) -> Patient:
     """
     try:
         db = await get_supabase_client()
-        patient.id = patient_id
-        return await patients_crud.update(db=db, obj_in=patient)
+        return await patient_service.update_patient_by_id(db=db, patient_id=patient_id, patient_data=patient)
     except Exception as e:
         raise HTTPException(
             status_code=400,
@@ -155,9 +151,10 @@ async def delete_patient(patient_id: str) -> Patient:
     """
     try:
         db = await get_supabase_client()
-        return await patients_crud.delete(db=db, id=patient_id)
+        return await patient_service.delete_patient(db=db, patient_id=patient_id)
     except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Failed to delete patient. {str(e)}",
         )
+    

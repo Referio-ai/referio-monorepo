@@ -32,7 +32,9 @@ class FacilityCreate(BaseModel):
 
 
 class FacilityUpdate(BaseModel):
+    id: Optional[str] = None
     organization_id: Optional[UUID] = None
+    facility_id: Optional[UUID] = None
     facility_name: Optional[str] = None
     facility_address: Optional[Dict[str, Any]] = None
     facility_primary_contact_fname: Optional[str] = None

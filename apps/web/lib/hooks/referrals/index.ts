@@ -1,13 +1,33 @@
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ReferralsService } from "@/lib/api/client/services/ReferralsService";
 import { BatchesService } from "@/lib/api/client/services/BatchesService";
 import { ReferralService } from "@/lib/api/client/custom-services/referral";
 import { ApiV1Service } from '@/lib/api/client'
+import { useFacilityStore } from '@/lib/stores/facilityStore';
 
-export const useReferrals = ({ page, page_size, search }: { page: number, page_size: number, search: string }) => useQuery({
-  queryKey: ["referrals", page, page_size, search],
-  queryFn: () => ReferralsService.apiV1GetReferrals({ page, page_size, search }),
-});
+export const useReferrals = ({ page, page_size, search }: { page: number, page_size: number, search: string }) => {
+  const { activeFacilityId } = useFacilityStore();
+  
+  return useQuery({
+    queryKey: ["referrals", page, page_size, search, activeFacilityId],
+    queryFn: () => {
+      if (activeFacilityId) {
+        // Use facility-specific endpoint when facility is selected
+        return ReferralService.getFacilitatorInboundReferrals({
+          page,
+          page_size,
+          search,
+          status: 'all', // You might want to make this configurable
+          facilitator_facility_id: activeFacilityId
+        });
+      } else {
+        // Use regular endpoint when no facility is selected
+        return ReferralsService.apiV1GetReferrals({ page, page_size, search });
+      }
+    },
+    enabled: true, // Always enabled, but behavior changes based on facility selection
+  });
+};
 
 export const useReferralsWithDetails = ({ page, page_size, search, batch_prefix }: { page: number, page_size: number, search: string, batch_prefix: string }) => useQuery({
   queryKey: ["referrals-with-details", page, page_size, search, batch_prefix],
@@ -107,3 +127,59 @@ export const useUploadReferralFormAsync = () => {
     },
   })
 }
+
+export const useUpdateReferralStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ referralId, status, notes, appointmentDate, appointmentType }: { 
+      referralId: string, 
+      status: string, 
+      notes: string,
+      appointmentDate?: string,
+      appointmentType?: string 
+    }) => {
+      const response = await ReferralService.updateReferralStatus({ 
+        referralId, 
+        status, 
+        notes,
+        appointmentDate,
+        appointmentType
+      })
+      return response
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate all referral-related queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["scanned-referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["facilitator-inbound-referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["facilitator-outbound-referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["referrals-with-details"] });
+      queryClient.invalidateQueries({ queryKey: ["referrals", "batch"] });
+      
+      // Invalidate specific referral queries
+      queryClient.invalidateQueries({ queryKey: ["referrals", variables.referralId] });
+      queryClient.invalidateQueries({ queryKey: ["referrals", "slug"] });
+      
+      // Invalidate status history for this specific referral
+      queryClient.invalidateQueries({ queryKey: ["referral-status-history", variables.referralId] });
+    },
+  })
+}
+
+export const useFacilitatorInboundReferrals = ({ page, page_size, search, status, facilitator_facility_id, sort_by }: { page: number, page_size: number, search: string, status: string, facilitator_facility_id: string, sort_by?: string }) => useQuery({
+  queryKey: ["facilitator-inbound-referrals", page, page_size, search, status, facilitator_facility_id, sort_by],
+  queryFn: () => ReferralService.getFacilitatorInboundReferrals({ page, facilitator_facility_id, page_size, search, status, sort_by }),
+})
+
+export const useFacilitatorOutboundReferrals = ({ page, page_size, search, status, facilitator_facility_id, sort_by }: { page: number, page_size: number, search: string, status: string, facilitator_facility_id: string, sort_by?: string }) => useQuery({
+  queryKey: ["facilitator-outbound-referrals", page, page_size, search, status, facilitator_facility_id, sort_by],
+  queryFn: () => ReferralService.getFacilitatorOutboundReferrals({ page, facilitator_facility_id, page_size, search, status, sort_by }),
+})
+
+export const useReferralStatusHistory = (referralId: string) => useQuery({
+  queryKey: ["referral-status-history", referralId],
+  queryFn: () => ReferralService.getReferralStatusHistory({ referralId }),
+  enabled: !!referralId,
+  staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+});  

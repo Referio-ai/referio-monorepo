@@ -17,6 +17,9 @@ export type OpenAPIConfig = {
     PASSWORD?: string | Resolver<string> | undefined;
     HEADERS?: Headers | Resolver<Headers> | undefined;
     ENCODE_PATH?: ((path: string) => string) | undefined;
+    TIMEOUT?: number;
+    RETRY_ATTEMPTS?: number;
+    RETRY_DELAY?: number;
 };
 
 export const OpenAPI: OpenAPIConfig = {
@@ -29,4 +32,7 @@ export const OpenAPI: OpenAPIConfig = {
     PASSWORD: undefined,
     HEADERS: undefined,
     ENCODE_PATH: undefined,
+    TIMEOUT: 30000, // 30 seconds
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY: 1000, // 1 second
 };

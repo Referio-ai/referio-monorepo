@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.api.api_v1.endpoints import organizations, referrals, batches, patients, rewards, facilities, referrals_messages
+from src.api.api_v1.endpoints import organizations, referrals, batches, patients, rewards, facilities, referrals_messages, facilitators, notifications
 
 api_router = APIRouter()
 api_router.include_router(organizations.router, prefix="/organizations", tags=["organizations"], responses={404: {"description": "Organization Endpoints"}})
@@ -8,5 +8,6 @@ api_router.include_router(batches.router, prefix="/batches", tags=["batches"], r
 api_router.include_router(patients.router, prefix="/patients", tags=["patients"], responses={404: {"description": "Patient Endpoints"}})
 api_router.include_router(rewards.router, prefix="/rewards", tags=["rewards"], responses={404: {"description": "Rewards Endpoints"}})
 api_router.include_router(facilities.router, prefix="/facilities", tags=["facilities"], responses={404: {"description": "Facilities Endpoints"}})
-api_router.include_router(referrals_messages.router, prefix="/referrals-messages", tags=["referrals-messages"], responses={404: {"description": "Referral Messages Endpoints"}}
-)
+api_router.include_router(referrals_messages.router, prefix="/referrals-messages", tags=["referrals-messages"], responses={404: {"description": "Referral Messages Endpoints"}})
+api_router.include_router(facilitators.router, prefix="/facilitators", tags=["facilitators"], responses={404: {"description": "Facilitator Endpoints"}})
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"], responses={404: {"description": "Notification Endpoints"}})

@@ -208,6 +208,9 @@ export const sendRequest = async <T>(
     axiosClient: AxiosInstance
 ): Promise<AxiosResponse<T>> => {
     const source = axios.CancelToken.source();
+    const timeout = config.TIMEOUT || 30000;
+    const maxRetries = config.RETRY_ATTEMPTS || 3;
+    const retryDelay = config.RETRY_DELAY || 1000;
 
     const requestConfig: AxiosRequestConfig = {
         url,
@@ -216,19 +219,51 @@ export const sendRequest = async <T>(
         method: options.method,
         withCredentials: config.WITH_CREDENTIALS,
         cancelToken: source.token,
+        timeout,
     };
 
     onCancel(() => source.cancel('The user aborted a request.'));
 
-    try {
-        return await axiosClient.request(requestConfig);
-    } catch (error) {
-        const axiosError = error as AxiosError<T>;
-        if (axiosError.response) {
-            return axiosError.response;
+    let lastError: any;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await axiosClient.request(requestConfig);
+            
+            // Check for 5xx errors that should be retried
+            if (response.status >= 500 && response.status < 600 && attempt < maxRetries) {
+                console.warn(`Server error ${response.status}, retrying... (attempt ${attempt + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+                continue;
+            }
+            
+            return response;
+        } catch (error) {
+            lastError = error;
+            const axiosError = error as AxiosError<T>;
+            
+            // Don't retry on client errors (4xx) or if we've exhausted retries
+            if (axiosError.response?.status && axiosError.response.status >= 400 && axiosError.response.status < 500) {
+                return axiosError.response;
+            }
+            
+            // Retry on network errors or 5xx errors
+            if (attempt < maxRetries) {
+                console.warn(`Request failed, retrying... (attempt ${attempt + 1}/${maxRetries})`, error);
+                await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+                continue;
+            }
+            
+            // If we have a response, return it even if it's an error
+            if (axiosError.response) {
+                return axiosError.response;
+            }
+            
+            throw error;
         }
-        throw error;
     }
+    
+    throw lastError;
 };
 
 export const getResponseHeader = (response: AxiosResponse<any>, responseHeader?: string): string | undefined => {

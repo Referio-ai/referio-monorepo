@@ -2,7 +2,8 @@ import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Filter, Clock, Calendar, Image, Search, ChevronDown } from 'lucide-react';
+import { Filter, Clock, Calendar, Image, Search, ChevronDown, AlertTriangle } from 'lucide-react';
+import { format, isToday, isYesterday } from 'date-fns';
 import { 
   Referral, 
   ReferralStatus, 
@@ -17,7 +18,7 @@ import { ReferralListSkeleton } from '../skeletons/ReferralSkeletons';
 
 interface ReferralListProps {
   referrals: Referral[];
-  selectedReferralId?: number;
+  selectedReferralId?: string;
   activeTab: ReferralStatus | 'all';
   searchFilter: ReferralSearchFilter;
   sortBy: ReferralSortOption;
@@ -48,9 +49,46 @@ export const ReferralList: React.FC<ReferralListProps> = ({
   getStatusBadge,
   isLoading = false
 }) => {
+  // Utility function to check if a referral is overdue (more than 2 days old)
+  const isReferralOverdue = (dateReceived: string): boolean => {
+    try {
+      const receivedDate = new Date(dateReceived);
+      const currentDate = new Date();
+      const diffTime = currentDate.getTime() - receivedDate.getTime();
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays > 2;
+    } catch (error) {
+      return false; // Return false if date parsing fails
+    }
+  };
+
+  // Human-readable date formatting function
+  const formatHumanReadableDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      
+      // Show relative time for recent dates
+      if (isToday(date)) {
+        return `Today at ${format(date, 'h:mm a')}`;
+      } else if (isYesterday(date)) {
+        return `Yesterday at ${format(date, 'h:mm a')}`;
+      } else {
+        // For older dates, show full date and time
+        return format(date, 'MMM dd, yyyy \'at\' h:mm a');
+      }
+    } catch (error) {
+      return dateString; // Return original string if parsing fails
+    }
+  };
+
   const getPriorityBadge = (priority: string) => {
-    const badgeStyle = PRIORITY_BADGE_STYLES[priority as keyof typeof PRIORITY_BADGE_STYLES] || PRIORITY_BADGE_STYLES.normal;
-    const label = PRIORITY_LABELS[priority as keyof typeof PRIORITY_LABELS] || 'New';
+    // Only show badge for urgent priority, hide for others
+    if (priority !== 'urgent') {
+      return null;
+    }
+    
+    const badgeStyle = PRIORITY_BADGE_STYLES.urgent;
+    const label = PRIORITY_LABELS.urgent;
     
     return (
       <Badge className={`${badgeStyle} text-xs px-2 py-1`}>
@@ -85,12 +123,6 @@ export const ReferralList: React.FC<ReferralListProps> = ({
       <div className="p-6 border-b">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Referrals</h1>
-          <Button 
-            onClick={onNewReferralClick} 
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            New Referral
-          </Button>
         </div>
         
         <Tabs defaultValue={activeTab} className="w-full mb-6">
@@ -165,12 +197,12 @@ export const ReferralList: React.FC<ReferralListProps> = ({
       </div>
       
       {isLoading ? <ReferralListSkeleton /> : (
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-scroll max-h-[calc(80vh-230px)]">
         {referrals.map(referral => (
           <button
-            key={referral.id}
+            key={referral.referral_id}
             className={`w-full text-left p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-              selectedReferralId === referral.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+              selectedReferralId === referral.referral_id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
             }`}
             onClick={() => onReferralSelect(referral)}
           >
@@ -178,17 +210,23 @@ export const ReferralList: React.FC<ReferralListProps> = ({
               <h3 className="font-semibold text-gray-900 text-lg">{referral.patientName}</h3>
               <div className="flex gap-2">
                 {getPriorityBadge(referral.priority)}
+                {!isReferralOverdue(referral.dateReceived) && (
+                  <Badge className="bg-red-100 text-red-700 text-xs px-2 py-1 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Overdue
+                  </Badge>
+                )}
               </div>
             </div>
             <p className="text-gray-600 mb-3">{referral.reason}</p>
             <div className="flex items-center text-sm text-gray-500 mb-3">
               <Clock className="h-4 w-4 mr-2" />
-              <span>{referral.dateReceived}</span>
+              <span>{formatHumanReadableDate(referral.dateReceived)}</span>
               {referral.status === 'active' && referral.appointmentDate && (
                 <>
                   <span className="mx-2">•</span>
                   <Calendar className="h-4 w-4 mr-1" />
-                  <span>{referral.appointmentDate}</span>
+                  <span>{formatHumanReadableDate(referral.appointmentDate)}</span>
                 </>
               )}
             </div>

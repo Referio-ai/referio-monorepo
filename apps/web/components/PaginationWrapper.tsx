@@ -10,6 +10,7 @@ interface PaginationWrapperProps {
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   maxVisiblePages?: number;
+  variant?: 'default' | 'compact';
 }
 
 export const PaginationWrapper: React.FC<PaginationWrapperProps> = ({
@@ -18,6 +19,7 @@ export const PaginationWrapper: React.FC<PaginationWrapperProps> = ({
   itemsPerPage,
   onPageChange,
   maxVisiblePages = 5,
+  variant = 'default',
 }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   
@@ -87,6 +89,53 @@ export const PaginationWrapper: React.FC<PaginationWrapperProps> = ({
 
   if (totalPages <= 1) return null;
 
+  // Compact variant for small widths
+  if (variant === 'compact') {
+    return (
+      <nav
+        className="flex items-center justify-center gap-1 py-2"
+        role="navigation"
+        aria-label="Pagination"
+      >
+        {/* Previous Page Button */}
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={cn(
+            'p-1.5 rounded-md transition-colors',
+            currentPage === 1
+              ? 'text-muted-foreground cursor-not-allowed'
+              : 'hover:bg-muted'
+          )}
+          aria-label="Go to previous page"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {/* Page Numbers */}
+        <div className="flex items-center gap-1">
+          {renderPageNumbers()}
+        </div>
+
+        {/* Next Page Button */}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={cn(
+            'p-1.5 rounded-md transition-colors',
+            currentPage === totalPages
+              ? 'text-muted-foreground cursor-not-allowed'
+              : 'hover:bg-muted'
+          )}
+          aria-label="Go to next page"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </nav>
+    );
+  }
+
+  // Default variant (original implementation)
   return (
     <nav
       className="flex items-center justify-center gap-2 py-4"

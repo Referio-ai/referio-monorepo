@@ -1,5 +1,5 @@
-import { DashboardLayout } from "@/components/dashboard/layout/DashboardLayout";
+import { FacilitatorDashboardLayout } from "@/components/dashboard/layout/FacilitatorDashboardLayout";
 
-export default function DashboardLayoutPage({ children }: { children: React.ReactNode }) {
-  return <DashboardLayout>{children}</DashboardLayout>;
-}
+export default function FacilitatorDashboardLayoutPage({ children }: { children: React.ReactNode }) {
+  return <FacilitatorDashboardLayout>{children}</FacilitatorDashboardLayout>;
+} 

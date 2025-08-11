@@ -1,10 +1,12 @@
 'use client';
 import React, { useState } from 'react';
 import { 
-  Search, Bell, User, ChevronDown, Settings, LogOut 
+  Search, Bell, User, ChevronDown, Settings, LogOut, Building
 } from 'lucide-react';
 import { useUser, useLogoutFunction, useRedirectFunctions } from "@propelauth/nextjs/client";
 import { useRouter } from "next/navigation";
+import { NotificationDropdown } from './NotificationDropdown';
+import { useFacilityStore } from '@/lib/stores/facilityStore';
 
 interface HeaderProps {
   title: string;
@@ -23,6 +25,12 @@ export const Header: React.FC<HeaderProps> = ({
   const { user } = useUser();
   const logoutFn = useLogoutFunction();
   const router = useRouter();
+  
+  // Get facility data from store
+  const { activeFacilityId, facilities } = useFacilityStore();
+  
+  // Get the selected facility
+  const selectedFacility = facilities.find(f => f.facility_id === activeFacilityId);
 
   const handleLogout = async () => {
     await logoutFn();
@@ -38,6 +46,17 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
           <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+          
+          {/* Display selected facility if available */}
+          {selectedFacility && (
+            <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-blue-50 rounded-lg">
+              <Building className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">
+                {selectedFacility.facility_name}
+              </span>
+            </div>
+          )}
+          
           {onSearch && (
             <div className="ml-8 flex-1 max-w-md">
               <div className="relative">
@@ -54,10 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center gap-4">
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          <NotificationDropdown userId={user.userId} />
           
           <div className="relative">
             <button

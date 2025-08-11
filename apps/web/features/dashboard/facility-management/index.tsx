@@ -1,30 +1,17 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Building, Search, Plus, MapPin, Phone, Mail, Users, Trash2, Loader2 } from 'lucide-react';
+import { Building, Search, Plus, MapPin, Phone, Mail, Users, Trash2, Loader2, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 import { toast } from 'sonner';
-import { useGetFacilities, createFacility } from '@/lib/hooks/facilities';
+import { useGetFacilities, createFacility, updateFacility, deleteFacility } from '@/lib/hooks/facilities';
 import AddFacilityModal from './components/AddFacilityModal/index';
-import { useOrganizations } from '@/lib/hooks/organizations/index';
+import EditFacilityModal from './components/EditFacilityModal/index';
 import { PaginationWrapper } from '@/components/PaginationWrapper';
-
-interface Organization {
-  organization_id: string;
-  organization_name: string;
-  organization_address: Record<string, any>;
-  organization_primary_contact_fname: string;
-  organization_primary_contact_mname: string;
-  organization_primary_contact_lname: string;
-  organization_primary_contact_email: string;
-  organization_primary_contact_phone_number: string;
-  organization_prefix: string;
-}
 
 interface Facility {
   facility_id: string;
@@ -47,7 +34,6 @@ interface Facility {
 
 interface FacilityFilters {
   search: string;
-  organization_id: string;
   page: number;
   limit: number;
 }
@@ -63,18 +49,13 @@ interface FacilityResponse {
 }
 
 const ITEMS_PER_PAGE = 5;
-const ALL_VALUE = 'all';
-
 
 const FacilityManagement = () => {
   const [filters, setFilters] = useState<FacilityFilters>({
     search: '',
-    organization_id: ALL_VALUE,
     page: 1,
     limit: ITEMS_PER_PAGE
   });
-
-  const { data: organizations, isLoading: isOrganizationsLoading } = useOrganizations();
 
   const { data: facilitiesResponse, isLoading: isFacilitiesLoading, refetch: refetchFacilities } = useGetFacilities({
     page: filters.page,
@@ -95,9 +76,13 @@ const FacilityManagement = () => {
   },[filters.page]);
 
   const { mutate: createFacilityMutation, isPending: isCreatingFacility } = createFacility();
+  const { mutate: updateFacilityMutation, isPending: isUpdatingFacility } = updateFacility();
+  const { mutate: deleteFacilityMutation, isPending: isDeletingFacility } = deleteFacility();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [facilityToEdit, setFacilityToEdit] = useState<Facility | null>(null);
   const [facilityToDelete, setFacilityToDelete] = useState<Facility | null>(null);
 
   // Handle filter changes
@@ -124,10 +109,27 @@ const FacilityManagement = () => {
       onSuccess: () => {
         toast.success("The facility has been successfully added.");
         setIsAddModalOpen(false);
+        refetchFacilities();
       },
       onError: (error) => {
         console.error(error);
         toast.error("Failed to add facility.");
+      }
+    });
+  };
+
+  // Handle edit facility
+  const handleEditFacility = (facilityId: string, updatedFacility: Partial<Facility>) => {
+    updateFacilityMutation({ facilityId, facility: updatedFacility }, {
+      onSuccess: () => {
+        toast.success("The facility has been successfully updated.");
+        setIsEditModalOpen(false);
+        setFacilityToEdit(null);
+        refetchFacilities();
+      },
+      onError: (error) => {
+        console.error(error);
+        toast.error("Failed to update facility.");
       }
     });
   };
@@ -140,11 +142,25 @@ const FacilityManagement = () => {
 
   const confirmDelete = () => {
     if (facilityToDelete) {
-      // Call delete mutation here
-      setIsDeleteDialogOpen(false);
-      setFacilityToDelete(null);
-      toast.success("The facility has been successfully deleted.");
+      deleteFacilityMutation(facilityToDelete.facility_id, {
+        onSuccess: () => {
+          toast.success("The facility has been successfully deleted.");
+          setIsDeleteDialogOpen(false);
+          setFacilityToDelete(null);
+          refetchFacilities();
+        },
+        onError: (error) => {
+          console.error(error);
+          toast.error("Failed to delete facility.");
+        }
+      });
     }
+  };
+
+  // Handle edit button click
+  const handleEditClick = (facility: Facility) => {
+    setFacilityToEdit(facility);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -158,9 +174,14 @@ const FacilityManagement = () => {
         <Button 
           className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
           onClick={() => setIsAddModalOpen(true)}
+          disabled={isCreatingFacility}
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Facility
+          {isCreatingFacility ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Plus className="w-4 h-4 mr-2" />
+          )}
+          {isCreatingFacility ? 'Adding...' : 'Add New Facility'}
         </Button>
       </div>
       {/* Filters */}
@@ -176,22 +197,6 @@ const FacilityManagement = () => {
                 className="flex-1"
               />
             </div>
-            <Select
-              value={filters.organization_id}
-              onValueChange={(value) => handleFilterChange('organization_id', value)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Organization" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>All Organizations</SelectItem>
-                {organizations?.map(org => (
-                  <SelectItem key={org.organization_id} value={org.organization_id}>
-                    {org.organization_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -263,15 +268,35 @@ const FacilityManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td className=" py-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDeleteFacility(facility as Facility)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => handleEditClick(facility as Facility)}
+                          disabled={isUpdatingFacility}
+                        >
+                          {isUpdatingFacility ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Edit className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteFacility(facility as Facility)}
+                          disabled={isDeletingFacility}
+                        >
+                          {isDeletingFacility ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
                     </td>
                     </tr>
                   ))
@@ -299,7 +324,6 @@ const FacilityManagement = () => {
                 variant="outline"
                 onClick={() => setFilters({
                   search: '',
-                  organization_id: ALL_VALUE,
                   page: 1,
                   limit: ITEMS_PER_PAGE
                 })}
@@ -311,12 +335,24 @@ const FacilityManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Replace the old Add Facility Modal with the new component */}
+      {/* Add Facility Modal */}
       <AddFacilityModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        organizations={organizations || []}
+        organizations={[]}
         onSubmit={handleAddFacility}
+      />
+
+      {/* Edit Facility Modal */}
+      <EditFacilityModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setFacilityToEdit(null);
+        }}
+        facility={facilityToEdit}
+        onSubmit={handleEditFacility}
+        isLoading={isUpdatingFacility}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -331,8 +367,12 @@ const FacilityManagement = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeletingFacility}
+            >
+              {isDeletingFacility ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

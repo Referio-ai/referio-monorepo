@@ -61,17 +61,39 @@ class CRUDFacilityBatch(CRUDBase[Facility, FacilityCreate, FacilityUpdate]):
     async def update(self, db: AsyncClient, *, obj_in: FacilityUpdate) -> Facility:
         """Update a facility """
         try:
-            return await super().update("facility_entity", db, obj_in=obj_in)
+            # Convert UUIDs to strings if they exist
+            if obj_in.organization_id:
+                obj_in.organization_id = str(obj_in.organization_id)
+            if obj_in.propelauth_facility_id:
+                obj_in.propelauth_facility_id = str(obj_in.propelauth_facility_id)
+            if obj_in.facility_id:
+                obj_in.facility_id = str(obj_in.facility_id)
+            
+            # Use direct database query since the base class uses 'id' but we use 'facility_id'
+            result = await db.table("facility_entity").update(
+                obj_in.model_dump(exclude_none=True)
+            ).eq("facility_id", obj_in.facility_id).execute()
+            
+            data = result.data
+            if not data:
+                raise HTTPException(status_code=404, detail="Facility not found")
+            
+            return Facility(**data[0])
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=400,
-                detail=f"Failed to update facility . {str(e)}",
+                detail=f"Failed to update facility. {str(e)}",
             )
 
     async def delete(self, db: AsyncClient, *, id: str) -> Facility:
-        """Delete a facility """
+        """Delete a facility (soft delete)"""
         try:
-            return await super().delete("facility_entity", db, id=id)
+            # Use direct database query for soft delete
+            result = await db.table("facility_entity").update({"deleted": True}).eq("facility_id", id).execute()
+            data = result.data
+            return Facility(**data[0]) if data else None
         except Exception as e:
             raise HTTPException(
                 status_code=400,
