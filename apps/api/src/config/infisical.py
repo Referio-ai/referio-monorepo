@@ -80,6 +80,10 @@ REDUCTO_API_KEY = next(x for x in jsondata if x["secretKey"] == "REDUCTO_API_KEY
     "secretValue"
 ]
 
+REDUCTO_WEBHOOK_URL = next(x for x in jsondata if x["secretKey"] == "REDUCTO_WEBHOOK_URL")[
+    "secretValue"
+]
+
 REDUCTO_WEBHOOK_SECRET = next(x for x in jsondata if x["secretKey"] == "REDUCTO_WEBHOOK_SECRET")[
     "secretValue"
 ]

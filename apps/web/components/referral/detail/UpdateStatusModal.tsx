@@ -181,6 +181,7 @@ export const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
       setAppointmentType('');
     }
   };
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

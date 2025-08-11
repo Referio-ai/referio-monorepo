@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,8 @@ import NewReferralForm from '@/components/referral/forms/NewReferralForm';
 import { PaginationWrapper } from '@/components/PaginationWrapper';
 import { ReferralListSkeleton } from '@/components/referral/skeletons/ReferralSkeletons';
 
-// Import the useFacilitatorInboundReferrals hook
-import { useFacilitatorInboundReferrals } from '@/lib/hooks/referrals';
+// Import the referral hooks
+import { useFacilitatorInboundReferrals, useReferral } from '@/lib/hooks/referrals';
 
 // Import the facility store
 import { useFacilityStore } from '@/lib/stores/facilityStore';
@@ -59,6 +60,11 @@ export const FacilitatorInbox = () => {
   const [isNewReferralOpen, setIsNewReferralOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
+  // URL handling (query params)
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
   // Add pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -67,7 +73,7 @@ export const FacilitatorInbox = () => {
   const { activeFacilityId } = useFacilityStore();
   
   // Helper function to map frontend sort options to backend sort options
-  const mapFrontendSortToBackendSort = (frontendSort: ReferralSortOption): string | undefined => {
+  const mapFrontendSortToBackendSort = useCallback((frontendSort: ReferralSortOption): string | undefined => {
     switch (frontendSort) {
       case 'date-newest':
         return 'date_newest';
@@ -76,7 +82,7 @@ export const FacilitatorInbox = () => {
       default:
         return undefined;
     }
-  };
+  }, []);
   
   // Use the useFacilitatorInboundReferrals hook to fetch real data
   const { 
@@ -105,7 +111,7 @@ export const FacilitatorInbox = () => {
   };
   
   // Transform API data to match the expected Referral interface
-  const transformApiReferralToReferral = (apiReferral: any): Referral => {
+  const transformApiReferralToReferral = useCallback((apiReferral: any): Referral => {
     const patientName = apiReferral.patient_fname && apiReferral.patient_lname 
       ? `${apiReferral.patient_fname} ${apiReferral.patient_lname}`
       : apiReferral.patient_fname || apiReferral.patient_lname || 'Unknown Patient';
@@ -160,10 +166,42 @@ export const FacilitatorInbox = () => {
       appointmentDate: apiReferral.appointment_date || undefined,
       appointmentType: apiReferral.appointment_type || undefined,
     };
-  };
+  }, []);
   
   // Transform all API referrals
-  const referrals = facilitatorReferrals.map(transformApiReferralToReferral);
+  const referrals = useMemo(() => 
+    facilitatorReferrals.map(transformApiReferralToReferral), 
+    [facilitatorReferrals, transformApiReferralToReferral]
+  );
+  
+  // If URL contains ?id=<referral_id>, auto-select the matching referral or fetch it
+  const selectedIdFromUrl = useMemo(() => searchParams.get('id') || '', [searchParams]);
+  const { data: referralByIdData } = useReferral(selectedIdFromUrl);
+  
+  // Memoize the router.replace function to prevent unnecessary re-renders
+  const updateUrl = useCallback((newParams: URLSearchParams) => {
+    const qs = newParams.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [router, pathname]);
+  
+  // Clear URL params
+  const clearUrlParams = useCallback(() => {
+    router.replace(pathname);
+  }, [router, pathname]);
+  
+  useEffect(() => {
+    if (!selectedIdFromUrl) return;
+    // Try to find in the current list first
+    const fromList = referrals.find(r => r.referral_id === selectedIdFromUrl);
+    if (fromList) {
+      setSelectedReferral(fromList);
+      return;
+    }
+    // Fallback: use fetched referral by ID and transform it
+    if (referralByIdData) {
+      setSelectedReferral(transformApiReferralToReferral(referralByIdData as any));
+    }
+  }, [selectedIdFromUrl, referrals, referralByIdData, transformApiReferralToReferral]);
   
   // Update loading state based on API loading
   useEffect(() => {
@@ -173,12 +211,16 @@ export const FacilitatorInbox = () => {
   // Clear selected referral when facility changes
   useEffect(() => {
     setSelectedReferral(null);
-  }, [activeFacilityId]);
+    // Clear referral id from URL when context changes
+    clearUrlParams();
+  }, [activeFacilityId, clearUrlParams]);
   
   // Clear selected referral when tab changes
   useEffect(() => {
     setSelectedReferral(null);
-  }, [activeTab]);
+    // Clear referral id from URL when context changes
+    clearUrlParams();
+  }, [activeTab, clearUrlParams]);
   
   // Handle search changes
   useEffect(() => {
@@ -187,7 +229,7 @@ export const FacilitatorInbox = () => {
   }, [searchQuery]);
   
   // Filter, search, and sort referrals
-  const processedReferrals = React.useMemo(() => {
+  const processedReferrals = useMemo(() => {
     let result = referrals.filter(ref => {
       // Status filter
       const statusMatch = activeTab === 'all' || ref.status === activeTab;
@@ -224,7 +266,7 @@ export const FacilitatorInbox = () => {
     return result;
   }, [referrals, activeTab, searchFilter, searchQuery]);
   
-  const getStatusBadge = (status: ReferralStatus) => {
+  const getStatusBadge = useCallback((status: ReferralStatus) => {
     // Use facilitator-specific status badges
     const facilitatorStatus = status as FacilitatorInboxStatus;
     if (facilitatorStatus in FACILITATOR_STATUS_BADGE_STYLES) {
@@ -233,9 +275,9 @@ export const FacilitatorInbox = () => {
       </Badge>;
     }
     return <Badge className={STATUS_BADGE_STYLES[status]}>{STATUS_LABELS[status]}</Badge>;
-  };
+  }, []);
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = useCallback((priority: string) => {
     // Only show badge for urgent priority, hide for others
     if (priority !== 'urgent') {
       return null;
@@ -249,87 +291,87 @@ export const FacilitatorInbox = () => {
         {label}
       </Badge>
     );
-  };
+  }, []);
   
   // Function to handle new referral submission
-  const handleNewReferralSubmit = (formData: NewReferralFormData) => {
+  const handleNewReferralSubmit = useCallback((formData: NewReferralFormData) => {
     console.log("New referral data:", formData);
     setIsNewReferralOpen(false);
     // Refetch data after creating new referral
     refetchFacilitatorReferrals();
-  };
+  }, [refetchFacilitatorReferrals]);
 
   // Navigation handler
-  const handleNavigate = (section: string) => {
+  const handleNavigate = useCallback((section: string) => {
     console.log('Navigating to:', section);
     // Implement navigation logic here
-  };
+  }, []);
 
   // Search handler
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
   // Search filter handler
-  const handleSearchFilterChange = (filter: ReferralSearchFilter) => {
+  const handleSearchFilterChange = useCallback((filter: ReferralSearchFilter) => {
     setSearchFilter(filter);
-  };
+  }, []);
 
   // Sort handler
-  const handleSortChange = (sort: ReferralSortOption) => {
+  const handleSortChange = useCallback((sort: ReferralSortOption) => {
     setSortBy(sort);
-  };
+  }, []);
 
   // Pagination handlers
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
-  };
+  }, []);
 
-  const handlePageSizeChange = (newPageSize: number) => {
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
     setPage(1); // Reset to first page when changing page size
-  };
+  }, []);
 
   // User menu handler
-  const handleUserMenuClick = () => {
+  const handleUserMenuClick = useCallback(() => {
     console.log('User menu clicked');
     // Implement user menu logic here
-  };
+  }, []);
 
   // Facilitator-specific action handlers
-  const handleApproveReferral = () => {
+  const handleApproveReferral = useCallback(() => {
     console.log('Approve referral for:', selectedReferral?.patientName);
     // Implement approval logic here
-  };
+  }, [selectedReferral?.patientName]);
 
-  const handleRejectReferral = () => {
+  const handleRejectReferral = useCallback(() => {
     console.log('Reject referral for:', selectedReferral?.patientName);
     // Implement rejection logic here
-  };
+  }, [selectedReferral?.patientName]);
 
-  const handleReviewReferral = () => {
+  const handleReviewReferral = useCallback(() => {
     console.log('Review referral for:', selectedReferral?.patientName);
     // Implement review logic here
-  };
+  }, [selectedReferral?.patientName]);
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = useCallback((message: string) => {
     console.log('Sending message:', message);
     // Implement message sending logic here
-  };
+  }, []);
 
-  const handleUploadFiles = (files: File[]) => {
+  const handleUploadFiles = useCallback((files: File[]) => {
     console.log('Uploading files:', files);
     // Implement file upload logic here
-  };
+  }, []);
 
   // Handle status update and refresh referral data
-  const handleStatusUpdate = () => {
+  const handleStatusUpdate = useCallback(() => {
     // Refresh the facilitator inbound referrals data
     refetchFacilitatorReferrals();
-  };
+  }, [refetchFacilitatorReferrals]);
 
   // Handle individual referral refresh
-  const handleReferralRefresh = (referralId: string) => {
+  const handleReferralRefresh = useCallback((referralId: string) => {
     // Refresh the facilitator inbound referrals data
     refetchFacilitatorReferrals();
     
@@ -338,7 +380,15 @@ export const FacilitatorInbox = () => {
     if (updatedReferral) {
       setSelectedReferral(updatedReferral);
     }
-  };
+  }, [refetchFacilitatorReferrals, referrals]);
+
+  // Selecting a referral should sync it to the URL (?id=...)
+  const handleSelectReferral = useCallback((referral: Referral) => {
+    setSelectedReferral(referral);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('id', referral.referral_id);
+    updateUrl(params);
+  }, [searchParams, updateUrl]);
   
   // Handle API errors
   if (facilitatorReferralsError) {
@@ -358,7 +408,7 @@ export const FacilitatorInbox = () => {
             searchFilter={searchFilter}
             sortBy={sortBy}
             searchQuery={searchQuery}
-            onReferralSelect={setSelectedReferral}
+            onReferralSelect={handleSelectReferral}
             onTabChange={(tab) => setActiveTab(tab as FacilitatorInboxStatus)}
             onSearchFilterChange={handleSearchFilterChange}
             onSortChange={handleSortChange}
@@ -372,7 +422,6 @@ export const FacilitatorInbox = () => {
           <div className="flex-1 p-6 bg-white overflow-y-auto">
             {selectedReferral ? (
               <ReferralDetail 
-                key={`${selectedReferral.referral_id}-${activeTab}-${searchQuery}-${sortBy}`}
                 referral={selectedReferral}
                 onScheduleAppointment={handleReviewReferral}
                 onAcceptReferral={handleApproveReferral}

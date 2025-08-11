@@ -762,8 +762,6 @@ class ReferralService:
                 )   
             
             referral_id = referral.data[0]["referral_id"]
-
-            print(f"Referral ID: {referral_id}")
             
             # Initialize variables for extracted data
             patient_data_extracted = None
@@ -1151,6 +1149,16 @@ class ReferralService:
             if patient_result and patient_result.get("patient_id"):
                 referral_updates["patient_id"] = patient_result["patient_id"]
                 print(f"Setting patient_id: {patient_result['patient_id']}")
+                
+                # Add patient name for filtering purposes
+                patient_fname = patient_result['patient_data'].get("patient_fname", "")
+                patient_lname = patient_result['patient_data'].get("patient_lname", "")
+                print(f"referral_updates: {patient_fname}")
+                print(f"Patient lname: {patient_lname}")
+                if patient_fname or patient_lname:
+                    patient_name = f"{patient_fname} {patient_lname}".strip()
+                    referral_updates["patient_name"] = patient_name
+                    print(f"Setting patient_name: {patient_name}")
             
             # Update referral date if available
             if referral_data.get("referral_date"):
@@ -1790,9 +1798,11 @@ class ReferralService:
             
             # Handle search functionality at database level
             if search:
+                # Search across referral fields including patient_name directly on referrals table
                 search_query = base_query.or_(
                     f"referral_slug.ilike.%{search}%,"
-                    f"referral_batch_prefix.ilike.%{search}%"
+                    f"referral_batch_prefix.ilike.%{search}%,"
+                    f"patient_name.ilike.%{search}%"
                 )
             else:
                 search_query = base_query
@@ -1824,9 +1834,11 @@ class ReferralService:
                 count_query = count_query.eq("referral_status", status.strip())
             
             if search:
+                # Search across referral fields including patient_name directly on referrals table
                 count_query = count_query.or_(
                     f"referral_slug.ilike.%{search}%,"
-                    f"referral_batch_prefix.ilike.%{search}%"
+                    f"referral_batch_prefix.ilike.%{search}%,"
+                    f"patient_name.ilike.%{search}%"
                 )
             
             # Execute count and data queries concurrently

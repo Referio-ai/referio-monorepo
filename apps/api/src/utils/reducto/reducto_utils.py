@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import aiohttp
 import asyncio
 from pathlib import Path
-from src.config.infisical import REDUCTO_API_KEY, API_URL
+from src.config.infisical import REDUCTO_API_KEY, REDUCTO_WEBHOOK_URL
 from src.prompts.reducto_prompts import REDUCTO_PROMPT
 
 
@@ -77,7 +77,7 @@ async def reducto_referral_extraction_async(document_url: str, referral_id: str 
             },
             "webhook":{
                 "mode": "direct",
-                "url": f"https://7baa796969df.ngrok-free.app/api/v1/referrals/webhook/reducto",
+                "url": f"{REDUCTO_WEBHOOK_URL}",
                 "channels": ['referio_referal']
             }
         }

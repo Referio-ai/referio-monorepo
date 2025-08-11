@@ -441,10 +441,7 @@ async def handle_reducto_webhook(request: Request):
             await ReferralService.process_extracted_referral_data(db=db, job_id=job_id, extracted_data=extracted_data)
             await db.table("referrals").update({
                 "job_status": "completed"
-            }).eq("job_id", job_id).execute()   
-
-
-      
+            }).eq("job_id", job_id).execute()
 
             # save the extraction data to the database
 

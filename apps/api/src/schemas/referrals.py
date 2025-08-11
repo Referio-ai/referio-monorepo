@@ -12,6 +12,7 @@ class Referral(BaseModel):
     referral_batch_prefix: str
     referral_slug: str
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_scanned: bool
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: bool
@@ -37,6 +38,7 @@ class ReferralCreate(BaseModel):
     referral_inbound_facility_id: UUID
     referral_batch_prefix: Optional[str] = None
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_slug: Optional[str] = None
     referral_scanned: bool = False
     referral_scanned_date: Optional[datetime] = None
@@ -53,6 +55,7 @@ class ReferralUpdate(BaseModel):
     referral_inbound_facility_id: Optional[UUID] = None
     referral_outbound_date: Optional[datetime] = None   
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_scanned: Optional[bool] = None
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: Optional[bool] = None
@@ -73,6 +76,7 @@ class ReferralWithDetails(BaseModel):
     referral_batch_prefix: str
     referral_slug: str
     patient_id: Optional[UUID] = None
+    patient_name: Optional[str] = None  # Patient's full name for filtering
     referral_scanned: bool
     referral_scanned_date: Optional[datetime] = None
     referral_submitted: bool
