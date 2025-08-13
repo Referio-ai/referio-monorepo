@@ -108,19 +108,7 @@ export const FacilitatorOutbox = () => {
     const phone = apiReferral.patient_contact_phone || 'N/A';
     
     // Map facilitator outbox status to referral status
-    let status: ReferralStatus = 'new'; // Default to new
-    if (apiReferral.referral_status) {
-      switch (apiReferral.referral_status) {
-        case 'delivered':
-          status = 'active';
-          break;
-        case 'failed':
-          status = 'archive';
-          break;
-        default:
-          status = 'new';
-      }
-    }
+    let status: ReferralStatus = apiReferral.referral_status; // Default to new
     
     // Determine priority (you may need to adjust this based on your business logic)
     const priority = 'normal'; // Default priority
@@ -150,6 +138,8 @@ export const FacilitatorOutbox = () => {
       documents: apiReferral.documents || [],
       appointmentDate: apiReferral.appointment_date || undefined,
       appointmentType: apiReferral.appointment_type || undefined,
+      isUrgent: apiReferral.is_urgent || false,
+      isOutbound: !!apiReferral.referral_outbound_date // If referral_outbound_date exists, it's an outbound referral
     };
   };
   
@@ -171,6 +161,8 @@ export const FacilitatorOutbox = () => {
   useEffect(() => {
     setSelectedReferral(null);
   }, [activeFacilityId]);
+
+  console.log("referrals", referrals);
   
   // Filter, search, and sort referrals
   const processedReferrals = React.useMemo(() => {
@@ -336,6 +328,7 @@ export const FacilitatorOutbox = () => {
             onNewReferralClick={() => setIsNewReferralOpen(true)}
             getStatusBadge={getStatusBadge}
             isLoading={isLoading}
+            isOutbound={true}
           />
           
           {/* Referral detail view */}

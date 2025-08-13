@@ -18,13 +18,15 @@ REFERRAL_STATUS_SCHEDULED = "scheduled"
 REFERRAL_STATUS_DECLINED_SERVICES = "declined_services"
 REFERRAL_STATUS_UNABLE_TO_REACH = "unable_to_reach"
 REFERRAL_STATUS_REPORT_SENT = "report_sent"
+REFERRAL_STATUS_COMPLETED = "completed"
 
 # REFERRAL STATUS OPTIONS (for UI display)
 REFERRAL_STATUS_OPTIONS = [
     REFERRAL_STATUS_SCHEDULED,
     REFERRAL_STATUS_DECLINED_SERVICES,
     REFERRAL_STATUS_UNABLE_TO_REACH,
-    REFERRAL_STATUS_REPORT_SENT
+    REFERRAL_STATUS_REPORT_SENT,
+    REFERRAL_STATUS_COMPLETED
 ]
 
 # REFERRAL STATUS LABELS (for UI display)
@@ -32,7 +34,8 @@ REFERRAL_STATUS_LABELS = {
     REFERRAL_STATUS_SCHEDULED: "Scheduled",
     REFERRAL_STATUS_DECLINED_SERVICES: "Declined Services",
     REFERRAL_STATUS_UNABLE_TO_REACH: "Unable to Reach",
-    REFERRAL_STATUS_REPORT_SENT: "Report Sent"
+    REFERRAL_STATUS_REPORT_SENT: "Report Sent",
+    REFERRAL_STATUS_COMPLETED: "Completed"
 }
 
 # REFERRAL STATUS MAPPING (maps UI status to database status)
@@ -40,5 +43,6 @@ REFERRAL_STATUS_MAPPING = {
     "Scheduled": "active",  # Scheduled means active
     "Declined Services": "archive",  # Declined means archive
     "Unable to Reach": "archive",  # Unable to reach means archive
-    "Report Sent": "archive"  # Report sent means archive
+    "Report Sent": "archive",  # Report sent means archive
+    "Completed": "archive"  # Completed means archive
 }

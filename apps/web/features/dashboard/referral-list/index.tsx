@@ -82,6 +82,7 @@ export const ReferralList = () => {
       ? Math.floor((new Date().getTime() - new Date(apiReferral.patient_dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       : 0;
     
+
     return {
       referral_id: apiReferral.referral_id,
       patientId: apiReferral.patient_id || undefined, // Add patientId from API response
@@ -102,7 +103,9 @@ export const ReferralList = () => {
       appointmentDate: apiReferral.appointment_date || undefined,
       appointmentTime: apiReferral.appointment_time || undefined,
       appointmentType: apiReferral.appointment_type || undefined,
-      documents: apiReferral.documents || []
+      documents: apiReferral.documents || [],
+      isUrgent: apiReferral.is_urgent || false,
+      isOutbound: !!apiReferral.referral_outbound_date // If referral_outbound_date exists, it's an outbound referral
     };
   };
   

@@ -134,7 +134,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             Referral ID: {currentReferral.referral_id}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        {currentReferral.isOutbound && <div className="flex items-center gap-3">
           <Badge 
             variant={currentReferral.status === 'active' ? 'default' : 'secondary'}
             className="text-xs"
@@ -150,7 +150,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             <Edit className="h-4 w-4" />
             Update Status
           </Button>
-        </div>
+        </div>}
       </div>
 
       {/* Status and Action Buttons */}

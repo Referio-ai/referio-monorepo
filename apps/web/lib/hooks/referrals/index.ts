@@ -73,10 +73,11 @@ export const useBatchReferrals = (batchId: string) => useQuery({
 // Upload referral form with Reducto extraction
 export const useUploadReferralForm = () => {
   return useMutation({
-    mutationFn: async ({ referralId, files }: { referralId: string; files: File[] }) => {
+    mutationFn: async ({ referralId, files, is_urgent }: { referralId: string; files: File[]; is_urgent?: boolean }) => {
       const response = await ReferralService.apiV1UploadReferralFormWithExtraction({
         referralId,
         files,
+        is_urgent,
       })
       console.log(response)
       return response
@@ -121,8 +122,8 @@ export const useReferralsForQrPrinting = ({ batchPrefix }: { batchPrefix: string
 
 export const useUploadReferralFormAsync = () => {
   return useMutation({
-    mutationFn: async ({ referralId, files }: { referralId: string; files: File[] }) => {
-      const response = await ReferralService.uploadReferralFormAsync({ referralId, files })
+    mutationFn: async ({ referralId, files, is_urgent }: { referralId: string; files: File[]; is_urgent?: boolean }) => {
+      const response = await ReferralService.uploadReferralFormAsync({ referralId, files, is_urgent })
       return response
     },
   })

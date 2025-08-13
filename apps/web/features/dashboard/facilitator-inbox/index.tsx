@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ import ReferralListComponent from '@/components/referral/list/ReferralList';
 import ReferralDetail from '@/components/referral/detail/ReferralDetail';
 import NewReferralForm from '@/components/referral/forms/NewReferralForm';
 import { PaginationWrapper } from '@/components/PaginationWrapper';
-import { ReferralListSkeleton } from '@/components/referral/skeletons/ReferralSkeletons';
+import { ReferralDetailSkeleton } from '@/components/referral/skeletons/ReferralSkeletons';
 
 // Import the referral hooks
 import { useFacilitatorInboundReferrals, useReferral } from '@/lib/hooks/referrals';
@@ -59,11 +59,17 @@ export const FacilitatorInbox = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewReferralOpen, setIsNewReferralOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isReferralDetailLoading, setIsReferralDetailLoading] = useState(false);
   
   // URL handling (query params)
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  
+  // Refs to track initial values and prevent clearing URL on first load
+  const isInitialLoad = useRef(true);
+  const initialFacilityId = useRef<string | null>(null);
+  const initialTab = useRef<FacilitatorInboxStatus>('new');
   
   // Add pagination state
   const [page, setPage] = useState(1);
@@ -165,6 +171,8 @@ export const FacilitatorInbox = () => {
       documents: apiReferral.documents || [],
       appointmentDate: apiReferral.appointment_date || undefined,
       appointmentType: apiReferral.appointment_type || undefined,
+      isUrgent: apiReferral.is_urgent || false,
+      isOutbound: !!apiReferral.referral_outbound_date // If referral_outbound_date exists, it's an outbound referral
     };
   }, []);
   
@@ -176,8 +184,14 @@ export const FacilitatorInbox = () => {
   
   // If URL contains ?id=<referral_id>, auto-select the matching referral or fetch it
   const selectedIdFromUrl = useMemo(() => searchParams.get('id') || '', [searchParams]);
-  const { data: referralByIdData } = useReferral(selectedIdFromUrl);
   
+  // Fetch referral by ID if it's not in the current list
+  const { 
+    data: referralByIdData, 
+    isLoading: isReferralByIdLoading,
+    error: referralByIdError 
+  } = useReferral(selectedIdFromUrl);
+
   // Memoize the router.replace function to prevent unnecessary re-renders
   const updateUrl = useCallback((newParams: URLSearchParams) => {
     const qs = newParams.toString();
@@ -188,38 +202,78 @@ export const FacilitatorInbox = () => {
   const clearUrlParams = useCallback(() => {
     router.replace(pathname);
   }, [router, pathname]);
-  
+
+  // Enhanced referral selection logic
   useEffect(() => {
-    if (!selectedIdFromUrl) return;
-    // Try to find in the current list first
+    if (!selectedIdFromUrl) {
+      setSelectedReferral(null);
+      setIsReferralDetailLoading(false);
+      return;
+    }
+
+    setIsReferralDetailLoading(true);
+    
+    // First, try to find the referral in the current list
     const fromList = referrals.find(r => r.referral_id === selectedIdFromUrl);
     if (fromList) {
       setSelectedReferral(fromList);
+      setIsReferralDetailLoading(false);
       return;
     }
-    // Fallback: use fetched referral by ID and transform it
-    if (referralByIdData) {
-      setSelectedReferral(transformApiReferralToReferral(referralByIdData as any));
+    
+    // If not found in list, use the fetched referral by ID
+    if (referralByIdData && !referralByIdError) {
+      try {
+        const transformedReferral = transformApiReferralToReferral(referralByIdData as any);
+        setSelectedReferral(transformedReferral);
+      } catch (error) {
+        console.error('Error transforming referral data:', error);
+        setSelectedReferral(null);
+      }
+      setIsReferralDetailLoading(false);
+    } else if (referralByIdError) {
+      console.error('Error fetching referral by ID:', referralByIdError);
+      setSelectedReferral(null);
+      setIsReferralDetailLoading(false);
     }
-  }, [selectedIdFromUrl, referrals, referralByIdData, transformApiReferralToReferral]);
+  }, [selectedIdFromUrl, referrals, referralByIdData, referralByIdError, transformApiReferralToReferral]);
   
   // Update loading state based on API loading
   useEffect(() => {
     setIsLoading(isFacilitatorReferralsLoading);
   }, [isFacilitatorReferralsLoading]);
   
-  // Clear selected referral when facility changes
+  // Set initial values on first load
   useEffect(() => {
-    setSelectedReferral(null);
-    // Clear referral id from URL when context changes
-    clearUrlParams();
+    if (isInitialLoad.current) {
+      initialFacilityId.current = activeFacilityId;
+      initialTab.current = activeTab;
+      isInitialLoad.current = false;
+    }
+  }, [activeFacilityId, activeTab]);
+  
+  // Clear selected referral when facility changes (but not on first load)
+  useEffect(() => {
+    // Only clear if this is not the initial load and facility actually changed
+    if (!isInitialLoad.current && initialFacilityId.current !== activeFacilityId) {
+      setSelectedReferral(null);
+      // Clear referral id from URL when context changes
+      clearUrlParams();
+      // Update the initial value
+      initialFacilityId.current = activeFacilityId;
+    }
   }, [activeFacilityId, clearUrlParams]);
   
-  // Clear selected referral when tab changes
+  // Clear selected referral when tab changes (but not on first load)
   useEffect(() => {
-    setSelectedReferral(null);
-    // Clear referral id from URL when context changes
-    clearUrlParams();
+    // Only clear if this is not the initial load and tab actually changed
+    if (!isInitialLoad.current && initialTab.current !== activeTab) {
+      setSelectedReferral(null);
+      // Clear referral id from URL when context changes
+      clearUrlParams();
+      // Update the initial value
+      initialTab.current = activeTab;
+    }
   }, [activeTab, clearUrlParams]);
   
   // Handle search changes
@@ -396,6 +450,9 @@ export const FacilitatorInbox = () => {
     // You might want to show an error message to the user here
   }
   
+  // Show error state if referral by ID failed
+  const showReferralError = selectedIdFromUrl && referralByIdError && !isReferralByIdLoading;
+  
   return (
     <div className="flex h-screen bg-gray-100">
       <div className="flex-1 flex flex-col">
@@ -416,11 +473,27 @@ export const FacilitatorInbox = () => {
             onNewReferralClick={() => setIsNewReferralOpen(true)}
             getStatusBadge={getStatusBadge}
             isLoading={isLoading}
+            isOutbound={false}
           />
           
           {/* Referral detail view */}
           <div className="flex-1 p-6 bg-white overflow-y-auto">
-            {selectedReferral ? (
+            {showReferralError ? (
+              <div className="h-full flex flex-col items-center justify-center text-center text-red-500">
+                <AlertCircle className="h-16 w-16 mb-4" />
+                <h2 className="text-lg font-medium mb-2">Referral Not Found</h2>
+                <p className="mb-4">The referral with ID "{selectedIdFromUrl}" could not be found.</p>
+                <Button 
+                  onClick={() => {
+                    clearUrlParams();
+                    setSelectedReferral(null);
+                  }}
+                  variant="outline"
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            ) : selectedReferral ? (
               <ReferralDetail 
                 referral={selectedReferral}
                 onScheduleAppointment={handleReviewReferral}
@@ -430,7 +503,7 @@ export const FacilitatorInbox = () => {
                 onUploadFiles={handleUploadFiles}
                 onStatusUpdate={handleStatusUpdate}
                 onReferralRefresh={handleReferralRefresh}
-                isLoading={isLoading}
+                isLoading={isReferralDetailLoading}
                 activeTab={activeTab}
                 searchQuery={searchQuery}
                 sortBy={sortBy}

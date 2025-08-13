@@ -66,8 +66,9 @@ export const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
     'Scheduled',
     'Declined Services',
     'Unable to Reach',
-    'Report Sent'
-  ];
+    'Report Sent',
+    'Completed'
+  ].filter(status => status !== statusHistory[0]?.status_type);
 
   const appointmentTypes = [
     'Consultation',
@@ -125,6 +126,7 @@ export const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
             case 'Declined Services':
             case 'Unable to Reach':
             case 'Report Sent':
+            case 'Completed':
               mappedStatus = 'archive';
               break;
             default:

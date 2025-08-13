@@ -31,6 +31,7 @@ interface ReferralListProps {
   onNewReferralClick: () => void;
   getStatusBadge: (status: ReferralStatus) => React.ReactNode;
   isLoading?: boolean;
+  isOutbound?: boolean;
 }
 
 export const ReferralList: React.FC<ReferralListProps> = ({
@@ -47,8 +48,12 @@ export const ReferralList: React.FC<ReferralListProps> = ({
   onSearchChange,
   onNewReferralClick,
   getStatusBadge,
+  isOutbound,
   isLoading = false
 }) => {
+
+  console.log('referrals', referrals,'222');
+
   // Utility function to check if a referral is overdue (more than 2 days old)
   const isReferralOverdue = (dateReceived: string): boolean => {
     try {
@@ -81,18 +86,16 @@ export const ReferralList: React.FC<ReferralListProps> = ({
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    // Only show badge for urgent priority, hide for others
-    if (priority !== 'urgent') {
+  const getPriorityBadge = (priority: string, isUrgent?: boolean) => {
+    // Show badge for urgent priority or if isUrgent flag is true
+    if (priority !== 'urgent' && !isUrgent) {
       return null;
     }
     
-    const badgeStyle = PRIORITY_BADGE_STYLES.urgent;
-    const label = PRIORITY_LABELS.urgent;
-    
     return (
-      <Badge className={`${badgeStyle} text-xs px-2 py-1`}>
-        {label}
+      <Badge className="bg-orange-100 text-orange-700 text-xs px-2 py-1 flex items-center gap-1">
+        <AlertTriangle className="h-3 w-3" />
+        Urgent
       </Badge>
     );
   };
@@ -209,8 +212,8 @@ export const ReferralList: React.FC<ReferralListProps> = ({
             <div className="flex justify-between items-start mb-2">
               <h3 className="font-semibold text-gray-900 text-lg">{referral.patientName}</h3>
               <div className="flex gap-2">
-                {getPriorityBadge(referral.priority)}
-                {!isReferralOverdue(referral.dateReceived) && (
+                {getPriorityBadge(referral.priority, referral.isUrgent)}
+                {!isReferralOverdue(referral.dateReceived) && !isOutbound && (
                   <Badge className="bg-red-100 text-red-700 text-xs px-2 py-1 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Overdue

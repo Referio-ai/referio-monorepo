@@ -131,4 +131,6 @@ export interface ReferralFormUploadProps {
   lastScannedDate?: string | null;
   nextStep: () => void;
   documentType?: string;
+  isUrgent?: boolean;
+  onUrgentChange?: (isUrgent: boolean) => void;
 } 

@@ -50,14 +50,14 @@ async def get_referrals(page: int = 1, page_size: int = 10, search: str = "") ->
         )
 
 
-# @router.get("/{referral_id}", status_code=200)
-# async def get_referral(referral_id: str) -> Referral:
-#     """Get a specific referral by ID"""
-#     db = await get_supabase_client()
-#     referral = await referrals_crud.get(db=db, id=referral_id)
-#     if not referral:
-#         raise HTTPException(status_code=404, detail="Referral not found")
-#     return referral
+@router.get("/get-referral-by-id/{referral_id}", status_code=200)
+async def get_referral(referral_id: str) -> ReferralWithDetails:
+    """Get a specific referral by ID with facility and patient details"""
+    db = await get_supabase_client()
+    referral = await ReferralService.fetch_referral_by_id_with_details(db=db, referral_id=referral_id)
+    if not referral:
+        raise HTTPException(status_code=404, detail="Referral not found")
+    return referral
 
 
 @router.post("/", status_code=201)
@@ -84,17 +84,22 @@ async def update_referral_status(referral_id: str, request: Request) -> dict:
 
         print(payload, 'payload')
 
-        # Extract appointment fields from payload
-        appointment_date = payload.get("referral", {}).get("appointment_date")
-        appointment_type = payload.get("referral", {}).get("appointment_type")
+        # Extract fields from payload
+        referral_data = payload.get("referral", {})
+        appointment_date = referral_data.get("appointment_date")
+        appointment_type = referral_data.get("appointment_type")
+        user_id = referral_data.get("user_id")
+        user_name = referral_data.get("user_name")
 
         return await ReferralService.update_referral_status(
             db=db, 
             referral_id=referral_id, 
-            status_type=payload.get("referral", {}).get("status_type"), 
-            notes=payload.get("referral", {}).get("notes"),
+            status_type=referral_data.get("status_type"), 
+            notes=referral_data.get("notes"),
             appointment_date=appointment_date,
-            appointment_type=appointment_type
+            appointment_type=appointment_type,
+            user_id=user_id,
+            user_name=user_name
         )
         
     except Exception as e:
@@ -158,6 +163,7 @@ async def upload_referral_document(
 async def upload_referral_form_with_extraction(
     referral_id: str,
     files: List[UploadFile] = Form(...),
+    is_urgent: bool = Form(False),
 ):
     """
     Upload referral form(s) and extract data using Reducto AI
@@ -166,11 +172,13 @@ async def upload_referral_form_with_extraction(
     1. Uploads the referral form files to storage
     2. Processes each file through Reducto for data extraction
     3. Stores the extraction results
-    4. Returns both upload results and extracted data
+    4. Updates referral with urgent status if specified
+    5. Returns both upload results and extracted data
     
     Args:
         referral_id: ID of the referral to attach the forms to
         files: List of referral form files to upload and process
+        is_urgent: Flag indicating if the referral is urgent
         
     Returns:
         Dict containing:
@@ -184,13 +192,15 @@ async def upload_referral_form_with_extraction(
     return await ReferralService.upload_referral_form(
         db=db, 
         referral_id=referral_id, 
-        form_data=files
+        form_data=files,
+        is_urgent=is_urgent
     )
 
 @router.post("/upload-form-async/{referral_id}", status_code=200)
 async def upload_referral_form_with_extraction_async(
     referral_id: str,
     files: List[UploadFile] = Form(...),
+    is_urgent: bool = Form(False),
 ):
     """
     Upload referral form(s) and extract data using Reducto AI
@@ -199,11 +209,13 @@ async def upload_referral_form_with_extraction_async(
     1. Uploads the referral form files to storage
     2. Processes each file through Reducto for data extraction
     3. Stores the extraction results
-    4. Returns both upload results and extracted data
+    4. Updates referral with urgent status if specified
+    5. Returns both upload results and extracted data
     
     Args:
         referral_id: ID of the referral to attach the forms to
         files: List of referral form files to upload and process
+        is_urgent: Flag indicating if the referral is urgent
         
     Returns:
         Dict containing:
@@ -217,7 +229,8 @@ async def upload_referral_form_with_extraction_async(
     return await ReferralService.upload_referral_form_async(
         db=db, 
         referral_id=referral_id, 
-        form_data=files
+        form_data=files,
+        is_urgent=is_urgent
     )
 
 
