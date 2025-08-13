@@ -967,12 +967,12 @@ class ReferralService:
 
             # Get patient name for the notification
             patient_name = "Unknown Patient"
-            if patient_result and patient_result.get("patient_fname") and patient_result.get("patient_lname"):
-                patient_name = f"{patient_result.get('patient_fname')} {patient_result.get('patient_lname')}"
-            elif patient_result and patient_result.get("patient_fname"):
-                patient_name = patient_result.get("patient_fname")
-            elif patient_result and patient_result.get("patient_lname"):
-                patient_name = patient_result.get("patient_lname")
+            if patient_result and patient_result['patient_data'].get("patient_fname") and patient_result['patient_data'].get("patient_lname"):
+                patient_name = f"{patient_result['patient_data'].get('patient_fname')} {patient_result['patient_data'].get('patient_lname')}"
+            elif patient_result and patient_result['patient_data'].get("patient_fname"):
+                patient_name = patient_result['patient_data'].get("patient_fname")
+            elif patient_result and patient_result['patient_data'].get("patient_lname"):
+                patient_name = patient_result['patient_data'].get("patient_lname")
 
             # create a notification for the user
             await NotificationService.create_notification(
