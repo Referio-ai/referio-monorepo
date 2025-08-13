@@ -483,7 +483,9 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
                   <p className="text-gray-900">{demographicsData.phone}</p>
                 )}
               </div>
-              <div>
+            </div>
+            <div>
+            <div>
                 <Label htmlFor="email" className="text-sm font-medium text-gray-500">Email</Label>
                 {isEditingDemographics ? (
                   <div>
@@ -536,80 +538,8 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
           <Image src={referral?.documents?.[0]?.signed_url || ''} width={400} height={400} alt="Patient Image" />
         </CardContent>
       </Card>
-
-      {/* Insurance Information */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Insurance Information</CardTitle>
-            {referral.hasInsurance && (
-              <Badge className="bg-green-100 text-green-800">Verified</Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500">Provider</p>
-              <p className="text-gray-900">{referral.insurance}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Member ID</p>
-                <p className="text-gray-900">{referral.memberId}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Group #</p>
-                <p className="text-gray-900">GRP829457</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Insurance Document</CardTitle>
-        </CardHeader>
-        <CardContent>
-        <div>
-              <p className="text-sm font-medium text-gray-500">Insurance Document</p>
-              {insuranceDocument?.signed_url ? (
-                <div className="relative inline-block">
-                  <Image 
-                    src={insuranceDocument.signed_url} 
-                    alt="Insurance Document" 
-                    width={400} 
-                    height={400}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => handleImageClick(
-                      insuranceDocument.signed_url, 
-                      'Insurance Document', 
-                      'Insurance Card'
-                    )}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-1 right-1 p-1 h-6 w-6 bg-black/50 text-white hover:bg-black/70"
-                    onClick={() => handleImageClick(
-                      insuranceDocument.signed_url, 
-                      'Insurance Document', 
-                      'Insurance Card'
-                    )}
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No insurance document available</p>
-              )}
-            </div>
-        </CardContent>
-      </Card>
-
-      {/* Referral Comments */}
-      <Card className="col-span-2">
+   {/* Referral Comments */}
+   <Card className="col-span-2">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Referral Comments</CardTitle>
@@ -695,6 +625,80 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
           )}
         </CardContent>
       </Card>
+      {/* Insurance Information */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Insurance Information</CardTitle>
+            {referral.hasInsurance && (
+              <Badge className="bg-green-100 text-green-800">Verified</Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            
+            <div>
+              <p className="text-sm font-medium text-gray-500">Provider</p>
+              <p className="text-gray-900">{referral.insurance}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Member ID</p>
+                <p className="text-gray-900">{referral.memberId}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Group #</p>
+                <p className="text-gray-900">GRP829457</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Insurance Document</CardTitle>
+        </CardHeader>
+        <CardContent>
+        <div>
+              <p className="text-sm font-medium text-gray-500">Insurance Document</p>
+              {insuranceDocument?.signed_url ? (
+                <div className="relative inline-block">
+                  <Image 
+                    src={insuranceDocument.signed_url} 
+                    alt="Insurance Document" 
+                    width={400} 
+                    height={400}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleImageClick(
+                      insuranceDocument.signed_url, 
+                      'Insurance Document', 
+                      'Insurance Card'
+                    )}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-1 right-1 p-1 h-6 w-6 bg-black/50 text-white hover:bg-black/70"
+                    onClick={() => handleImageClick(
+                      insuranceDocument.signed_url, 
+                      'Insurance Document', 
+                      'Insurance Card'
+                    )}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No insurance document available</p>
+              )}
+            </div>
+        </CardContent>
+      </Card>
+
+   
 
       {/* Image Modal */}
       {selectedImage && (

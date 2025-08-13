@@ -66,7 +66,7 @@ export class ReferralsService {
     }): CancelablePromise<Referral> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/referrals/{referral_id}',
+            url: '/api/v1/referrals/get-referral-by-id/{referral_id}',
             path: {
                 'referral_id': referralId,
             },

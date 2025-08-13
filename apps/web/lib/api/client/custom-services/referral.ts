@@ -34,19 +34,28 @@ export class ReferralService {
     public static apiV1UploadReferralFormWithExtraction({
         referralId,
         files,
+        is_urgent,
     }: {
         referralId: string,
         files: File[],
+        is_urgent?: boolean,
     }): CancelablePromise<any> {
+        const formData: any = {
+            files: files,
+        };
+        
+        // Only include is_urgent if it's provided
+        if (is_urgent !== undefined) {
+            formData.is_urgent = is_urgent;
+        }
+        
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/referrals/upload-form/{referral_id}',
             path: {
                 'referral_id': referralId,
             },
-            formData: {
-                files: files,
-            },
+            formData: formData,
             mediaType: 'multipart/form-data',
         });
     }
@@ -171,19 +180,28 @@ export class ReferralService {
     public static uploadReferralFormAsync({
         referralId,
         files,
+        is_urgent,
     }: {
         referralId: string,
         files: File[],
+        is_urgent?: boolean,
     }): CancelablePromise<any> {
+        const formData: any = {
+            files: files,
+        };
+        
+        // Only include is_urgent if it's provided
+        if (is_urgent !== undefined) {
+            formData.is_urgent = is_urgent;
+        }
+        
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/referrals/upload-form-async/{referral_id}',
             path: {
                 'referral_id': referralId,
             },
-            formData: {
-                files: files,
-            },
+            formData: formData,
             mediaType: 'multipart/form-data',
         });
     }

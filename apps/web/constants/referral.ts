@@ -33,6 +33,8 @@ export interface Referral {
   appointmentType?: string;
   completedDate?: string;
   documents: ReferralDocument[];
+  isUrgent?: boolean; // Flag for urgent referrals
+  isOutbound?: boolean; // Flag to identify outbound referrals
   // Status details for archived referrals
   referral_status_type?: string; // The specific status type (Scheduled, Declined Services, etc.)
   referral_status_notes?: string; // Notes about the status

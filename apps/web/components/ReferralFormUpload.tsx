@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, FileText, Trash2, Upload, AlertCircle, CheckCircle2, User, Calendar, Phone, MapPin, Building, Loader2, UserCheck } from 'lucide-react';
+import { Camera, FileText, Trash2, Upload, AlertCircle, CheckCircle2, User, Calendar, Phone, MapPin, Building, Loader2, UserCheck, Clock } from 'lucide-react';
 import { FilePreview, ReferralFormUploadProps } from './types';
 import { useUploadReferralForm, useUploadReferralFormAsync } from '@/lib/hooks/referrals';
 import { toast } from 'sonner';
@@ -23,7 +23,9 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
   scannedPatientInfo = null,
   lastScannedDate = null,
   nextStep = (n: number | null = null) => {},
-  documentType = 'referral_form'
+  documentType = 'referral_form',
+  isUrgent = false,
+  onUrgentChange
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<FilePreview[]>([]);
@@ -33,6 +35,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
   const [isValid, setIsValid] = useState(false);
   const [extractionResults, setExtractionResults] = useState<any>(null);
   const [showUploadForm, setShowUploadForm] = useState(true);
+  const [urgent, setUrgent] = useState(isUrgent);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use the upload hook
@@ -56,6 +59,12 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
     }
 
   }, [extractionResults, hasPatientAssociation]);
+
+  // Handle urgent toggle change
+  const handleUrgentChange = (newUrgent: boolean) => {
+    setUrgent(newUrgent);
+    onUrgentChange?.(newUrgent);
+  };
 
   useEffect(() => {
     if (existingFilesCount === 0 && selectedFiles.length > 0) {
@@ -173,7 +182,8 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
 
       uploadReferralFormAsyncMutation.mutateAsync({
         referralId,
-        files: selectedFiles
+        files: selectedFiles,
+        is_urgent: urgent
       }, {
         onSuccess: (result) => {
           console.log(result, 'result')
@@ -607,6 +617,30 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
                 PDF, Images, Word docs accepted
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Urgent Toggle */}
+      {showUploadForm && (
+        <div className="w-full max-w-md mb-6">
+          <div className="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <Clock size={20} className="text-orange-600" />
+              <div>
+                <p className="text-sm font-medium text-orange-800">Mark as Urgent</p>
+                <p className="text-xs text-orange-600">This referral requires immediate attention</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={urgent}
+                onChange={(e) => handleUrgentChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+            </label>
           </div>
         </div>
       )}

@@ -55,6 +55,100 @@ class ReferralService:
             )
 
     @staticmethod
+    async def fetch_referral_by_id_with_details(
+        db: AsyncClient, 
+        referral_id: str
+    ) -> Optional[ReferralWithDetails]:
+        """
+        Fetch a referral by its ID with facility and patient details
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral to fetch
+            
+        Returns:
+            ReferralWithDetails object if found, None otherwise
+        """
+        try:
+            # First, get the referral
+            referral_result = await db.table("referrals").select("*").eq("referral_id", referral_id).eq("deleted", False).execute()
+            
+            if not referral_result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            referral_data = referral_result.data[0]
+            
+            # Get outbound facility information
+            outbound_facility_result = await db.table("facility_entity").select("facility_name").eq("facility_id", referral_data['referral_outbound_facility_id']).execute()
+            outbound_facility_name = outbound_facility_result.data[0]['facility_name'] if outbound_facility_result.data else None
+            
+            # Get inbound facility information
+            inbound_facility_result = await db.table("facility_entity").select("facility_name").eq("facility_id", referral_data['referral_inbound_facility_id']).execute()
+            inbound_facility_name = inbound_facility_result.data[0]['facility_name'] if inbound_facility_result.data else None
+            
+            # Get patient information if patient_id exists
+            patient_data = {}
+            if referral_data.get('patient_id'):
+                patient_result = await db.table("patients").select("patient_fname, patient_mname, patient_lname, patient_dob, patient_contact_phone, patient_contact_email, patient_gender, patient_insurance_member_id").eq("patient_id", referral_data['patient_id']).execute()
+                if patient_result.data:
+                    patient_data = patient_result.data[0]
+            
+            # Get documents count if available
+            documents_result = await db.table("referral_documents").select("document_id, document_name, document_type, document_url, created_at").eq("referral_id", referral_id).execute()
+            documents = documents_result.data if documents_result.data else []
+            document_count = len(documents)
+            
+            # Create ReferralWithDetails object
+            return ReferralWithDetails(
+                referral_id=referral_data['referral_id'],
+                referral_outbound_facility_id=referral_data['referral_outbound_facility_id'],
+                referral_inbound_facility_id=referral_data['referral_inbound_facility_id'],
+                referral_outbound_date=referral_data.get('referral_outbound_date'),
+                referral_batch_prefix=referral_data['referral_batch_prefix'],
+                referral_slug=referral_data['referral_slug'],
+                patient_id=referral_data.get('patient_id'),
+                patient_name=referral_data.get('patient_name'),
+                referral_scanned=referral_data['referral_scanned'],
+                referral_scanned_date=referral_data.get('referral_scanned_date'),
+                referral_submitted=referral_data['referral_submitted'],
+                referral_submitted_date=referral_data.get('referral_submitted_date'),
+                referral_status=referral_data.get('referral_status'),
+                referral_status_type=referral_data.get('referral_status_type'),
+                referral_status_notes=referral_data.get('referral_status_notes'),
+                referral_remark=referral_data.get('referral_remark'),
+                referral_doctor_name=referral_data.get('referral_doctor_name'),
+                job_id=referral_data.get('job_id'),
+                is_urgent=referral_data.get('is_urgent', False),
+                deleted=referral_data.get('deleted', False),
+                appointment_date=referral_data.get('appointment_date'),
+                appointment_type=referral_data.get('appointment_type'),
+                outbound_facility_name=outbound_facility_name,
+                inbound_facility_name=inbound_facility_name,
+                patient_fname=patient_data.get('patient_fname'),
+                patient_mname=patient_data.get('patient_mname'),
+                patient_lname=patient_data.get('patient_lname'),
+                patient_dob=patient_data.get('patient_dob'),
+                patient_contact_phone=patient_data.get('patient_contact_phone'),
+                patient_contact_email=patient_data.get('patient_contact_email'),
+                patient_gender=patient_data.get('patient_gender'),
+                patient_insurance_member_id=patient_data.get('patient_insurance_member_id'),
+                documents=documents,
+                document_count=document_count
+            )
+        except HTTPException:
+            # Re-raise HTTPException from CRUD layer
+            raise
+        except Exception as e:
+            print(f"Error fetching referral by ID with details: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch referral: {str(e)}"
+            )
+
+    @staticmethod
     async def fetch_referral_by_slug(
         db: AsyncClient, 
         referral_slug: str,
@@ -443,7 +537,8 @@ class ReferralService:
     async def upload_referral_form_async(
         db: AsyncClient, 
         referral_id: str,
-        form_data: dict
+        form_data: dict,
+        is_urgent: bool = False
     ) -> dict:
         """
         Upload a referral form and process it through Reducto for data extraction
@@ -502,6 +597,24 @@ class ReferralService:
                 except Exception as doc_error:
                     print(f"Warning: Failed to store document records: {str(doc_error)}")
 
+            # Step 3.5: Update referral urgent status if provided
+            if is_urgent is not None:
+                try:
+                    from datetime import datetime
+                    update_data = {
+                        "is_urgent": is_urgent,
+                        "referral_submitted": True,
+                        "referral_submitted_date": datetime.now().isoformat()
+                    }
+                    result = await db.table("referrals").update(update_data).eq("referral_id", referral_id).execute()
+                    if result.data:
+                        print(f"Successfully updated referral urgent status to: {is_urgent}")
+                    else:
+                        print(f"Warning: Failed to update referral urgent status")
+                except Exception as urgent_error:
+                    print(f"Warning: Failed to update referral urgent status: {str(urgent_error)}")
+                    # Don't fail the main operation if urgent update fails
+
 
     
             # Step 4: Return comprehensive results    
@@ -534,7 +647,8 @@ class ReferralService:
     async def upload_referral_form(
         db: AsyncClient, 
         referral_id: str,
-        form_data: dict
+        form_data: dict,
+        is_urgent: bool = False
     ) -> dict:
         """
         Upload a referral form and process it through Reducto for data extraction
@@ -841,14 +955,33 @@ class ReferralService:
             
 
 
+            # Get facility name for the notification
+            facility_name = "Unknown Facility"
+            if referral.data[0].get("referral_inbound_facility_id"):
+                try:
+                    facility_result = await db.table("facility_entity").select("facility_name").eq("facility_id", referral.data[0]["referral_inbound_facility_id"]).execute()
+                    if facility_result.data:
+                        facility_name = facility_result.data[0]["facility_name"]
+                except Exception as e:
+                    print(f"Warning: Failed to get facility name: {str(e)}")
+
+            # Get patient name for the notification
+            patient_name = "Unknown Patient"
+            if patient_result and patient_result.get("patient_fname") and patient_result.get("patient_lname"):
+                patient_name = f"{patient_result.get('patient_fname')} {patient_result.get('patient_lname')}"
+            elif patient_result and patient_result.get("patient_fname"):
+                patient_name = patient_result.get("patient_fname")
+            elif patient_result and patient_result.get("patient_lname"):
+                patient_name = patient_result.get("patient_lname")
+
             # create a notification for the user
             await NotificationService.create_notification(
                 db=db,
                 notification_data=NotificationCreate(
                     title="Referral Extraction Completed",
-                    message="Your referral has been extracted successfully",
+                    message=f"Referral extraction completed for patient {patient_name} at {facility_name}",
                     type="facility",
-                    value=referral.data[0]["referral_inbound_facility_id"],
+                    value=referral.data[0]["referral_id"],
                 )
             );           
 
@@ -1180,6 +1313,10 @@ class ReferralService:
             referral_updates["referral_submitted"] = True
             referral_updates["referral_submitted_date"] = datetime.now().isoformat()
             
+            # Update urgent status if provided
+            if is_urgent is not None:
+                referral_updates["is_urgent"] = is_urgent
+            
             # Only update if we have changes to make
             if referral_updates:
                 # Use direct database update using referral_id field
@@ -1413,7 +1550,9 @@ class ReferralService:
         status_type: str,
         notes: Optional[str] = None,
         appointment_date: Optional[str] = None,
-        appointment_type: Optional[str] = None
+        appointment_type: Optional[str] = None,
+        user_id: Optional[str] = None,
+        user_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Update referral status based on the status type and add notes
@@ -1425,6 +1564,8 @@ class ReferralService:
             notes: Optional notes about the status update
             appointment_date: Optional appointment date (only for Scheduled status)
             appointment_type: Optional appointment type (only for Scheduled status)
+            user_id: Optional user ID who is making the status update
+            user_name: Optional user name who is making the status update
             
         Returns:
             Dict containing update results and status information
@@ -1488,8 +1629,8 @@ class ReferralService:
                     status_type=status_type,
                     database_status=database_status,
                     notes=notes,
-                    updated_by_id=None,  # TODO: Get from authentication context
-                    updated_by_name="System",  # TODO: Get from authentication context
+                    updated_by_id=user_id,
+                    updated_by_name=user_name or "System",
                     appointment_date=appointment_date,
                     appointment_type=appointment_type
                 )
@@ -1506,6 +1647,35 @@ class ReferralService:
                 print(f"Warning: Failed to store status history: {str(history_error)}")
                 # Don't fail the main operation if status history fails
             
+            # Create referral message for status update
+            referral_message_record = None
+            try:
+                from src.services.referral_message_service import ReferralMessageService
+                
+                # Create message content with user and timestamp
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                message_content = f"Status updated to '{status_type}'"
+                if notes:
+                    message_content += f" - {notes}"
+                if user_name:
+                    message_content += f" by {user_name}"
+                message_content += f" at {current_time}"
+                
+                # Use ReferralMessageService to add the message
+                referral_message_record = await ReferralMessageService.add_message_to_referral(
+                    db=db,
+                    referral_id=referral_id,
+                    message=message_content,
+                    sender=user_name or "System",
+                    sender_id=user_id or "system"
+                )
+                
+                print(f"Referral message created successfully: {referral_message_record.referrals_messages_id}")
+                
+            except Exception as message_error:
+                print(f"Warning: Failed to create referral message: {str(message_error)}")
+                # Don't fail the main operation if message creation fails
+            
             return {
                 "status": "success",
                 "referral_id": referral_id,
@@ -1516,7 +1686,8 @@ class ReferralService:
                 "appointment_type": appointment_type,
                 "updated_referral": updated_referral,
                 "status_history": status_history_record,
-                "message": f"Referral status updated to {status_type}"
+                "referral_message": referral_message_record,
+                "message": f"Referral status updated to {status_type} at {current_time}"
             }
             
         except HTTPException:
@@ -1937,6 +2108,7 @@ class ReferralService:
                         referral_remark=row.get('referral_remark'),
                         referral_doctor_name=row.get('referral_doctor_name'),
                         deleted=row.get('deleted', False),
+                        is_urgent=row.get('is_urgent', False),
                         appointment_date=row.get('appointment_date'),
                         appointment_type=row.get('appointment_type'),
                         outbound_facility_name=outbound_facility_name,
@@ -2051,9 +2223,11 @@ class ReferralService:
             
             # Handle search functionality at database level
             if search:
+                # Search across referral fields including patient_name directly on referrals table
                 search_query = base_query.or_(
                     f"referral_slug.ilike.%{search}%,"
-                    f"referral_batch_prefix.ilike.%{search}%"
+                    f"referral_batch_prefix.ilike.%{search}%,"
+                    f"patient_name.ilike.%{search}%"
                 )
             else:
                 search_query = base_query
@@ -2085,9 +2259,11 @@ class ReferralService:
                 count_query = count_query.eq("referral_status", status.strip())
             
             if search:
+                # Search across referral fields including patient_name directly on referrals table
                 count_query = count_query.or_(
                     f"referral_slug.ilike.%{search}%,"
-                    f"referral_batch_prefix.ilike.%{search}%"
+                    f"referral_batch_prefix.ilike.%{search}%,"
+                    f"patient_name.ilike.%{search}%"
                 )
             
             # Execute count and data queries concurrently
@@ -2177,6 +2353,7 @@ class ReferralService:
                         referral_outbound_date=row.get('referral_outbound_date'),
                         referral_batch_prefix=row['referral_batch_prefix'],
                         referral_slug=row['referral_slug'],
+                        is_urgent=row.get('is_urgent', False),
                         patient_id=row.get('patient_id'),
                         referral_scanned=row['referral_scanned'],
                         referral_scanned_date=row.get('referral_scanned_date'),
