@@ -348,6 +348,7 @@ export const FacilitatorOutbox = () => {
                 activeTab={activeTab}
                 searchQuery={searchQuery}
                 sortBy={sortBy}
+                isOutbound={true}
               />
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">

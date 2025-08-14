@@ -507,6 +507,7 @@ export const FacilitatorInbox = () => {
                 activeTab={activeTab}
                 searchQuery={searchQuery}
                 sortBy={sortBy}
+                isOutbound={false}
               />
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">

@@ -940,8 +940,8 @@ class ReferralService:
                 if referral_data_extracted and isinstance(referral_data_extracted, dict):
                     notes = referral_data_extracted.get("notes")
                 message = (
-                    f"New patient created: {patient_result.get('patient_fname')} {patient_result.get('patient_lname')} "
-                    f"with DOB {patient_result.get('patient_dob')}"
+                    f"New patient created: {patient_result['patient_data'].get('patient_fname')} {patient_result['patient_data'].get('patient_lname')} "
+                    f"with DOB {patient_result['patient_data'].get('patient_dob')}"
                 )
                 if notes:
                     message += f". Notes: {notes}"
@@ -1266,7 +1266,8 @@ class ReferralService:
         referral_id: str,
         referral_data: Dict[str, Any],
         patient_result: Optional[Dict[str, Any]] = None,
-        provider_data: Optional[Dict[str, Any]] = None
+        provider_data: Optional[Dict[str, Any]] = None,
+        is_urgent: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Update referral record with extracted information

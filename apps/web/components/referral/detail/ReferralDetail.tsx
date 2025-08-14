@@ -30,6 +30,7 @@ interface ReferralDetailProps {
   activeTab?: string;
   searchQuery?: string;
   sortBy?: string;
+  isOutbound?: boolean;
 }
 
 export const ReferralDetail: React.FC<ReferralDetailProps> = ({
@@ -46,7 +47,8 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   isLoading = false,
   activeTab,
   searchQuery,
-  sortBy
+  sortBy,
+  isOutbound
 }) => {
   const [activeDetailTab, setActiveDetailTab] = useState('info');
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
@@ -134,7 +136,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             Referral ID: {currentReferral.referral_id}
           </p>
         </div>
-        {currentReferral.isOutbound && <div className="flex items-center gap-3">
+        {!isOutbound && <div className="flex items-center gap-3">
           <Badge 
             variant={currentReferral.status === 'active' ? 'default' : 'secondary'}
             className="text-xs"
