@@ -38,6 +38,11 @@ export interface Referral {
   // Status details for archived referrals
   referral_status_type?: string; // The specific status type (Scheduled, Declined Services, etc.)
   referral_status_notes?: string; // Notes about the status
+  // Update tracking fields
+  has_update?: boolean; // Flag indicating if the referral has new file updates
+  has_update_users?: string[]; // Array of user IDs who have read file updates
+  has_com_update?: boolean; // Flag indicating if the referral has new communication updates
+  has_com_update_users?: string[]; // Array of user IDs who have read communication updates
 }
 
 export interface NewReferralFormData {

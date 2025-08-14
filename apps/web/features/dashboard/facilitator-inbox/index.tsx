@@ -172,7 +172,11 @@ export const FacilitatorInbox = () => {
       appointmentDate: apiReferral.appointment_date || undefined,
       appointmentType: apiReferral.appointment_type || undefined,
       isUrgent: apiReferral.is_urgent || false,
-      isOutbound: !!apiReferral.referral_outbound_date // If referral_outbound_date exists, it's an outbound referral
+      isOutbound: !!apiReferral.referral_outbound_date, // If referral_outbound_date exists, it's an outbound referral
+      has_update: apiReferral.has_update || false,
+      has_update_users: apiReferral.has_update_users || [],
+      has_com_update: apiReferral.has_com_update || false,
+      has_com_update_users: apiReferral.has_com_update_users || []
     };
   }, []);
   

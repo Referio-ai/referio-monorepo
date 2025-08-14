@@ -168,6 +168,86 @@ export const useUpdateReferralStatus = () => {
   })
 }
 
+/**
+ * Hook to mark communication updates as read for a referral
+ */
+export const useMarkCommunicationAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ referralId, userId }: { 
+      referralId: string, 
+      userId: string 
+    }) => {
+      const response = await ReferralService.markCommunicationAsRead({ 
+        referralId, 
+        userId 
+      })
+      return response
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate referral queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["referrals", variables.referralId] });
+      queryClient.invalidateQueries({ queryKey: ["referrals-with-details"] });
+      queryClient.invalidateQueries({ queryKey: ["facilitator-inbound-referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["facilitator-outbound-referrals"] });
+    },
+  })
+}
+
+/**
+ * Hook to get communication update status for a referral
+ */
+export const useCommunicationUpdateStatus = (referralId: string) => {
+  return useQuery({
+    queryKey: ["referral-communication-status", referralId],
+    queryFn: () => ReferralService.getCommunicationUpdateStatus({ referralId }),
+    enabled: !!referralId,
+    staleTime: 1000 * 60 * 1, // Cache for 1 minute
+  })
+}
+
+/**
+ * Hook to mark file updates as read for a referral
+ */
+export const useMarkFileUpdateAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ referralId, userId }: { 
+      referralId: string, 
+      userId: string 
+    }) => {
+      const response = await ReferralService.markFileUpdateAsRead({ 
+        referralId, 
+        userId 
+      })
+      return response
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate referral queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["referrals", variables.referralId] });
+      queryClient.invalidateQueries({ queryKey: ["referrals-with-details"] });
+      queryClient.invalidateQueries({ queryKey: ["facilitator-inbound-referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["facilitator-outbound-referrals"] });
+    },
+  })
+}
+
+/**
+ * Hook to get file update status for a referral
+ */
+export const useFileUpdateStatus = (referralId: string) => {
+  return useQuery({
+    queryKey: ["referral-file-update-status", referralId],
+    queryFn: () => ReferralService.getFileUpdateStatus({ referralId }),
+    enabled: !!referralId,
+    staleTime: 1000 * 60 * 1, // Cache for 1 minute
+  })
+}
+
 export const useFacilitatorInboundReferrals = ({ page, page_size, search, status, facilitator_facility_id, sort_by }: { page: number, page_size: number, search: string, status: string, facilitator_facility_id: string, sort_by?: string }) => useQuery({
   queryKey: ["facilitator-inbound-referrals", page, page_size, search, status, facilitator_facility_id, sort_by],
   queryFn: () => ReferralService.getFacilitatorInboundReferrals({ page, facilitator_facility_id, page_size, search, status, sort_by }),

@@ -1827,7 +1827,8 @@ class ReferralService:
                 type=document_type,
                 bucket_name="referral-documents",
                 base_path="referrals",
-                document_category=document_category
+                document_category=document_category,
+                user_id=None  # TODO: Pass actual user_id when available
             )
             
             if not upload_results:
@@ -2123,7 +2124,11 @@ class ReferralService:
                         patient_gender=patient_data.get('patient_gender'),
                         patient_insurance_member_id=patient_data.get('patient_insurance_member_id'),
                         documents=updated_documents,
-                        document_count=len(updated_documents)
+                        document_count=len(updated_documents),
+                        has_update=row.get('has_update', False),
+                        has_update_users=row.get('has_update_users', []),
+                        has_com_update=row.get('has_com_update', False),
+                        has_com_update_users=row.get('has_com_update_users', [])
                     )
                     
                     items.append(referral_item)

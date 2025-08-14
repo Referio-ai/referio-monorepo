@@ -669,3 +669,131 @@ async def get_facilitator_outbound_referrals(
             status_code=500,
             detail=f"An error occurred while fetching outbound referrals for the current facilitator. {str(e)}",
         )
+
+
+@router.post("/{referral_id}/mark-communication-read/{user_id}", status_code=200)
+async def mark_communication_as_read(
+    referral_id: str,
+    user_id: str
+) -> Dict[str, Any]:
+    """
+    Mark a referral's communication updates as read by a specific user
+    
+    Args:
+        referral_id: ID of the referral
+        user_id: ID of the user marking the communication as read
+        
+    Returns:
+        Dictionary containing the update result
+    """
+    try:
+        db = await get_supabase_client()
+        
+        return await ReferralMessageService.mark_communication_as_read(
+            db=db,
+            referral_id=referral_id,
+            user_id=user_id
+        )
+        
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"Error marking communication as read: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to mark communication as read: {str(e)}"
+        )
+
+
+@router.get("/{referral_id}/communication-status", status_code=200)
+async def get_communication_update_status(referral_id: str) -> Dict[str, Any]:
+    """
+    Get the communication update status for a referral
+    
+    Args:
+        referral_id: ID of the referral
+        
+    Returns:
+        Dictionary containing communication update status
+    """
+    try:
+        db = await get_supabase_client()
+        return await ReferralMessageService.get_communication_update_status(
+            db=db,
+            referral_id=referral_id
+        )
+        
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"Error getting communication update status: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get communication update status: {str(e)}"
+        )
+
+
+@router.post("/{referral_id}/mark-file-update-read/{user_id}", status_code=200)
+async def mark_file_update_as_read(
+    referral_id: str,
+    user_id: str
+) -> Dict[str, Any]:
+    """
+    Mark a referral's file updates as read by a specific user
+    
+    Args:
+        referral_id: ID of the referral
+        user_id: ID of the user marking the file update as read
+        
+    Returns:
+        Dictionary containing the update result
+    """
+    try:
+        db = await get_supabase_client()
+        
+        return await ReferralMessageService.mark_file_update_as_read(
+            db=db,
+            referral_id=referral_id,
+            user_id=user_id
+        )
+        
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"Error marking file update as read: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to mark file update as read: {str(e)}"
+        )
+
+
+@router.get("/{referral_id}/file-update-status", status_code=200)
+async def get_file_update_status(referral_id: str) -> Dict[str, Any]:
+    """
+    Get the file update status for a referral
+    
+    Args:
+        referral_id: ID of the referral
+        
+    Returns:
+        Dictionary containing file update status
+    """
+    try:
+        db = await get_supabase_client()
+        return await ReferralMessageService.get_file_update_status(
+            db=db,
+            referral_id=referral_id
+        )
+        
+    except HTTPException:
+        # Re-raise HTTPException from service layer
+        raise
+    except Exception as e:
+        print(f"Error getting file update status: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get file update status: {str(e)}"
+        )
