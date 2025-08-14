@@ -32,7 +32,7 @@ class FacilitatorService:
                     detail="PropelAuth configuration is missing. Please check PROPEL_AUTH_URL and PROPEL_API_KEY."
                 )
             
-            # Use provided password or generate a secure one
+            # Use provided password or generate a secure one if not provided
             user_password = password if password else self._generate_secure_password()
             
             # Use the separate first and last name fields
