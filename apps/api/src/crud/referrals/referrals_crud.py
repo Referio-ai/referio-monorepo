@@ -113,7 +113,7 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
                 detail=f"Failed to delete referral. {str(e)}",
             )
     
-    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str, document_category: Optional[str] = None):
+    async def upload_files(self, db: AsyncClient, *, id: str, files: List[UploadFile], bucket_name: str, base_path:str, type: str, document_category: Optional[str] = None, user_id: Optional[str] = None):
         """Upload files for a referral"""
         try:
             fileResults = []
@@ -132,6 +132,14 @@ class CRUDReferrals(CRUDBase[Referral, ReferralCreate, ReferralUpdate]):
               if document_category:
                   fileResult.document_category = document_category
               fileResults.append(fileResult)
+            
+            # Update referral to mark it has file updates
+            # Add the current user to the list since they've already seen the files they uploaded
+            await db.table("referrals").update({
+                "has_update": True,
+                "has_update_users": []  # Add the user to the list since they've seen the files
+            }).eq("referral_id", id).execute()
+            
             return fileResults
         except Exception as e:
             raise HTTPException(

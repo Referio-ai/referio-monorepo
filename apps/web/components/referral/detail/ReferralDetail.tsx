@@ -13,6 +13,8 @@ import { CommunicationTab } from './CommunicationTab';
 import { ReportsTab } from './ReportsTab';
 import { UpdateStatusModal } from './UpdateStatusModal';
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { useCommunicationUpdateStatus, useMarkCommunicationAsRead } from '@/lib/hooks/referrals';
+import { useUser } from '@propelauth/nextjs/client';
 
 interface ReferralDetailProps {
   referral: Referral;
@@ -30,6 +32,7 @@ interface ReferralDetailProps {
   activeTab?: string;
   searchQuery?: string;
   sortBy?: string;
+  isOutbound?: boolean;
 }
 
 export const ReferralDetail: React.FC<ReferralDetailProps> = ({
@@ -46,11 +49,17 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   isLoading = false,
   activeTab,
   searchQuery,
-  sortBy
+  sortBy,
+  isOutbound
 }) => {
   const [activeDetailTab, setActiveDetailTab] = useState('info');
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
   const [currentReferral, setCurrentReferral] = useState<Referral>(referral);
+  
+  // Communication status and user hooks
+  const { data: communicationStatus } = useCommunicationUpdateStatus(currentReferral?.referral_id);
+  const { user } = useUser();
+  const markCommunicationAsRead = useMarkCommunicationAsRead();
 
   // Update current referral when prop changes
   useEffect(() => {
@@ -61,6 +70,26 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   useEffect(() => {
     setActiveDetailTab('info');
   }, [currentReferral?.referral_id]);
+
+  // Mark communication as read when Communication tab is selected
+  useEffect(() => {
+    if (activeDetailTab === 'communication' && 
+        user?.userId && 
+        communicationStatus?.has_com_update &&
+        !communicationStatus.has_com_update_users?.includes(user.userId)) {
+      // Mark as read immediately for instant visual feedback
+      markCommunicationAsRead.mutate({
+        referralId: currentReferral.referral_id,
+        userId: user.userId
+      });
+    }
+  }, [activeDetailTab, user?.userId, communicationStatus, markCommunicationAsRead, currentReferral.referral_id]);
+
+  // Create optimistic state for immediate red dot removal
+  const shouldShowRedDot = user?.userId && 
+    communicationStatus?.has_com_update && 
+    !communicationStatus.has_com_update_users?.includes(user.userId) &&
+    activeDetailTab !== 'communication';
 
   // Handle referral data update from modal
   const handleReferralDataUpdate = (updatedReferral: Referral) => {
@@ -134,7 +163,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             Referral ID: {currentReferral.referral_id}
           </p>
         </div>
-        {currentReferral.isOutbound && <div className="flex items-center gap-3">
+        {!isOutbound && <div className="flex items-center gap-3">
           <Badge 
             variant={currentReferral.status === 'active' ? 'default' : 'secondary'}
             className="text-xs"
@@ -215,7 +244,9 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
             className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm relative"
           >
             Communication
-            {/* <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div> */}
+                        {shouldShowRedDot && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            )}
           </TabsTrigger>
           <TabsTrigger 
             value="reports" 

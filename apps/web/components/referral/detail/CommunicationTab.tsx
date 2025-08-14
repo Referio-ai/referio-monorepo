@@ -8,6 +8,7 @@ import { Referral } from '@/constants/referral';
 import { useMessagesByReferralId, useAddMessageToReferral, useUploadMessageAttachments, useMessageAttachments } from '@/lib/hooks/referrals-messages';
 import { useUser } from '@propelauth/nextjs/client';
 import { useLatestMessagesByReferralId } from '@/lib/hooks/referrals-messages';
+import { useMarkCommunicationAsRead, useCommunicationUpdateStatus } from '@/lib/hooks/referrals';
 
 interface CommunicationTabProps {
   referral: Referral;
@@ -66,6 +67,7 @@ export const CommunicationTab: React.FC<CommunicationTabProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastProcessedMessagesRef = useRef<string>('');
+  const hasMarkedAsReadRef = useRef<boolean>(false);
 
   // Fetch messages for this referral
   const { data: messagesResponse, isLoading: isLoadingMessages, error, refetch } = useLatestMessagesByReferralId(referral.referral_id, MESSAGES_PER_PAGE);
@@ -81,10 +83,32 @@ export const CommunicationTab: React.FC<CommunicationTabProps> = ({
   // Upload attachments mutation
   const uploadAttachmentsMutation = useUploadMessageAttachments();
 
+  // Communication update tracking hooks
+  const markCommunicationAsRead = useMarkCommunicationAsRead();
+  const { data: communicationStatus } = useCommunicationUpdateStatus(referral.referral_id);
+
   // Scroll to bottom function
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Function to manually mark communication as read
+  const handleMarkAsRead = useCallback(() => {
+    if (user?.userId && communicationStatus?.has_com_update) {
+      markCommunicationAsRead.mutate({
+        referralId: referral.referral_id,
+        userId: user.userId
+      });
+    }
+  }, [user?.userId, communicationStatus?.has_com_update, markCommunicationAsRead, referral.referral_id]);
+
+  // Show success message when communication is marked as read
+  useEffect(() => {
+    if (markCommunicationAsRead.isSuccess) {
+      // The communication status will automatically update due to query invalidation
+      console.log('Communication marked as read successfully');
+    }
+  }, [markCommunicationAsRead.isSuccess]);
 
   // Update local messages when server messages change
   useEffect(() => {
@@ -113,12 +137,26 @@ export const CommunicationTab: React.FC<CommunicationTabProps> = ({
     }
   }, [messages, hasMore]);
 
+  // Reset the marked as read flag when referral changes
+  useEffect(() => {
+    hasMarkedAsReadRef.current = false;
+  }, [referral.referral_id]);
+
   // Refresh messages when tab becomes active
   useEffect(() => {
     if (isActive) {
       refetch();
+      
+      // Mark communication as read only once when tab is opened
+      if (user?.userId && communicationStatus?.has_com_update && !hasMarkedAsReadRef.current) {
+        markCommunicationAsRead.mutate({
+          referralId: referral.referral_id,
+          userId: user.userId
+        });
+        hasMarkedAsReadRef.current = true;
+      }
     }
-  }, [isActive, refetch]);
+  }, [isActive, refetch, user?.userId, communicationStatus?.has_com_update, markCommunicationAsRead, referral.referral_id]);
 
   // Scroll to bottom when messages change (only for new messages)
   useEffect(() => {
@@ -383,15 +421,24 @@ export const CommunicationTab: React.FC<CommunicationTabProps> = ({
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Communication History</CardTitle>
-        <CardDescription>Messages and referral letters</CardDescription>
-      </CardHeader>
-      <CardContent 
-        className="flex-1 overflow-y-scroll max-h-[calc(80vh-350px)]"
-        ref={messagesContainerRef}
-        onScroll={handleScroll}
-      >
+        <CardTitle className="flex items-center gap-2">
+          <span>Communication History</span>
+        </CardTitle>
+        <CardDescription>
+          Messages and referral letters
+        </CardDescription>
+              </CardHeader>
+        
+
+        
+        <CardContent 
+          className="flex-1 overflow-y-scroll max-h-[calc(80vh-350px)]"
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+        >
         <div className="space-y-4">
+          {/* New Updates Indicator */}
+          
           {/* Loading more messages indicator */}
           {isLoadingMore && (
             <div className="flex items-center justify-center py-4">

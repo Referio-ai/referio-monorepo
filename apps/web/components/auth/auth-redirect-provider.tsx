@@ -131,16 +131,14 @@ export function AuthRedirectProvider({
         // Handle user type-based routing for protected routes
         if (!PUBLIC_ROUTES.includes(pathname)) {
           handleUserTypeRedirect(user, pathname, router);
+          return;
         }
       }
     }
   }, [user, loading, pathname, router]);
 
   // Show loading state while checking authentication OR if user should be redirected
-  if (
-    (!user || loading) && !PUBLIC_ROUTES.includes(pathname) ||
-    (user && shouldRedirectUser(user, pathname))
-  ) {
+  if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>

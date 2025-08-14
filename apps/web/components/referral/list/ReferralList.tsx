@@ -15,6 +15,8 @@ import {
   PRIORITY_LABELS 
 } from '@/constants/referral';
 import { ReferralListSkeleton } from '../skeletons/ReferralSkeletons';
+import { useUser } from '@propelauth/nextjs/client';
+import { useMarkCommunicationAsRead, useMarkFileUpdateAsRead } from '@/lib/hooks/referrals';
 
 interface ReferralListProps {
   referrals: Referral[];
@@ -53,6 +55,46 @@ export const ReferralList: React.FC<ReferralListProps> = ({
 }) => {
 
   console.log('referrals', referrals,'222');
+
+  // User and update tracking hooks
+  const { user } = useUser();
+  const markCommunicationAsRead = useMarkCommunicationAsRead();
+  const markFileUpdateAsRead = useMarkFileUpdateAsRead();
+
+  // Function to check if a referral has unread updates for the current user
+  const hasUnreadUpdates = (referral: Referral): boolean => {
+    if (!user?.userId) return false;
+    
+    const hasUnreadCommunication = !(referral.has_com_update_users ?? []).includes(user.userId);
+    
+    const hasUnreadFiles = !(referral.has_update_users ?? []).includes(user.userId);
+    
+    return hasUnreadCommunication || hasUnreadFiles;
+  };
+
+  // Function to mark updates as read when a referral is selected
+  const handleReferralSelect = (referral: Referral) => {
+    if (user?.userId) {
+      // Mark communication updates as read if they exist
+
+        markCommunicationAsRead.mutate({
+          referralId: referral.referral_id,
+          userId: user.userId
+        });
+   
+      
+      // Mark file updates as read if they exist
+      if (!(referral.has_update_users ?? []).includes(user.userId)) {
+        markFileUpdateAsRead.mutate({
+          referralId: referral.referral_id,
+          userId: user.userId
+        });
+      }
+    }
+    
+    // Call the original onReferralSelect
+    onReferralSelect(referral);
+  };
 
   // Utility function to check if a referral is overdue (more than 2 days old)
   const isReferralOverdue = (dateReceived: string): boolean => {
@@ -207,10 +249,15 @@ export const ReferralList: React.FC<ReferralListProps> = ({
             className={`w-full text-left p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
               selectedReferralId === referral.referral_id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
             }`}
-            onClick={() => onReferralSelect(referral)}
+            onClick={() => handleReferralSelect(referral)}
           >
             <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-gray-900 text-lg">{referral.patientName}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 text-lg">{referral.patientName}</h3>
+                {hasUnreadUpdates(referral) && (
+                  <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0" title="New updates available" />
+                )}
+              </div>
               <div className="flex gap-2">
                 {getPriorityBadge(referral.priority, referral.isUrgent)}
                 {!isReferralOverdue(referral.dateReceived) && !isOutbound && (

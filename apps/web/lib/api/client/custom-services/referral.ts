@@ -319,6 +319,94 @@ export class ReferralService {
             },
         });
     }
+
+    /**
+     * Mark communication updates as read for a referral
+     * @param referralId - ID of the referral
+     * @param userId - ID of the user marking the communication as read
+     * @returns Promise with the update result
+     */
+    public static markCommunicationAsRead({
+        referralId,
+        userId,
+    }: {
+        referralId: string,
+        userId: string,
+    }): CancelablePromise<any> {
+        
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/{referral_id}/mark-communication-read/{user_id}',
+            path: {
+                'referral_id': referralId,
+                'user_id': userId,
+            },
+        });
+    }
+
+    /**
+     * Get communication update status for a referral
+     * @param referralId - ID of the referral
+     * @returns Promise with the communication update status
+     */
+    public static getCommunicationUpdateStatus({
+        referralId,
+    }: {
+        referralId: string,
+    }): CancelablePromise<any> {
+        
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/{referral_id}/communication-status',
+            path: {
+                'referral_id': referralId,
+            },
+        });
+    }
+
+    /**
+     * Mark file updates as read for a referral
+     * @param referralId - ID of the referral
+     * @param userId - ID of the user marking the file update as read
+     * @returns Promise with the update result
+     */
+    public static markFileUpdateAsRead({
+        referralId,
+        userId,
+    }: {
+        referralId: string,
+        userId: string,
+    }): CancelablePromise<any> {
+        
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/referrals/{referral_id}/mark-file-update-read/{user_id}',
+            path: {
+                'referral_id': referralId,
+                'user_id': userId,
+            },
+        });
+    }
+
+    /**
+     * Get file update status for a referral
+     * @param referralId - ID of the referral
+     * @returns Promise with the file update status
+     */
+    public static getFileUpdateStatus({
+        referralId,
+    }: {
+        referralId: string,
+    }): CancelablePromise<any> {
+        
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/referrals/{referral_id}/file-update-status',
+            path: {
+                'referral_id': referralId,
+            },
+        });
+    }
 } 
 
 

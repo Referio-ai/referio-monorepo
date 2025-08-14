@@ -69,8 +69,15 @@ class ReferralMessageService:
                     detail="Failed to create message"
                 )
             
+            # Update referral to mark it has communication updates
+            # Add the current user to the list since they've already seen the message they created
+            await db.table("referrals").update({
+                "has_com_update": True,
+                "has_com_update_users": [sender_id]  # Add the sender to the list since they've seen the message
+            }).eq("referral_id", referral_id).execute()
+            
             # If user_info is provided, we can store additional context
-            # This could be extended to store user details in a separate table or field
+            # This could be extended to store user details in a separate audit table
             if user_info:
                 # Log user info for audit purposes (could be stored in a separate audit table)
                 print(f"Message added by user: {user_info}")
@@ -130,7 +137,8 @@ class ReferralMessageService:
                 type="message_attachment",
                 bucket_name="referral-documents",
                 base_path="messages",
-                document_category=document_category or "message_attachment"
+                document_category=document_category or "message_attachment",
+                user_id=None  # TODO: Pass actual user_id when available
             )
             
             if not upload_results:
@@ -647,6 +655,122 @@ class ReferralMessageService:
             )
 
     @staticmethod
+    async def mark_communication_as_read(
+        db: AsyncClient,
+        referral_id: str,
+        user_id: str
+    ) -> Dict[str, Any]:
+        """
+        Mark a referral's communication updates as read by a specific user
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral
+            user_id: ID of the user marking the communication as read
+            
+        Returns:
+            Dictionary containing the update result
+        """
+        try:
+            # Validate referral exists
+            referral_result = await db.table("referrals").select("referral_id, has_com_update, has_com_update_users").eq("referral_id", referral_id).eq("deleted", False).execute()
+            
+            if not referral_result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            referral = referral_result.data[0]
+            current_users = referral.get("has_com_update_users", [])
+            
+            # Add user to the list if not already there
+            if user_id not in current_users:
+                current_users.append(user_id)
+                
+                # Update the referral
+                update_result = await db.table("referrals").update({
+                    "has_com_update_users": current_users
+                }).eq("referral_id", referral_id).execute()
+                
+                if not update_result.data:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to update referral communication read status"
+                    )
+                
+                return {
+                    "referral_id": referral_id,
+                    "user_id": user_id,
+                    "marked_as_read": True,
+                    "updated_users_list": current_users,
+                    "message": "Communication marked as read successfully"
+                }
+            else:
+                return {
+                    "referral_id": referral_id,
+                    "user_id": user_id,
+                    "marked_as_read": False,
+                    "updated_users_list": current_users,
+                    "message": "Communication already marked as read by this user"
+                }
+                
+        except HTTPException:
+            # Re-raise HTTPException
+            raise
+        except Exception as e:
+            print(f"Error marking communication as read: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to mark communication as read: {str(e)}"
+            )
+
+    @staticmethod
+    async def get_communication_update_status(
+        db: AsyncClient,
+        referral_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get the communication update status for a referral
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral
+            
+        Returns:
+            Dictionary containing communication update status
+        """
+        try:
+            # Validate referral exists
+            referral_result = await db.table("referrals").select("referral_id, has_com_update, has_com_update_users").eq("referral_id", referral_id).eq("deleted", False).execute()
+            
+            if not referral_result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            referral = referral_result.data[0]
+            
+            return {
+                "referral_id": referral_id,
+                "has_com_update": referral.get("has_com_update", False),
+                "has_com_update_users": referral.get("has_com_update_users", []),
+                "unread_count": len(referral.get("has_com_update_users", [])),
+                "status": "has_updates" if referral.get("has_com_update", False) else "no_updates"
+            }
+                
+        except HTTPException:
+            # Re-raise HTTPException
+            raise
+        except Exception as e:
+            print(f"Error getting communication update status: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get communication update status: {str(e)}"
+            )
+
+    @staticmethod
     async def create_message(
         db: AsyncClient,
         message_data: ReferralMessagesCreate
@@ -690,6 +814,13 @@ class ReferralMessageService:
                     detail="Failed to create message"
                 )
             
+            # Update referral to mark it has communication updates
+            # Add the current user to the list since they've already seen the message they created
+            await db.table("referrals").update({
+                "has_com_update": True,
+                "has_com_update_users": [str(message_data.sender_id)]  # Add the sender to the list since they've seen the message
+            }).eq("referral_id", str(message_data.referral_id)).execute()
+            
             # Return the created message
             created_message_data = result.data[0]
             return ReferralMessages(**created_message_data)
@@ -702,4 +833,120 @@ class ReferralMessageService:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to create message: {str(e)}"
+            )
+
+    @staticmethod
+    async def mark_file_update_as_read(
+        db: AsyncClient,
+        referral_id: str,
+        user_id: str
+    ) -> Dict[str, Any]:
+        """
+        Mark a referral's file updates as read by a specific user
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral
+            user_id: ID of the user marking the file update as read
+            
+        Returns:
+            Dictionary containing the update result
+        """
+        try:
+            # Validate referral exists
+            referral_result = await db.table("referrals").select("referral_id, has_update, has_update_users").eq("referral_id", referral_id).eq("deleted", False).execute()
+            
+            if not referral_result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            referral = referral_result.data[0]
+            current_users = referral.get("has_update_users", [])
+            
+            # Add user to the list if not already there
+            if user_id not in current_users:
+                current_users.append(user_id)
+                
+                # Update the referral
+                update_result = await db.table("referrals").update({
+                    "has_update_users": current_users
+                }).eq("referral_id", referral_id).execute()
+                
+                if not update_result.data:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to update referral file read status"
+                    )
+                
+                return {
+                    "referral_id": referral_id,
+                    "user_id": user_id,
+                    "marked_as_read": True,
+                    "updated_users_list": current_users,
+                    "message": "File update marked as read successfully"
+                }
+            else:
+                return {
+                    "referral_id": referral_id,
+                    "user_id": user_id,
+                    "marked_as_read": False,
+                    "updated_users_list": current_users,
+                    "message": "File update already marked as read by this user"
+                }
+                
+        except HTTPException:
+            # Re-raise HTTPException
+            raise
+        except Exception as e:
+            print(f"Error marking file update as read: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to mark file update as read: {str(e)}"
+            )
+
+    @staticmethod
+    async def get_file_update_status(
+        db: AsyncClient,
+        referral_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get the file update status for a referral
+        
+        Args:
+            db: Database client
+            referral_id: ID of the referral
+            
+        Returns:
+            Dictionary containing file update status
+        """
+        try:
+            # Validate referral exists
+            referral_result = await db.table("referrals").select("referral_id, has_update, has_update_users").eq("referral_id", referral_id).eq("deleted", False).execute()
+            
+            if not referral_result.data:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Referral with ID {referral_id} not found"
+                )
+            
+            referral = referral_result.data[0]
+            
+            return {
+                "referral_id": referral_id,
+                "has_update": referral.get("has_update", False),
+                "has_update_users": referral.get("has_update_users", []),
+                "unread_count": len(referral.get("has_update_users", [])),
+                "status": "has_updates" if referral.get("has_update", False) else "no_updates"
+            }
+                
+        except HTTPException:
+            # Re-raise HTTPException
+            raise
+        except Exception as e:
+            print(f"Error getting file update status: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get file update status: {str(e)}"
             )
