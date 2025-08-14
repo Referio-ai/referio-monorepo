@@ -130,7 +130,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({
 
   const getPriorityBadge = (priority: string, isUrgent?: boolean) => {
     // Show badge for urgent priority or if isUrgent flag is true
-    if (priority !== 'urgent' && !isUrgent) {
+    if ((priority !== 'urgent' && !isUrgent ) || activeTab == 'archive') {
       return null;
     }
     
@@ -260,7 +260,7 @@ export const ReferralList: React.FC<ReferralListProps> = ({
               </div>
               <div className="flex gap-2">
                 {getPriorityBadge(referral.priority, referral.isUrgent)}
-                {!isReferralOverdue(referral.dateReceived) && !isOutbound && (
+                {!isReferralOverdue(referral.dateReceived)  && activeTab !== 'archive' && (
                   <Badge className="bg-red-100 text-red-700 text-xs px-2 py-1 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Overdue
