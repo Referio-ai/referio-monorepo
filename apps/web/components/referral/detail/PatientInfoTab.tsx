@@ -353,20 +353,20 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
       {/* Demographics */}
-      <Card>
-        <CardHeader>
+      <Card className="h-fit">
+        <CardHeader className="pb-3 lg:pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle>Demographics</CardTitle>
+            <CardTitle className="text-base lg:text-lg">Demographics</CardTitle>
             {!isEditingDemographics ? (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleEditDemographics}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs lg:text-sm"
               >
-                <Edit className="h-4 w-4" />
+                <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
                 Edit
               </Button>
             ) : (
@@ -376,9 +376,9 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
                   size="sm"
                   onClick={handleSaveDemographics}
                   disabled={updatePatientMutation.isPending || hasValidationErrors}
-                  className="flex items-center gap-1 text-green-600 hover:text-green-700"
+                  className="flex items-center gap-1 text-green-600 hover:text-green-700 text-xs lg:text-sm"
                 >
-                  <Save className="h-4 w-4" />
+                  <Save className="h-3 w-3 lg:h-4 lg:w-4" />
                   {updatePatientMutation.isPending ? 'Saving...' : 'Save'}
                 </Button>
                 <Button
@@ -386,196 +386,225 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
                   size="sm"
                   onClick={handleCancelEdit}
                   disabled={updatePatientMutation.isPending}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                  className="flex items-center gap-1 text-red-600 hover:text-red-700 text-xs lg:text-sm"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3 lg:h-4 lg:w-4" />
                   Cancel
                 </Button>
               </div>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="patientName" className="text-sm font-medium text-gray-500">Name *</Label>
-                {isEditingDemographics ? (
-                  <div>
-                    <Input
-                      id="patientName"
-                      value={demographicsData.patientName}
-                      onChange={(e) => handleInputChange('patientName', e.target.value)}
-                      onBlur={(e) => handleInputBlur('patientName', e.target.value)}
-                      className={`mt-1 ${validationErrors.patientName ? 'border-red-500' : ''}`}
-                      placeholder="Enter patient name"
-                    />
-                    {validationErrors.patientName && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.patientName}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-900">{demographicsData.patientName}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="age" className="text-sm font-medium text-gray-500">Age</Label>
-                {isEditingDemographics ? (
-                  <div>
-                    <Input
-                      id="age"
-                      type="number"
-                      value={demographicsData.age}
-                      onChange={(e) => handleInputChange('age', e.target.value)}
-                      onBlur={(e) => handleInputBlur('age', e.target.value)}
-                      className={`mt-1 ${validationErrors.age ? 'border-red-500' : ''}`}
-                      min="0"
-                      max="120"
-                      placeholder="Enter age"
-                    />
-                    {validationErrors.age && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.age}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-900">{demographicsData.age}</p>
-                )}
-              </div>
-            </div>
+        <CardContent className="space-y-3 lg:space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
             <div>
-              <Label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-500">DOB</Label>
+              <Label htmlFor="patientName" className="text-xs lg:text-sm font-medium text-gray-500">Name *</Label>
               {isEditingDemographics ? (
                 <div>
                   <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={demographicsData.dateOfBirth}
-                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                    onBlur={(e) => handleInputBlur('dateOfBirth', e.target.value)}
-                    className={`mt-1 ${validationErrors.dateOfBirth ? 'border-red-500' : ''}`}
+                    id="patientName"
+                    value={demographicsData.patientName}
+                    onChange={(e) => handleInputChange('patientName', e.target.value)}
+                    onBlur={(e) => handleInputBlur('patientName', e.target.value)}
+                    className={`mt-1 text-xs lg:text-sm ${validationErrors.patientName ? 'border-red-500' : ''}`}
+                    placeholder="Enter patient name"
                   />
-                  {validationErrors.dateOfBirth && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.dateOfBirth}</p>
+                  {validationErrors.patientName && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.patientName}</p>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-900">{demographicsData.dateOfBirth ? formatDate(demographicsData.dateOfBirth) : ''}</p>
+                <p className="text-gray-900 text-sm lg:text-base mt-1">{demographicsData.patientName}</p>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="phone" className="text-sm font-medium text-gray-500">Phone</Label>
-                {isEditingDemographics ? (
-                  <div>
-                    <Input
-                      id="phone"
-                      value={demographicsData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      onBlur={(e) => handleInputBlur('phone', e.target.value)}
-                      className={`mt-1 ${validationErrors.phone ? 'border-red-500' : ''}`}
-                      placeholder="Enter phone number"
-                    />
-                    {validationErrors.phone && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-900">{demographicsData.phone}</p>
-                )}
-              </div>
-            </div>
             <div>
-            <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-500">Email</Label>
-                {isEditingDemographics ? (
-                  <div>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={demographicsData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      onBlur={(e) => handleInputBlur('email', e.target.value)}
-                      className={`mt-1 ${validationErrors.email ? 'border-red-500' : ''}`}
-                      placeholder="Enter email address"
-                    />
-                    {validationErrors.email && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-900">{demographicsData.email}</p>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="referredBy" className="text-sm font-medium text-gray-500">Referring Doctor</Label>
+              <Label htmlFor="age" className="text-xs lg:text-sm font-medium text-gray-500">Age</Label>
               {isEditingDemographics ? (
                 <div>
                   <Input
-                    id="referredBy"
-                    value={demographicsData.referredBy}
-                    onChange={(e) => handleInputChange('referredBy', e.target.value)}
-                    onBlur={(e) => handleInputBlur('referredBy', e.target.value)}
-                    className={`mt-1 ${validationErrors.referredBy ? 'border-red-500' : ''}`}
-                    placeholder="Enter referring doctor name"
+                    id="age"
+                    type="number"
+                    value={demographicsData.age}
+                    onChange={(e) => handleInputChange('age', e.target.value)}
+                    onBlur={(e) => handleInputBlur('age', e.target.value)}
+                    className={`mt-1 text-xs lg:text-sm ${validationErrors.age ? 'border-red-500' : ''}`}
+                    min="0"
+                    max="120"
+                    placeholder="Enter age"
                   />
-                  {validationErrors.referredBy && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.referredBy}</p>
+                  {validationErrors.age && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.age}</p>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-900">{demographicsData.referredBy}</p>
+                <p className="text-gray-900 text-sm lg:text-base mt-1">{demographicsData.age}</p>
               )}
             </div>
           </div>
+          <div>
+            <Label htmlFor="dateOfBirth" className="text-xs lg:text-sm font-medium text-gray-500">DOB</Label>
+            {isEditingDemographics ? (
+              <div>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={demographicsData.dateOfBirth}
+                  onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                  onBlur={(e) => handleInputBlur('dateOfBirth', e.target.value)}
+                  className={`mt-1 text-xs lg:text-sm ${validationErrors.dateOfBirth ? 'border-red-500' : ''}`}
+                />
+                {validationErrors.dateOfBirth && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.dateOfBirth}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-900 text-sm lg:text-base mt-1">{demographicsData.dateOfBirth ? formatDate(demographicsData.dateOfBirth) : ''}</p>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+            <div>
+              <Label htmlFor="phone" className="text-xs lg:text-sm font-medium text-gray-500">Phone</Label>
+              {isEditingDemographics ? (
+                <div>
+                  <Input
+                    id="phone"
+                    value={demographicsData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onBlur={(e) => handleInputBlur('phone', e.target.value)}
+                    className={`mt-1 text-xs lg:text-sm ${validationErrors.phone ? 'border-red-500' : ''}`}
+                    placeholder="Enter phone number"
+                  />
+                  {validationErrors.phone && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-900 text-sm lg:text-base mt-1">{demographicsData.phone}</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="email" className="text-xs lg:text-sm font-medium text-gray-500">Email</Label>
+              {isEditingDemographics ? (
+                <div>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={demographicsData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onBlur={(e) => handleInputBlur('email', e.target.value)}
+                    className={`mt-1 text-xs lg:text-sm ${validationErrors.email ? 'border-red-500' : ''}`}
+                    placeholder="Enter email address"
+                  />
+                  {validationErrors.email && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-900 text-sm lg:text-base mt-1">{demographicsData.email}</p>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="referredBy" className="text-xs lg:text-sm font-medium text-gray-500">Referring Doctor</Label>
+            {isEditingDemographics ? (
+              <div>
+                <Input
+                  id="referredBy"
+                  value={demographicsData.referredBy}
+                  onChange={(e) => handleInputChange('referredBy', e.target.value)}
+                  onBlur={(e) => handleInputBlur('referredBy', e.target.value)}
+                  className={`mt-1 text-xs lg:text-sm ${validationErrors.referredBy ? 'border-red-500' : ''}`}
+                  placeholder="Enter referring doctor name"
+                />
+                {validationErrors.referredBy && (
+                  <p className="text-red-500 text-xs mt-1">{validationErrors.referredBy}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-900 text-sm lg:text-base mt-1">{demographicsData.referredBy}</p>
+            )}
+          </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Referral</CardTitle>
+      
+      {/* Referral Image */}
+      <Card className="h-fit">
+        <CardHeader className="pb-3 lg:pb-4">
+          <CardTitle className="text-base lg:text-lg">Referral</CardTitle>
         </CardHeader>
         <CardContent>
-          <Image src={referral?.documents?.[0]?.signed_url || ''} width={400} height={400} alt="Patient Image" />
+          {referral?.documents?.[0]?.signed_url ? (
+            <div className="relative w-full aspect-square max-w-sm mx-auto">
+              <Image 
+                src={referral.documents[0].signed_url} 
+                alt="Referral Document" 
+                fill
+                className="object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(
+                  referral.documents[0].signed_url, 
+                  'Referral Document', 
+                  'Referral'
+                )}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 p-1 h-6 w-6 bg-black/50 text-white hover:bg-black/70"
+                onClick={() => handleImageClick(
+                  referral.documents[0].signed_url, 
+                  'Referral Document', 
+                  'Referral'
+                )}
+              >
+                <Eye className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-200 rounded-lg">
+              <div className="text-gray-400 text-2xl mb-2">📄</div>
+              <p className="text-gray-500 text-sm">No referral document</p>
+            </div>
+          )}
         </CardContent>
       </Card>
-   {/* Referral Comments */}
-   <Card className="col-span-2">
-        <CardHeader>
+
+      {/* Referral Comments */}
+      <Card className="col-span-1 lg:col-span-2">
+        <CardHeader className="pb-3 lg:pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle>Referral Comments</CardTitle>
-            <Badge className="bg-gray-100 text-gray-800 flex items-center gap-1">
+            <CardTitle className="text-base lg:text-lg">Referral Comments</CardTitle>
+            <Badge className="bg-gray-100 text-gray-800 flex items-center gap-1 text-xs">
               <Paperclip className="h-3 w-3" />
               Attached
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-6 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 mb-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Date Received</p>
-              <p className="text-gray-900">{formatDate(referral.dateReceived)}</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-500">Date Received</p>
+              <p className="text-gray-900 text-sm lg:text-base">{formatDate(referral.dateReceived)}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Reason</p>
-              <p className="text-gray-900">{referral.reason}</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-500">Reason</p>
+              <p className="text-gray-900 text-sm lg:text-base">{referral.reason}</p>
             </div>
           </div>
-    
         </CardContent>
       </Card>
 
       {/* X-Rays */}
-      <Card className="col-span-2">
-        <CardHeader>
-          <CardTitle>X-Rays</CardTitle>
+      <Card className="col-span-1 lg:col-span-2">
+        <CardHeader className="pb-3 lg:pb-4">
+          <CardTitle className="text-base lg:text-lg">X-Rays</CardTitle>
         </CardHeader>
         <CardContent>
           {hasXrayDocuments ? (
-            <div className="grid grid-cols-4 gap-4">
-              {xrayDocuments.slice(0, 3).map((document, index) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+              {xrayDocuments.slice(0, 4).map((document, index) => (
                 <div key={document.document_id} className="space-y-2">
                   <div 
-                    className="bg-gray-100 h-32 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors relative overflow-hidden"
+                    className="bg-gray-100 h-24 sm:h-28 lg:h-32 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors relative overflow-hidden"
                     onClick={() => handleImageClick(
                       document.signed_url, 
                       `X-Ray ${index + 1}`, 
@@ -591,7 +620,7 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute top-1 right-1 p-1 h-6 w-6 bg-black/50 text-white hover:bg-black/70"
+                      className="absolute top-1 right-1 p-1 h-5 w-5 lg:h-6 lg:w-6 bg-black/50 text-white hover:bg-black/70"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleImageClick(
@@ -601,103 +630,98 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
                         );
                       }}
                     >
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
                     </Button>
                   </div>
-                  <p className="text-sm text-center font-medium">X-Ray {index + 1}</p>
+                  <p className="text-xs lg:text-sm text-center font-medium">X-Ray {index + 1}</p>
                 </div>
               ))}
               {xrayDocuments.length < 4 && (
                 <div className="space-y-2">
-                  <div className="border-2 border-dashed border-gray-200 h-32 rounded-lg flex flex-col items-center justify-center text-gray-400">
-                    <div className="text-2xl">+</div>
+                  <div className="border-2 border-dashed border-gray-200 h-24 sm:h-28 lg:h-32 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                    <div className="text-xl lg:text-2xl">+</div>
                     <p className="text-xs text-center">Upload Additional X-rays</p>
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-200 rounded-lg">
-              <div className="text-gray-400 text-2xl mb-2">📷</div>
-              <p className="mt-2 text-gray-500">No X-rays provided</p>
+            <div className="flex flex-col items-center justify-center h-24 sm:h-28 lg:h-32 border-2 border-dashed border-gray-200 rounded-lg">
+              <div className="text-gray-400 text-xl lg:text-2xl mb-2">📷</div>
+              <p className="text-gray-500 text-sm">No X-rays provided</p>
             </div>
           )}
         </CardContent>
       </Card>
+      
       {/* Insurance Information */}
-      <Card>
-        <CardHeader>
+      <Card className="h-fit">
+        <CardHeader className="pb-3 lg:pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle>Insurance Information</CardTitle>
+            <CardTitle className="text-base lg:text-lg">Insurance Information</CardTitle>
             {referral.hasInsurance && (
-              <Badge className="bg-green-100 text-green-800">Verified</Badge>
+              <Badge className="bg-green-100 text-green-800 text-xs">Verified</Badge>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            
+        <CardContent className="space-y-3 lg:space-y-4">
+          <div>
+            <p className="text-xs lg:text-sm font-medium text-gray-500">Provider</p>
+            <p className="text-gray-900 text-sm lg:text-base">{referral.insurance}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Provider</p>
-              <p className="text-gray-900">{referral.insurance}</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-500">Member ID</p>
+              <p className="text-gray-900 text-sm lg:text-base">{referral.memberId}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Member ID</p>
-                <p className="text-gray-900">{referral.memberId}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Group #</p>
-                <p className="text-gray-900">GRP829457</p>
-              </div>
+            <div>
+              <p className="text-xs lg:text-sm font-medium text-gray-500">Group #</p>
+              <p className="text-gray-900 text-sm lg:text-base">GRP829457</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Insurance Document</CardTitle>
+      {/* Insurance Document */}
+      <Card className="h-fit">
+        <CardHeader className="pb-3 lg:pb-4">
+          <CardTitle className="text-base lg:text-lg">Insurance Document</CardTitle>
         </CardHeader>
         <CardContent>
-        <div>
-              <p className="text-sm font-medium text-gray-500">Insurance Document</p>
-              {insuranceDocument?.signed_url ? (
-                <div className="relative inline-block">
-                  <Image 
-                    src={insuranceDocument.signed_url} 
-                    alt="Insurance Document" 
-                    width={400} 
-                    height={400}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => handleImageClick(
-                      insuranceDocument.signed_url, 
-                      'Insurance Document', 
-                      'Insurance Card'
-                    )}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-1 right-1 p-1 h-6 w-6 bg-black/50 text-white hover:bg-black/70"
-                    onClick={() => handleImageClick(
-                      insuranceDocument.signed_url, 
-                      'Insurance Document', 
-                      'Insurance Card'
-                    )}
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No insurance document available</p>
-              )}
-            </div>
+          <div>
+            <p className="text-xs lg:text-sm font-medium text-gray-500 mb-2">Insurance Document</p>
+            {insuranceDocument?.signed_url ? (
+              <div className="relative w-full aspect-square max-w-sm mx-auto">
+                <Image 
+                  src={insuranceDocument.signed_url} 
+                  alt="Insurance Document" 
+                  fill
+                  className="object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => handleImageClick(
+                    insuranceDocument.signed_url, 
+                    'Insurance Document', 
+                    'Insurance Card'
+                  )}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 p-1 h-6 w-6 bg-black/50 text-white hover:bg-black/70"
+                  onClick={() => handleImageClick(
+                    insuranceDocument.signed_url, 
+                    'Insurance Document', 
+                    'Insurance Card'
+                  )}
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No insurance document available</p>
+            )}
+          </div>
         </CardContent>
       </Card>
-
-   
 
       {/* Image Modal */}
       {selectedImage && (

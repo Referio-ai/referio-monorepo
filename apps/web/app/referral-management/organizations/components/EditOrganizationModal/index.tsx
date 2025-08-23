@@ -84,7 +84,7 @@ const EditOrganizationModal: React.FC<EditOrganizationModalProps> = ({
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof Organization],
+          ...prev[parent as keyof any],
           [child]: value,
         },
       }));
