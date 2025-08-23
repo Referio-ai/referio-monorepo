@@ -52,6 +52,22 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     filename?: string;
   }>>([]);
 
+  // Sync newly uploaded docs when existing documents change (e.g., after parent refresh)
+  useEffect(() => {
+    // Clear newly uploaded docs if they're now in the existing documents
+    // This prevents duplicates when parent component refreshes data
+    if (existingDocuments.length > 0) {
+      setNewlyUploadedDocs(prev => 
+        prev.filter(newDoc => 
+          !existingDocuments.some(existingDoc => 
+            existingDoc.document_id === newDoc.document_id ||
+            (newDoc.document_id.startsWith('temp_') && existingDoc.filename === newDoc.filename)
+          )
+        )
+      );
+    }
+  }, [existingDocuments]);
+
   // Combine existing documents with newly uploaded ones
   const allTreatmentReports = [
     ...existingDocuments.filter(doc => doc.document_category === 'treatment_reports'),
