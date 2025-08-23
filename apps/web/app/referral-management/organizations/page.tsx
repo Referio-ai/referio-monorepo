@@ -138,7 +138,7 @@ const OrganizationManagement = () => {
 
   // Handle edit organization
   const handleEditOrganization = (organizationId: string, updatedOrganization: Partial<Organization>) => {
-    updateOrganizationMutation({ organizationId, organization: updatedOrganization }, {
+    updateOrganizationMutation({ organizationId, organization: updatedOrganization as any }, {
       onSuccess: () => {
         toast.success("The organization has been successfully updated.");
         setIsEditModalOpen(false);
