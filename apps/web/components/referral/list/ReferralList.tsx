@@ -164,45 +164,45 @@ export const ReferralList: React.FC<ReferralListProps> = ({
   // }
 
   return (
-    <div className="w-96 border-r flex flex-col bg-white">
-      <div className="p-6 border-b">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Referrals</h1>
+    <div className="w-80 lg:w-96 xl:w-[420px] border-r flex flex-col bg-white">
+      <div className="p-4 lg:p-6 border-b">
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Referrals</h1>
         </div>
         
-        <Tabs defaultValue={activeTab} className="w-full mb-6">
+        <Tabs defaultValue={activeTab} className="w-full mb-4 lg:mb-6">
           <TabsList className="grid grid-cols-3 w-full bg-gray-100">
             <TabsTrigger 
               value="new" 
               onClick={() => onTabChange('new')} 
-              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-sm"
             >
               New
             </TabsTrigger>
             <TabsTrigger 
               value="active" 
               onClick={() => onTabChange('active')} 
-              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-gray-500"
+              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-gray-500 text-sm"
             >
               Active
             </TabsTrigger>
             <TabsTrigger 
               value="archive" 
               onClick={() => onTabChange('archive')} 
-              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-gray-500"
+              className="data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm text-gray-500 text-sm"
             >
               Archive
             </TabsTrigger>
           </TabsList>
         </Tabs>
         
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-gray-600">{referrals.length} referrals</p>
+        <div className="flex items-center justify-between mb-3 lg:mb-4">
+          <p className="text-xs lg:text-sm text-gray-600">{referrals.length} referrals</p>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
+            <span className="text-xs lg:text-sm text-gray-600">Sort by:</span>
             <div className="relative">
               <select 
-                className="pl-3 pr-8 py-2 border border-gray-300 rounded-md text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                className="pl-2 lg:pl-3 pr-6 lg:pr-8 py-1.5 lg:py-2 border border-gray-300 rounded-md text-xs lg:text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                 value={sortBy}
                 onChange={(e) => onSortChange(e.target.value as ReferralSortOption)}
               >
@@ -210,80 +210,68 @@ export const ReferralList: React.FC<ReferralListProps> = ({
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
-              <ChevronDown className="h-4 w-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <ChevronDown className="h-3 w-3 lg:h-4 lg:w-4 absolute right-1 lg:right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" />
             </div>
           </div>
         </div>
 
         <div className="flex gap-2">
-          {/* <div className="relative flex-shrink-0">
-            <select 
-              className="pl-3 pr-8 py-2 border border-gray-300 rounded-md text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-              value={searchFilter}
-              onChange={(e) => onSearchFilterChange(e.target.value as ReferralSearchFilter)}
-            >
-              {SEARCH_FILTER_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            <ChevronDown className="h-4 w-4 absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" />
-          </div> */}
           <div className="relative flex-1">
             <input
               type="text"
               placeholder={getPlaceholderText(searchFilter)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-8 lg:pl-10 pr-3 lg:pr-4 py-1.5 lg:py-2 border border-gray-300 rounded-md text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
-            <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search className="h-3 w-3 lg:h-4 lg:w-4 absolute left-2 lg:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
         </div>
       </div>
       
       {isLoading ? <ReferralListSkeleton /> : (
-    <div className="flex-1 overflow-y-scroll max-h-[calc(80vh-230px)]">
+    <div className="flex-1 overflow-y-scroll max-h-[calc(80vh-200px)] lg:max-h-[calc(80vh-230px)]">
         {referrals.map(referral => (
           <button
             key={referral.referral_id}
-            className={`w-full text-left p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+            className={`w-full text-left p-3 lg:p-4 xl:p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
               selectedReferralId === referral.referral_id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
             }`}
             onClick={() => handleReferralSelect(referral)}
           >
             <div className="flex justify-between items-start mb-2">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900 text-lg">{referral.patientName}</h3>
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-sm lg:text-base xl:text-lg truncate">{referral.patientName}</h3>
                 {hasUnreadUpdates(referral) && (
-                  <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0" title="New updates available" />
+                  <div className="w-2 h-2 lg:w-3 lg:h-3 bg-red-500 rounded-full flex-shrink-0" title="New updates available" />
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1 lg:gap-2 flex-shrink-0">
                 {getPriorityBadge(referral.priority, referral.isUrgent)}
                 {!isReferralOverdue(referral.dateReceived)  && activeTab !== 'archive' && (
-                  <Badge className="bg-red-100 text-red-700 text-xs px-2 py-1 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Overdue
+                  <Badge className="bg-red-100 text-red-700 text-xs px-1.5 lg:px-2 py-0.5 lg:py-1 flex items-center gap-1">
+                    <AlertTriangle className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
+                    <span className="hidden sm:inline">Overdue</span>
                   </Badge>
                 )}
               </div>
             </div>
-            <p className="text-gray-600 mb-3">{referral.reason}</p>
-            <div className="flex items-center text-sm text-gray-500 mb-3">
-              <Clock className="h-4 w-4 mr-2" />
-              <span>{formatHumanReadableDate(referral.dateReceived)}</span>
+            <p className="text-gray-600 mb-2 lg:mb-3 text-xs lg:text-sm line-clamp-2">{referral.reason}</p>
+            <div className="flex items-center text-xs lg:text-sm text-gray-500 mb-2 lg:mb-3">
+              <Clock className="h-3 w-3 lg:h-4 lg:w-4 mr-1.5 lg:mr-2" />
+              <span className="truncate">{formatHumanReadableDate(referral.dateReceived)}</span>
               {referral.status === 'active' && referral.appointmentDate && (
                 <>
-                  <span className="mx-2">•</span>
-                  <Calendar className="h-4 w-4 mr-1" />
-                  <span>{formatHumanReadableDate(referral.appointmentDate)}</span>
+                  <span className="mx-1.5 lg:mx-2">•</span>
+                  <Calendar className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
+                  <span className="truncate">{formatHumanReadableDate(referral.appointmentDate)}</span>
                 </>
               )}
             </div>
             {referral.hasXrays && (
               <div className="flex">
                 <Badge variant="outline" className="flex items-center text-xs">
-                  <Image className="h-3 w-3 mr-1" />
+                  <Image className="h-2.5 w-2.5 lg:h-3 lg:w-3 mr-1" />
                   X-rays
                 </Badge>
               </div>

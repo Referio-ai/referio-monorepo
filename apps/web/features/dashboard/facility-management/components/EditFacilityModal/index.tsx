@@ -5,8 +5,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useGetAllOrganizations } from '@/lib/hooks/organizations';
+
+interface Organization {
+  organization_id: string;
+  organization_name: string;
+}
 
 interface Facility {
   facility_id: string;
@@ -36,6 +43,7 @@ interface EditFacilityModalProps {
 }
 
 const validationSchema = Yup.object({
+  organization_id: Yup.string().required('Organization is required'),
   facility_name: Yup.string().required('Facility name is required'),
   facility_address: Yup.object({
     street: Yup.string().required('Street address is required'),
@@ -64,8 +72,11 @@ const EditFacilityModal: React.FC<EditFacilityModalProps> = ({
   onSubmit,
   isLoading = false,
 }) => {
+  const { data: organizations } = useGetAllOrganizations();
+
   const formik = useFormik({
     initialValues: {
+      organization_id: facility?.organization_id || '',
       facility_name: facility?.facility_name || '',
       facility_address: {
         street: facility?.facility_address.street || '',
@@ -86,6 +97,7 @@ const EditFacilityModal: React.FC<EditFacilityModalProps> = ({
       if (!facility) return;
       
       const updatedFacility: Partial<Facility> = {
+        organization_id: values.organization_id,
         facility_name: values.facility_name,
         facility_address: values.facility_address,
         facility_primary_contact_fname: values.facility_primary_contact_fname,
@@ -114,6 +126,29 @@ const EditFacilityModal: React.FC<EditFacilityModalProps> = ({
           <DialogTitle>Edit Facility</DialogTitle>
         </DialogHeader>
         <form onSubmit={formik.handleSubmit} className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="organization_id">Organization</Label>
+            <Select
+              value={formik.values.organization_id}
+              onValueChange={(value) => formik.setFieldValue('organization_id', value)}
+              disabled={isLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select organization" />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations?.map((org) => (
+                  <SelectItem key={org.organization_id} value={org.organization_id}>
+                    {org.organization_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formik.touched.organization_id && formik.errors.organization_id && (
+              <div className="text-sm text-red-500">{formik.errors.organization_id}</div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="facility_name">Facility Name</Label>
             <Input

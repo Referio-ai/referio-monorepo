@@ -19,10 +19,12 @@ export class FacilitiesService {
         page,
         pageSize,
         search,
+        organizationId,
         }: {
         page: number,
         pageSize: number,
         search: string,
+        organizationId?: string,
     }): CancelablePromise<PaginatedResponse<Facility>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -31,6 +33,7 @@ export class FacilitiesService {
                 page,
                 pageSize,
                 search,
+                organization_id:organizationId,
             },
         });
     }

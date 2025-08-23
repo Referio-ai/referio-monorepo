@@ -9,7 +9,7 @@ from supabase import AsyncClient
 
 from src.crud.facilitators.facilitators_crud import facilitators_crud
 from src.crud.user_facility.user_facility_crud import user_facility_crud
-from src.schemas.facilitators import Facilitator, FacilitatorCreate, FacilitatorUpdate, FacilitatorUpdateWithMultipleFacilities
+from src.schemas.facilitators import Facilitator, FacilitatorCreate, FacilitatorUpdate, FacilitatorUpdateWithMultipleFacilities, FacilitatorWithFacilities
 from src.schemas.user_facility import UserFacilityCreate
 from src.config.infisical import PROPEL_AUTH_URL, PROPEL_API_KEY
 from src.config.supabase_config import get_supabase_client
@@ -484,7 +484,7 @@ class FacilitatorService:
         sort_by: str = "facilitator_full_name",
         sort_order: str = "asc"
     ) -> dict:
-        """Get paginated facilitators with optional facility filter and sorting"""
+        """Get paginated facilitators with optional facility filter and sorting, including all associated facilities"""
         try:
             # Calculate offset
             offset = (page - 1) * page_size
@@ -534,17 +534,48 @@ class FacilitatorService:
             data_result = await query.execute()
             items = data_result.data
             
+            # For each facilitator, get their associated facilities
+            facilitators_with_facilities = []
+            for item in items:
+                print(f"Processing facilitator: {item['facilitator_id']} - {item['facilitator_full_name']}")
+                
+                # Get facilities for this facilitator from user_facility table
+                # Note: user_facility.user_id stores the propelauth_user_id, not facilitator_id
+                user_facility_result = await db.table("user_facility").select("*").eq("user_id", str(item["facilitator_id"])).execute()
+                
+             
+                facilities = []
+                if user_facility_result.data:
+                    # Get facility details for each facility_id
+                    for uf_item in user_facility_result.data:
+                        facility_result = await db.table("facility_entity").select("*").eq("facility_id", uf_item["facility_id"]).execute()
+                        print(f"Facility result: {facility_result.data}")
+                        if facility_result.data:
+                            facilities.append(facility_result.data[0])
+                
+                # Debug: Print facilities for current facilitator
+                print(f"Facilitator {item['facilitator_id']}: Found {len(facilities)} facilities")
+                if facilities:
+                    print(f"Facility IDs: {[f['facility_id'] for f in facilities]}")
+                
+                # Create FacilitatorWithFacilities object
+                facilitator_with_facilities = FacilitatorWithFacilities(
+                    **item,
+                    facilities=facilities
+                )
+                facilitators_with_facilities.append(facilitator_with_facilities)
+            
             # Calculate total pages
             total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
             
             return {
-                "items": [Facilitator(**item) for item in items],
+                "items": facilitators_with_facilities,
                 "total": total_count,
                 "page": page,
                 "page_size": page_size,
                 "total_pages": total_pages,
                 "sort_by": sort_by,
-                "sort_order": sort_order
+                "sort_order": sort_order,
             }
         except HTTPException:
             raise

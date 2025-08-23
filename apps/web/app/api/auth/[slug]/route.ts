@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 
 const routeHandlers = getRouteHandlers({
     postLoginRedirectPathFn: (req: NextRequest) => {
-        return '/'
+        return '/redirect-user'
     },
 })
 

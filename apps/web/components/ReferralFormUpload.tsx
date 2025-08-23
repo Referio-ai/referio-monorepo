@@ -50,13 +50,13 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
   // Initialize showUploadForm based on patient association
   useEffect(() => {
     // Hide upload form if there's already a patient association
-    if (hasPatientAssociation) {
-      setShowUploadForm(false);
-    }
+    // if (hasPatientAssociation) {
+    //   setShowUploadForm(false);
+    // }
 
-    if (extractionResults) {
-      setShowUploadForm(false);
-    }
+    // if (extractionResults) {
+    //   setShowUploadForm(false);
+    // }
 
   }, [extractionResults, hasPatientAssociation]);
 
@@ -488,9 +488,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       <div className="w-full max-w-md mb-8">
         <div className=" rounded-lg p-6">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <UserCheck size={24} className="text-green-600" />
-            </div>
+         
           </div>
           <div className="text-center flex flex-col gap-1">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">
@@ -499,7 +497,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
             <p className="text-sm text-gray-700 mb-3">
               Is this the correct referral to continue?
             </p>
-            <h2 className="font-mono font-bold">
+            <h2 className="font-mono font-bold text-3xl">
               {scannedPatientInfo?.firstNameInitial}.{scannedPatientInfo?.lastNameInitial}.
             </h2>
             {scannedPatientInfo?.birthYear && (
@@ -655,7 +653,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       />
 
       {/* Toggle Button for Patient Association */}
-      {hasPatientAssociation && !extractionResults && (
+      {/* {hasPatientAssociation && !extractionResults && (
         <div className="w-full max-w-md mb-8">
           <div className="text-center">
             <button
@@ -683,7 +681,7 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
             </p>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Error Messages */}
       {errors.length > 0 && showUploadForm && (
@@ -803,8 +801,17 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
       )}
 
       {/* Action Button for Patient Association (when upload form is hidden) */}
-      {hasPatientAssociation && !showUploadForm && (
-        <div className="w-full max-w-md mb-4">
+      {/* OR */}
+
+      
+
+      {hasPatientAssociation && (
+        <>
+        <div className="w-full max-w-md mb-4 mt-4">
+        <p className="text-center text-gray-500">OR</p>
+        </div>
+        
+        <div className="w-full max-w-md mb-4 mt-4">
           <button
             type="button"
             onClick={() => {
@@ -813,9 +820,11 @@ export const ReferralFormUpload: React.FC<ReferralFormUploadProps> = ({
             }}
             className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
           >
-            {extractionResults ? 'Continue adding information' : 'Continue with Existing Patient'}
+            {/* {extractionResults ? 'Continue adding information' : 'Continue with Existing Patient'} */}
+            Continue adding information
           </button>
         </div>
+        </>
       )}
 
       {/* New Upload Button (shown when results are displayed) */}

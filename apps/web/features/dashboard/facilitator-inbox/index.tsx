@@ -481,18 +481,19 @@ export const FacilitatorInbox = () => {
           />
           
           {/* Referral detail view */}
-          <div className="flex-1 p-6 bg-white overflow-y-auto">
+          <div className="flex-1 p-4 lg:p-6 bg-white overflow-y-auto">
             {showReferralError ? (
               <div className="h-full flex flex-col items-center justify-center text-center text-red-500">
-                <AlertCircle className="h-16 w-16 mb-4" />
-                <h2 className="text-lg font-medium mb-2">Referral Not Found</h2>
-                <p className="mb-4">The referral with ID "{selectedIdFromUrl}" could not be found.</p>
+                <AlertCircle className="h-12 w-12 lg:h-16 lg:w-16 mb-4" />
+                <h2 className="text-base lg:text-lg font-medium mb-2">Referral Not Found</h2>
+                <p className="mb-4 text-sm lg:text-base">The referral with ID "{selectedIdFromUrl}" could not be found.</p>
                 <Button 
                   onClick={() => {
                     clearUrlParams();
                     setSelectedReferral(null);
                   }}
                   variant="outline"
+                  size="sm"
                 >
                   Clear Selection
                 </Button>
@@ -515,9 +516,9 @@ export const FacilitatorInbox = () => {
               />
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
-                <Inbox className="h-16 w-16 mb-4" />
-                <h2 className="text-lg font-medium mb-2">No referral selected</h2>
-                <p>Select a referral from the list to review and approve</p>
+                <Inbox className="h-12 w-12 lg:h-16 lg:w-16 mb-4" />
+                <h2 className="text-base lg:text-lg font-medium mb-2">No referral selected</h2>
+                <p className="text-sm lg:text-base">Select a referral from the list to review and approve</p>
               </div>
             )}
           </div>

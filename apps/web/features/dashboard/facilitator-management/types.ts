@@ -1,8 +1,10 @@
 import type { Facility as ApiFacility } from '@/lib/api/client/models/Facility';
 import type { Facilitator as ApiFacilitator } from '@/lib/api/client/models/Facilitator';
+import type { FacilitatorWithFacilities as ApiFacilitatorWithFacilities } from '@/lib/api/client/models/FacilitatorWithFacilities';
 
 export type Facility = ApiFacility;
 export type Facilitator = ApiFacilitator;
+export type FacilitatorWithFacilities = ApiFacilitatorWithFacilities;
 
 export interface FacilitatorFilters {
   search: string;

@@ -5,6 +5,7 @@
 import type { Facilitator } from '../models/Facilitator';
 import type { FacilitatorCreate } from '../models/FacilitatorCreate';
 import type { FacilitatorPagination } from '../models/FacilitatorPagination';
+import type { FacilitatorWithFacilitiesPagination } from '../models/FacilitatorWithFacilitiesPagination';
 import type { FacilitatorUpdate } from '../models/FacilitatorUpdate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -13,8 +14,8 @@ import { request as __request } from '../core/request';
 export class FacilitatorsService {
     /**
      * Get All Facilitators
-     * Get all facilitators
-     * @returns FacilitatorPagination Successful Response
+     * Get all facilitators with facilities
+     * @returns FacilitatorWithFacilitiesPagination Successful Response
      * @throws ApiError
      */
     public static apiV1GetFacilitators({
@@ -25,7 +26,7 @@ export class FacilitatorsService {
         page?: number,
         pageSize?: number,
         search?: string,
-    }): CancelablePromise<FacilitatorPagination> {
+    }): CancelablePromise<FacilitatorWithFacilitiesPagination> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/facilitators/',

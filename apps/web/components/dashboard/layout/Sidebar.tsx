@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useFacilityStore } from '@/lib/stores/facilityStore';
 import FacilitySelectionModal from '@/components/facility/FacilitySelectionModal';
+import { useUser, useLogoutFunction } from "@propelauth/nextjs/client";
 
 export interface SidebarItem {
   icon: React.ElementType;
@@ -32,6 +33,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const router = useRouter();
   const activePath = usePathname();
+  const logoutFn = useLogoutFunction();
+
+  const handleLogout = async () => {
+    await logoutFn();
+    router.push('/');
+  };
   
   const { activeFacilityId, openFacilityModal, facilities } = useFacilityStore();
 
@@ -139,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isOpen && <span>Help & Support</span>}
         </button>
         <button 
-          onClick={onLogout}
+          onClick={handleLogout}
           className={`w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all mt-2 ${!isOpen && 'justify-center'}`}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />

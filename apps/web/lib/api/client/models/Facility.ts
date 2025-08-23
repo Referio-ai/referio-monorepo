@@ -5,6 +5,7 @@
 export type Facility = {
     facility_id: string;
     organization_id: string;
+    organization_name?: string;
     facility_name: string;
     facility_address: Record<string, any>;
     facility_primary_contact_fname: string;

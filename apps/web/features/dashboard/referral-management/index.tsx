@@ -589,7 +589,6 @@ const ReferralDashboard = () => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Referral QR Code - ${referral.id}</title>
           <style>
             @media print {
               body { margin: 0; padding: 20px; }
@@ -624,8 +623,6 @@ const ReferralDashboard = () => {
               margin-top: 20px;
               padding: 15px;
               background: #f8fafc;
-              border-radius: 8px;
-              border-left: 4px solid #3b82f6;
             }
             .referral-id {
               font-size: 18px;
@@ -674,24 +671,13 @@ const ReferralDashboard = () => {
         <body>
           <div class="qr-container">
             <div class="print-header">
-              <div class="print-title">Referral QR Code</div>
-              <div class="print-subtitle">Scan to view referral details</div>
+              <div class="print-title">Referio.ai</div>
             </div>
-            
             <div class="qr-code">
               ${qrCodeSVG}
             </div>
-            
             <div class="referral-info">
-              <div class="referral-id">${referral.id}</div>
-              <div class="batch-id">Batch: ${batchPrefix}</div>
-              <div class="url-info">
-                <strong>URL:</strong> ${qrCodeUrl}
-              </div>
-            </div>
-            
-            <div class="timestamp">
-              Generated on ${new Date().toLocaleString()}
+              <div class="batch-id">Scan QR to Upload Referral</div>
             </div>
           </div>
         </body>

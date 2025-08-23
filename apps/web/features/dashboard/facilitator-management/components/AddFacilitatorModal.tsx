@@ -46,6 +46,32 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
     label: facility.facility_name,
   }));
 
+  // Phone number formatting function
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digits
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    const trimmed = phoneNumber.slice(0, 10);
+    
+    // Format as (XXX) XXX-XXXX
+    if (trimmed.length === 0) return '';
+    if (trimmed.length <= 3) return `(${trimmed}`;
+    if (trimmed.length <= 6) return `(${trimmed.slice(0, 3)}) ${trimmed.slice(3)}`;
+    return `(${trimmed.slice(0, 3)}) ${trimmed.slice(3, 6)}-${trimmed.slice(6)}`;
+  };
+
+  // Handle phone number input change
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setFormData({ ...formData, facilitator_phone_number: formatted });
+  };
+
+  // Extract only digits for submission
+  const getCleanPhoneNumber = (formattedPhone: string): string => {
+    return formattedPhone.replace(/\D/g, '');
+  };
+
   const generatePassword = () => {
     const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
     let password = '';
@@ -103,7 +129,7 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
       facilitator_last_name: formData.facilitator_last_name,
       facilitator_full_name: `${formData.facilitator_first_name} ${formData.facilitator_last_name}`.trim(),
       facilitator_email: formData.facilitator_email,
-      facilitator_phone_number: formData.facilitator_phone_number,
+      facilitator_phone_number: getCleanPhoneNumber(formData.facilitator_phone_number),
       facilitator_status: 'active',
       password: formData.password,
       deleted: false,
@@ -209,9 +235,10 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
               <Input
                 id="phone"
                 value={formData.facilitator_phone_number}
-                onChange={(e) => setFormData({ ...formData, facilitator_phone_number: e.target.value })}
-                placeholder="+1-555-0123"
+                onChange={handlePhoneChange}
+                placeholder="(510) 555-5555"
                 required
+                maxLength={14}
               />
             </div>
           </div>

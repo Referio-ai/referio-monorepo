@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
@@ -15,9 +15,19 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200)
-async def get_facilities(page: int = 1, page_size: int = 10, search: str = "") -> FacilityPagination:
+async def get_facilities(
+    page: int = 1, 
+    page_size: int = 10, 
+    search: str = "", 
+    organization_id: Optional[str] = None
+) -> FacilityPagination:
     """Get all facilities"""
-    return await facilities_service.get_facilities_paginated(page=page, page_size=page_size, search=search)
+    return await facilities_service.get_facilities_paginated(
+        page=page, 
+        page_size=page_size, 
+        search=search, 
+        organization_id=organization_id
+    )
 
 
 @router.post("/", status_code=201)

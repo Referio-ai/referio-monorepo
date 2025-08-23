@@ -139,21 +139,14 @@ export const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
             status: mappedStatus,
             appointmentDate: selectedStatus === 'Scheduled' ? appointmentDate : undefined,
             appointmentType: selectedStatus === 'Scheduled' ? appointmentType : undefined,
+            // Add status details for archived referrals
+            referral_status_type: selectedStatus,
+            referral_status_notes: notes.trim() || undefined,
           };
           
-          // Call callback to update referral data directly
+          // Call callback to update referral data directly without refreshing
           if (onReferralDataUpdate) {
             onReferralDataUpdate(updatedReferral);
-          }
-          
-          // Call parent callback to refresh referral data
-          if (onStatusUpdate) {
-            onStatusUpdate();
-          }
-          
-          // Call callback to refresh individual referral data
-          if (onReferralRefresh) {
-            onReferralRefresh(referral.referral_id);
           }
           
           handleClose();

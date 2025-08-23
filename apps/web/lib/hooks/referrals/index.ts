@@ -150,19 +150,8 @@ export const useUpdateReferralStatus = () => {
       return response
     },
     onSuccess: (data, variables) => {
-      // Invalidate all referral-related queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["scanned-referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["facilitator-inbound-referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["facilitator-outbound-referrals"] });
-      queryClient.invalidateQueries({ queryKey: ["referrals-with-details"] });
-      queryClient.invalidateQueries({ queryKey: ["referrals", "batch"] });
-      
-      // Invalidate specific referral queries
-      queryClient.invalidateQueries({ queryKey: ["referrals", variables.referralId] });
-      queryClient.invalidateQueries({ queryKey: ["referrals", "slug"] });
-      
-      // Invalidate status history for this specific referral
+      // Only invalidate status history for this specific referral to refresh the modal
+      // Don't invalidate other queries to avoid refreshing the referral details
       queryClient.invalidateQueries({ queryKey: ["referral-status-history", variables.referralId] });
     },
   })

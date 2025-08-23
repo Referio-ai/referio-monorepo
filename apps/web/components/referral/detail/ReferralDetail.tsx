@@ -72,24 +72,24 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
   }, [currentReferral?.referral_id]);
 
   // Mark communication as read when Communication tab is selected
-  useEffect(() => {
-    if (activeDetailTab === 'communication' && 
-        user?.userId && 
-        communicationStatus?.has_com_update &&
-        !communicationStatus.has_com_update_users?.includes(user.userId)) {
-      // Mark as read immediately for instant visual feedback
-      markCommunicationAsRead.mutate({
-        referralId: currentReferral.referral_id,
-        userId: user.userId
-      });
-    }
-  }, [activeDetailTab, user?.userId, communicationStatus, markCommunicationAsRead, currentReferral.referral_id]);
+  // useEffect(() => {
+  //   if (activeDetailTab === 'communication' && 
+  //       user?.userId && 
+  //       communicationStatus?.has_com_update &&
+  //       !communicationStatus.has_com_update_users?.includes(user.userId)) {
+  //     // Mark as read immediately for instant visual feedback
+  //     markCommunicationAsRead.mutate({
+  //       referralId: currentReferral.referral_id,
+  //       userId: user.userId
+  //     });
+  //   }
+  // }, [activeDetailTab, user?.userId, communicationStatus, markCommunicationAsRead, currentReferral.referral_id]);
 
   // Create optimistic state for immediate red dot removal
-  const shouldShowRedDot = user?.userId && 
-    communicationStatus?.has_com_update && 
-    !communicationStatus.has_com_update_users?.includes(user.userId) &&
-    activeDetailTab !== 'communication';
+  // const shouldShowRedDot = user?.userId && 
+  //   communicationStatus?.has_com_update && 
+  //   !communicationStatus.has_com_update_users?.includes(user.userId) &&
+  //   activeDetailTab !== 'communication';
 
   // Handle referral data update from modal
   const handleReferralDataUpdate = (updatedReferral: Referral) => {
@@ -239,7 +239,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
           >
             Patient Info
           </TabsTrigger>
-          <TabsTrigger 
+          {/* <TabsTrigger 
             value="communication" 
             className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm relative"
           >
@@ -247,7 +247,7 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
                         {shouldShowRedDot && (
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
             )}
-          </TabsTrigger>
+          </TabsTrigger> */}
           <TabsTrigger 
             value="reports" 
             className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
@@ -260,17 +260,34 @@ export const ReferralDetail: React.FC<ReferralDetailProps> = ({
           <PatientInfoTab referral={currentReferral} onUploadFiles={onUploadFiles} />
         </TabsContent>
 
-        <TabsContent value="communication" className="flex-1">
+        {/* <TabsContent value="communication" className="flex-1">
           <CommunicationTab 
             referral={currentReferral} 
             onSendMessage={onSendMessage} 
             onUploadFiles={onUploadFiles}
             isActive={activeDetailTab === 'communication'}
           />
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="reports" className="flex-1">
-          <ReportsTab />
+          <ReportsTab 
+            referralId={currentReferral.referral_id}
+            existingDocuments={currentReferral.documents}
+            onFileUpload={onUploadFiles}
+            onDocumentsUpdated={(newDocs) => {
+              // Update the current referral with new documents
+              const updatedReferral = {
+                ...currentReferral,
+                documents: [...(currentReferral.documents || []), ...newDocs]
+              };
+              setCurrentReferral(updatedReferral);
+              
+              // Notify parent components if needed
+              if (onReferralDataUpdate) {
+                onReferralDataUpdate(updatedReferral);
+              }
+            }}
+          />
         </TabsContent>
       </Tabs>
 
