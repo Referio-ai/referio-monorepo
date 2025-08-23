@@ -39,7 +39,7 @@ const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
               <h3 className="font-semibold text-lg">
                 {facilitator.facilitator_full_name}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">Facilitator</p>
+              <p className="text-gray-600 dark:text-gray-400">User</p>
               <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-1 text-sm text-gray-500">
                   <Mail className="h-4 w-4" />

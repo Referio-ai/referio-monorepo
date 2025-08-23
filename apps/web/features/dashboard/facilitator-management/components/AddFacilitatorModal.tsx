@@ -138,7 +138,7 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
     
     createFacilitator(facilitatorData, {
       onSuccess: (result) => {
-        toast.success(`Facilitator added successfully to ${formData.facility_ids.length} facility(ies)`);
+        toast.success(`User added successfully to ${formData.facility_ids.length} facility(ies)`);
         // Reset form and close modal
         setFormData({
           facility_ids: [],
@@ -152,7 +152,7 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
         onClose();
       },
       onError: (error) => {
-        toast.error('Failed to add facilitator');
+        toast.error('Failed to add user');
       }
     });
   };
@@ -161,7 +161,7 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add New Facilitator</DialogTitle>
+          <DialogTitle>Add New User</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
@@ -288,7 +288,7 @@ const AddFacilitatorModal: React.FC<AddFacilitatorModalProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Add Facilitator</Button>
+            <Button type="submit">Add User</Button>
           </div>
         </form>
       </DialogContent>
