@@ -76,14 +76,14 @@ const FacilitatorManagement: React.FC = () => {
     // We just need to refresh the list after successful creation
     setIsAddModalOpen(false);
     refetchFacilitators();
-    toast.success('Facilitator added successfully');
+    toast.success('User added successfully');
   };
 
   const handleEditFacilitator = (facilitator: Facilitator) => {
     // This is now handled directly in the EditFacilitatorModal component
     setIsEditModalOpen(false);
     setSelectedFacilitator(null);
-    toast.success('Facilitator updated successfully');
+    toast.success('User updated successfully');
     refetchFacilitators();
   };
 
@@ -93,11 +93,11 @@ const FacilitatorManagement: React.FC = () => {
         onSuccess: () => {
           setIsDeleteDialogOpen(false);
           setSelectedFacilitator(null);
-          toast.success('Facilitator deleted successfully');
+          toast.success('User deleted successfully');
           refetchFacilitators();
         },
         onError: (error) => {
-          toast.error('Failed to delete facilitator', {
+          toast.error('Failed to delete user', {
             description: error.message,
           });
         },
@@ -124,9 +124,9 @@ const FacilitatorManagement: React.FC = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Facilitator Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">User Management</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Manage facilitators and their facility assignments
+          Manage users and their facility assignments
         </p>
       </div>
 
@@ -141,16 +141,16 @@ const FacilitatorManagement: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Facilitators ({total_count || facilitators.length})
+            Users ({total_count || facilitators.length})
           </h2>
         </div>
         <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Add Facilitator
+          Add User
         </Button>
       </div>
 
-      {/* Facilitators List */}
+      {/* Users List */}
       <div className="grid gap-4">
         {(isFacilitatorsLoading || isFacilitatorsRefetching) ? (
           <div className="flex justify-center items-center h-full">
@@ -198,7 +198,7 @@ const FacilitatorManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Add Facilitator Modal */}
+      {/* Add User Modal */}
       <AddFacilitatorModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -206,7 +206,7 @@ const FacilitatorManagement: React.FC = () => {
         facilities={facilities}
       />
 
-      {/* Edit Facilitator Modal */}
+      {/* Edit User Modal */}
       {selectedFacilitator && (
         <EditFacilitatorModal
           isOpen={isEditModalOpen}

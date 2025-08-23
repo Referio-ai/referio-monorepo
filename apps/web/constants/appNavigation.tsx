@@ -6,6 +6,6 @@ export const appNavigation = [
   // { icon: ListChecksIcon, label: 'Referrals-list', path: '/referral-management/referral-list/' },
   { icon: Building2, label: 'Organizations', path: '/referral-management/organizations/' },
   { icon: Building, label: 'Facilities', path: '/referral-management/facilities/' },
-  { icon: UserCheck, label: 'Facilitators', path: '/referral-management/facilitator/' },
+  { icon: UserCheck, label: 'Users', path: '/referral-management/facilitator/' },
   { icon: Users, label: 'Patients',  path: '/referral-management/patients/' },
 ]

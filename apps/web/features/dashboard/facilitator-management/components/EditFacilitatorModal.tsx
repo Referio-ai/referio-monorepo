@@ -173,7 +173,7 @@ const EditFacilitatorModal: React.FC<EditFacilitatorModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Facilitator</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="gap-4">
@@ -328,7 +328,7 @@ const EditFacilitatorModal: React.FC<EditFacilitatorModalProps> = ({
                   Updating...
                 </>
               ) : (
-                'Update Facilitator'
+                'Update User'
               )}
             </Button>
           </div>
