@@ -37,6 +37,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             primary_key = "facility_id"
         elif table_name == "referrals":
             primary_key = "referral_id"
+        elif table_name == "organizations":
+            primary_key = "organization_id"
         else:
             primary_key = "id"  # Default fallback
             
@@ -87,7 +89,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         data = result.data
         return self.model(**data[0])
 
-    async def update(self, table_name: str, db: AsyncClient, *, obj_in: UpdateSchemaType) -> ModelType:
+    async def update(self, table_name: str, db: AsyncClient, *, obj_in: UpdateSchemaType, id: str = None) -> ModelType:
         """update by UpdateSchemaType"""
         # Determine the primary key column based on table name
         if table_name == "patients":
@@ -96,10 +98,28 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             primary_key = "facility_id"
         elif table_name == "referrals":
             primary_key = "referral_id"
+        elif table_name == "organizations":
+            primary_key = "organization_id"
         else:
             primary_key = "id"  # Default fallback
+        
+        # Use the passed id parameter if available, otherwise try to get it from obj_in
+        record_id = id
+        if not record_id and hasattr(obj_in, 'id'):
+            record_id = obj_in.id
+        elif not record_id and hasattr(obj_in, 'organization_id'):
+            record_id = obj_in.organization_id
+        elif not record_id and hasattr(obj_in, 'facility_id'):
+            record_id = obj_in.facility_id
+        elif not record_id and hasattr(obj_in, 'patient_id'):
+            record_id = obj_in.patient_id
+        elif not record_id and hasattr(obj_in, 'referral_id'):
+            record_id = obj_in.referral_id
             
-        result = await db.table(table_name).update(obj_in.model_dump()).eq(primary_key, obj_in.id).execute()
+        if not record_id:
+            raise ValueError(f"No ID found for update operation on table {table_name}")
+            
+        result = await db.table(table_name).update(obj_in.model_dump()).eq(primary_key, record_id).execute()
         data = result.data
         return self.model(**data[0])
     
@@ -118,6 +138,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             primary_key = "facility_id"
         elif table_name == "referrals":
             primary_key = "referral_id"
+        elif table_name == "organizations":
+            primary_key = "organization_id"
         else:
             primary_key = "id"  # Default fallback
             
@@ -160,12 +182,23 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         
         # Add search filter if provided
         if search:
-            count_query = count_query.or_(
-                f"facility_name.ilike.%{search}%,"
-                f"facility_primary_contact_fname.ilike.%{search}%,"
-                f"facility_primary_contact_lname.ilike.%{search}%,"
-                f"facility_primary_contact_email.ilike.%{search}%"
-            )
+            if table_name == "facility_entity":
+                count_query = count_query.or_(
+                    f"facility_name.ilike.%{search}%,"
+                    f"facility_primary_contact_fname.ilike.%{search}%,"
+                    f"facility_primary_contact_lname.ilike.%{search}%,"
+                    f"facility_primary_contact_email.ilike.%{search}%"
+                )
+            elif table_name == "organizations":
+                count_query = count_query.or_(
+                    f"organization_name.ilike.%{search}%,"
+                    f"organization_primary_contact_fname.ilike.%{search}%,"
+                    f"organization_primary_contact_lname.ilike.%{search}%,"
+                    f"organization_primary_contact_email.ilike.%{search}%"
+                )
+            else:
+                # Default search behavior for other tables
+                pass
         
         count_result = await count_query.execute()
         total_count = count_result.count if count_result.count is not None else 0
@@ -177,12 +210,23 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         
         # Add search filter if provided
         if search:
-            data_query = data_query.or_(
-                f"facility_name.ilike.%{search}%,"
-                f"facility_primary_contact_fname.ilike.%{search}%,"
-                f"facility_primary_contact_lname.ilike.%{search}%,"
-                f"facility_primary_contact_email.ilike.%{search}%"
-            )
+            if table_name == "facility_entity":
+                data_query = data_query.or_(
+                    f"facility_name.ilike.%{search}%,"
+                    f"facility_primary_contact_fname.ilike.%{search}%,"
+                    f"facility_primary_contact_lname.ilike.%{search}%,"
+                    f"facility_primary_contact_email.ilike.%{search}%"
+                )
+            elif table_name == "organizations":
+                data_query = data_query.or_(
+                    f"organization_name.ilike.%{search}%,"
+                    f"organization_primary_contact_fname.ilike.%{search}%,"
+                    f"organization_primary_contact_lname.ilike.%{search}%,"
+                    f"organization_primary_contact_email.ilike.%{search}%"
+                )
+            else:
+                # Default search behavior for other tables
+                pass
         
         data_result = await data_query.execute()
         items = data_result.data

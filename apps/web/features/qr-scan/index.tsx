@@ -19,8 +19,6 @@ import { useReferralBySlug, useMarkReferralAsScanned, useUploadDocument, useUplo
 import {
   TOTAL_UPLOAD_STEPS,
   DEMO_USER_ID,
-  REFERRING_TO_OFFICE,
-  REFERRING_FROM_OFFICE,
   ACCEPTED_FILE_TYPES,
   MODAL_MESSAGES,
   type ModalType,
@@ -60,12 +58,17 @@ interface PatientInfo {
   firstNameInitial: string;
   lastNameInitial: string;
   birthYear: string;
+  fullName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  gender?: string;
+  insuranceMemberId?: string;
 }
 
 interface OfficeInfo {
   name: string;
-  address: string;
-  phone: string;
+  address?: string;
+  phone?: string;
 }
 
 interface UploadResult {
@@ -99,20 +102,29 @@ const mapReferralToPatientInfo = (referral: ReferralApiResponse): PatientInfo | 
   }
 
   const birthYear = new Date(referral.patient_dob).getFullYear().toString();
+  const fullName = `${referral.patient_fname} ${referral.patient_mname ? referral.patient_mname + ' ' : ''}${referral.patient_lname}`.trim();
+  
   return {
     firstNameInitial: referral.patient_fname.charAt(0).toUpperCase(),
     lastNameInitial: referral.patient_lname.charAt(0).toUpperCase(),
-    birthYear
+    birthYear,
+    fullName,
+    contactPhone: referral.patient_contact_phone || undefined,
+    contactEmail: referral.patient_contact_email || undefined,
+    gender: referral.patient_gender || undefined,
+    insuranceMemberId: referral.patient_insurance_member_id || undefined
   };
 };
 
-const mapFacilityToOfficeInfo = (facilityName: string, defaultOffice: OfficeInfo): OfficeInfo => {
-  // For now, use the facility name from API and default office info for address/phone
-  // In the future, this could be enhanced to fetch full facility details
+const mapFacilityToOfficeInfo = (facilityName: string): OfficeInfo => {
+  // Use the actual facility name from API
+  // Note: In the future, this could be enhanced to fetch full facility details
+  // including address and phone from a separate facility details endpoint
   return {
     name: facilityName,
-    address: defaultOffice.address,
-    phone: defaultOffice.phone
+    // For now, we'll use placeholder text since the API doesn't provide full facility details
+    address: "Address information not available",
+    phone: "Phone information not available"
   };
 };
 
@@ -154,8 +166,8 @@ export const QRScan = (props: { params: { slug: string } }) => {
   const [giftCardRecipient, setGiftCardRecipient] = useState('');
   const [giftCardContactType, setGiftCardContactType] = useState<GiftCardContactType>('email');
 
-  const [referringToOffice, setReferringToOffice] = useState<OfficeInfo>(REFERRING_TO_OFFICE);
-  const [referringFromOffice, setReferringFromOffice] = useState<OfficeInfo>(REFERRING_FROM_OFFICE);
+  const [referringToOffice, setReferringToOffice] = useState<OfficeInfo>({ name: 'Loading...' });
+  const [referringFromOffice, setReferringFromOffice] = useState<OfficeInfo>({ name: 'Loading...' });
   const [scannedPatientInfo, setScannedPatientInfo] = useState<PatientInfo | null>(null);
   const [isPreviouslyScanned, setIsPreviouslyScanned] = useState(false);
 
@@ -177,13 +189,13 @@ export const QRScan = (props: { params: { slug: string } }) => {
         setIsPreviouslyScanned(referralData.referral_scanned);
       }
 
-      // Map facility info to office info
+      // Map facility info to office info using actual API data
       if (referralData.inbound_facility_name) {
-        setReferringToOffice(mapFacilityToOfficeInfo(referralData.inbound_facility_name, REFERRING_TO_OFFICE));
+        setReferringToOffice(mapFacilityToOfficeInfo(referralData.inbound_facility_name));
       }
 
       if (referralData.outbound_facility_name) {
-        setReferringFromOffice(mapFacilityToOfficeInfo(referralData.outbound_facility_name, REFERRING_FROM_OFFICE));
+        setReferringFromOffice(mapFacilityToOfficeInfo(referralData.outbound_facility_name));
       }
     }
   }, [referral]);

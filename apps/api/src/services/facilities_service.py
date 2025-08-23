@@ -21,7 +21,8 @@ class FacilitiesService:
     async def get_facilities_paginated(
         page: int = 1, 
         page_size: int = 10, 
-        search: str = ""
+        search: str = "",
+        organization_id: Optional[str] = None
     ) -> FacilityPagination:
         """Get all facilities with pagination"""
         try:
@@ -30,7 +31,8 @@ class FacilitiesService:
                 db=db, 
                 page=page, 
                 page_size=page_size, 
-                search=search
+                search=search,
+                organization_id=organization_id
             )
         except Exception as e:
             raise HTTPException(
@@ -124,43 +126,31 @@ class FacilitiesService:
             )
         
     @staticmethod
-    async def get_facilities_by_user(user_id: str) -> List[Facility]:
-        """Get all facilities for a user"""
+    async def get_facilities_by_user_with_organizations(user_id: str) -> List[Facility]:
+        """Get all facilities for a user with organization names"""
         try:
             db = await get_supabase_client()
-            
-            # First, get the facilitator_id from the facilitators table using propelauth_user_id
-            facilitator_result = await db.table("facilitators").select("facilitator_id").eq("propelauth_user_id", user_id).execute()
-            
-            if not facilitator_result.data:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Facilitator not found for user_id: {user_id}",
-                )
-            
-            facilitator_id = facilitator_result.data[0]["facilitator_id"]
-            
-            # Get facility_ids from user_facility table using facilitator_id
-            user_facility_result = await db.table("user_facility").select("facility_id").eq("user_id", facilitator_id).execute()
-            
-            if not user_facility_result.data:
-                return []
-            
-            # Extract facility_ids
-            facility_ids = [item["facility_id"] for item in user_facility_result.data]
-            
-            # Get the actual facility data from facility_entity table
-            facilities = []
-            for facility_id in facility_ids:
-                facility_result = await db.table("facility_entity").select("*").eq("facility_id", facility_id).eq("deleted", False).execute()
-                if facility_result.data:
-                    facilities.append(Facility(**facility_result.data[0]))
-            
-            return facilities
+            return await facilities_crud.get_facilities_by_user_with_organizations(db=db, user_id=user_id)
         except HTTPException:
             # Re-raise HTTPException from above
             raise
         except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred while fetching facilities with organizations for user. {str(e)}",
+            )
+
+    @staticmethod
+    async def get_facilities_by_user(user_id: str) -> List[Facility]:
+        """Get all facilities for a user (now with organization names)"""
+        try:
+            # Use the new method that includes organization names
+            return await FacilitiesService.get_facilities_by_user_with_organizations(user_id)
+        except HTTPException:
+            # Re-raise HTTPException from above
+            raise
+        except Exception as e:
+            print(f"Error fetching facilities for user: {e}")
             raise HTTPException(
                 status_code=500,
                 detail=f"An error occurred while fetching facilities for user. {str(e)}",

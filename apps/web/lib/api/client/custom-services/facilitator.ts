@@ -31,17 +31,22 @@ export class FacilitatorService {
         page: number,
         pageSize: number,
         search: string,
-        facilityId: string,
+        facilityId?: string,
     }): CancelablePromise<PaginatedResponse<Facilitator>> {
+        const query: any = {
+            page,
+            page_size: pageSize,
+            search,
+        };
+        
+        if (facilityId) {
+            query.facility_id = facilityId;
+        }
+        
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/facilitators',
-            query: {
-                page,
-                pageSize,
-                search,
-                facilityId,
-            },
+            query,
         });
     }
 
@@ -169,6 +174,20 @@ export class FacilitatorService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/facilitators/{facilitator_id}/user-facilities',
+            path: {
+                'facilitator_id': facilitatorId,
+            },
+        });
+    }
+
+    public static apiV1DeleteFacilitator({
+        facilitatorId,
+    }: {
+        facilitatorId: string,
+    }): CancelablePromise<Facilitator> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/facilitators/{facilitator_id}',
             path: {
                 'facilitator_id': facilitatorId,
             },

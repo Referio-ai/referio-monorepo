@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useGetFacilitators } from '@/lib/hooks/facilitators';
 import { useGetFacilities } from '@/lib/hooks/facilities';
+import { useDeleteFacilitator } from '@/lib/hooks/facilitators';
 import { PaginationWrapper } from '@/components/PaginationWrapper';
 
 
@@ -53,6 +54,8 @@ const FacilitatorManagement: React.FC = () => {
     search: ''
   });
 
+  const deleteFacilitatorMutation = useDeleteFacilitator();
+
   const facilities = facilitiesResponse?.items || [];
   const facilitators = facilitatorsResponse?.items || [];
   const total_count = facilitatorsResponse?.total || 0;
@@ -86,10 +89,19 @@ const FacilitatorManagement: React.FC = () => {
 
   const handleDeleteFacilitator = () => {
     if (selectedFacilitator) {
-      // TODO: Implement actual API call for deleting facilitator
-      setIsDeleteDialogOpen(false);
-      setSelectedFacilitator(null);
-      toast.success('Facilitator deleted successfully');
+      deleteFacilitatorMutation.mutate(selectedFacilitator.facilitator_id, {
+        onSuccess: () => {
+          setIsDeleteDialogOpen(false);
+          setSelectedFacilitator(null);
+          toast.success('Facilitator deleted successfully');
+          refetchFacilitators();
+        },
+        onError: (error) => {
+          toast.error('Failed to delete facilitator', {
+            description: error.message,
+          });
+        },
+      });
     }
   };
 
@@ -145,12 +157,20 @@ const FacilitatorManagement: React.FC = () => {
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : filteredFacilitators.map((facilitator) => {
-          const facility = facilities.find(f => f.facility_id === facilitator.facility_id);
+          // Ensure both IDs are strings for comparison
+          const facilitatorFacilityId = String(facilitator.facility_id);
+          const facility = facilities.find(f => String(f.facility_id) === facilitatorFacilityId);
+          
+          // Transform Facilitator to FacilitatorWithFacilities
+          const facilitatorWithFacilities = {
+            ...facilitator,
+            facilities: facility ? [facility] : []
+          };
+          
           return (
             <FacilitatorCard
               key={facilitator.facilitator_id}
-              facilitator={facilitator}
-              facility={facility}
+              facilitator={facilitatorWithFacilities}
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
             />

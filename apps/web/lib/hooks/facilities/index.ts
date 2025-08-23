@@ -19,16 +19,18 @@ interface PaginatedResponse<T> {
 export const useGetFacilities = ({
   page,
   pageSize,
-  search
+  search,
+  organizationId
 }: {
   page: number;
   pageSize: number;
   search: string;
+  organizationId?: string;
 }) => {
   return useQuery({
-    queryKey: ['facilities', page, pageSize, search],
+    queryKey: ['facilities', page, pageSize, search, organizationId],
     queryFn: async () => {
-      const response = await FacilitiesService.apiV1GetFacilities({ page, pageSize, search });
+      const response = await CustomFacilitiesService.apiV1GetFacilities({ page, pageSize, search, organizationId });
       return response as unknown as PaginatedResponse<Facility>;
     },
   });

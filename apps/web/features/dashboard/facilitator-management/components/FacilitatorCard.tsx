@@ -4,18 +4,16 @@ import { User, Mail, Phone, Building, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Facilitator, Facility } from '../types';
+import { Facilitator, FacilitatorWithFacilities, Facility } from '../types';
 
 interface FacilitatorCardProps {
-  facilitator: Facilitator;
-  facility: Facility | undefined;
+  facilitator: FacilitatorWithFacilities;
   onEdit: (facilitator: Facilitator) => void;
   onDelete: (facilitator: Facilitator) => void;
 }
 
 const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
   facilitator,
-  facility,
   onEdit,
   onDelete,
 }) => {
@@ -51,10 +49,19 @@ const FacilitatorCard: React.FC<FacilitatorCardProps> = ({
                   <Phone className="h-4 w-4" />
                   {facilitator.facilitator_phone_number}
                 </div>
-                <div className="flex items-center gap-1 text-sm text-gray-500">
-                  <Building className="h-4 w-4" />
-                  {facility?.facility_name || 'Unknown Facility'}
-                </div>
+                {facilitator.facilities && facilitator.facilities.length > 0 && (
+                  <div className="flex items-center gap-1 text-sm text-gray-500">
+                    <Building className="h-4 w-4" />
+                    <span className="font-medium">Facilities:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {facilitator.facilities.map((facility, index) => (
+                        <Badge key={facility.facility_id} variant="outline" className="text-xs">
+                          {facility.facility_name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -19,11 +19,22 @@ router = APIRouter()
 
 
 @router.get("/", status_code=200)
-async def get_facilitators(page: int = 1, page_size: int = 10, search: str = "") -> FacilitatorPagination:
-    """Get all facilitators"""
+async def get_facilitators(
+    page: int = 1, 
+    page_size: int = 10, 
+    search: str = "",
+    facility_id: str = None
+) -> FacilitatorPagination:
+    """Get all facilitators with optional facility filtering"""
     try:
         db = await get_supabase_client()
-        return await facilitator_service.get_facilitators_paginated(db=db, page=page, page_size=page_size, search=search)
+        return await facilitator_service.get_facilitators_paginated(
+            db=db, 
+            page=page, 
+            page_size=page_size, 
+            search=search,
+            facility_id=facility_id
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,

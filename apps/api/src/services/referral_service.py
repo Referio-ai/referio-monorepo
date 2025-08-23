@@ -485,7 +485,7 @@ class ReferralService:
             
             # Format referrals for QR printing
             qr_referrals = []
-            base_url = "https://referio.app"  # This should be configurable
+            base_url = "https://referio.ai"  # This should be configurable
             
             for referral in referrals_result.data:
                 # Generate QR code URL

@@ -2,6 +2,7 @@ from typing import ClassVar, Sequence, Optional, Dict, Any, List
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, computed_field
+from .facilities import Facility
 
 
 class Facilitator(BaseModel):
@@ -19,6 +20,22 @@ class Facilitator(BaseModel):
     facility_id: Optional[UUID] = None
     table_name: ClassVar[str] = "facilitators"
 
+
+class FacilitatorWithFacilities(BaseModel):
+    facilitator_id: UUID
+    created_at: datetime
+    updated_at: datetime
+    facilitator_first_name: str
+    facilitator_last_name: str
+    facilitator_full_name: str  # Stored in database for search purposes
+    propelauth_user_id: str
+    facilitator_phone_number: str
+    facilitator_email: str
+    deleted: bool = False
+    facilitator_status: str = "active"  # active, inactive, suspended
+    facility_id: Optional[UUID] = None
+    table_name: ClassVar[str] = "facilitators"
+    facilities: List[Facility] = []
 
 class FacilitatorCreate(BaseModel):
     facilitator_first_name: str
@@ -78,8 +95,37 @@ class FacilitatorSearchResults(BaseModel):
 
 
 class FacilitatorPagination(BaseModel):
-    items: Sequence[Facilitator]
+    items: Sequence[FacilitatorWithFacilities]
     total: int
     page: int
     page_size: int
-    total_pages: int 
+    total_pages: int
+
+
+class FacilitatorWithFacilities(BaseModel):
+    """Facilitator with associated facilities"""
+    facilitator_id: UUID
+    created_at: datetime
+    updated_at: datetime
+    facilitator_first_name: str
+    facilitator_last_name: str
+    facilitator_full_name: str
+    propelauth_user_id: str
+    facilitator_phone_number: str
+    facilitator_email: str
+    deleted: bool = False
+    facilitator_status: str = "active"
+    facility_id: Optional[UUID] = None
+    facilities: List[Facility] = []
+    table_name: ClassVar[str] = "facilitators"
+
+
+class FacilitatorWithFacilitiesPagination(BaseModel):
+    """Paginated results for facilitators with facilities"""
+    items: Sequence[FacilitatorWithFacilities]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    sort_by: str
+    sort_order: str 

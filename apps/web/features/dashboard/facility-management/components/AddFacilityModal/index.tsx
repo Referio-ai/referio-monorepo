@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useOrganizations } from '@/lib/hooks/organizations/index';
+import { useGetOrganizations } from '@/lib/hooks/organizations/index';
 
 interface Organization {
   organization_id: string;
@@ -26,7 +26,6 @@ interface Facility {
     country: string;
   };
   facility_primary_contact_fname: string;
-  facility_primary_contact_mname: string;
   facility_primary_contact_lname: string;
   facility_primary_contact_phone_number: string;
   facility_primary_contact_email: string;
@@ -53,7 +52,6 @@ const validationSchema = Yup.object({
     country: Yup.string().required('Country is required'),
   }),
   facility_primary_contact_fname: Yup.string().required('First name is required'),
-  facility_primary_contact_mname: Yup.string(),
   facility_primary_contact_lname: Yup.string().required('Last name is required'),
   facility_primary_contact_phone_number: Yup.string()
     .required('Phone number is required')
@@ -69,13 +67,13 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
   onSubmit,
 }) => {
 
-  const { data: organizations, isLoading } = useOrganizations();
+  const { data: organizations, isLoading } = useGetOrganizations({ page: 1, pageSize: 10, search: '' });
 
 
   const generateTestData = () => {
 
     const testData = {
-      organization_id: organizations?.length && organizations.length > 0 ? organizations[0].organization_id : '',
+      organization_id: organizations?.items.length && organizations.items.length > 0 ? organizations.items[0].organization_id : '',
       facility_name: 'Test Medical Center',
       facility_address: {
         street: '123 Healthcare Ave',
@@ -85,7 +83,6 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
         country: 'USA',
       },
       facility_primary_contact_fname: 'John',
-      facility_primary_contact_mname: 'Q',
       facility_primary_contact_lname: 'Smith',
       facility_primary_contact_phone_number: '+14155552671',
       facility_primary_contact_email: 'john.smith@testmedical.com',
@@ -105,7 +102,6 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
         country: 'USA',
       },
       facility_primary_contact_fname: '',
-      facility_primary_contact_mname: '',
       facility_primary_contact_lname: '',
       facility_primary_contact_phone_number: '',
       facility_primary_contact_email: '',
@@ -118,7 +114,6 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
         facility_name: values.facility_name,
         facility_address: values.facility_address,
         facility_primary_contact_fname: values.facility_primary_contact_fname,
-        facility_primary_contact_mname: values.facility_primary_contact_mname,
         facility_primary_contact_lname: values.facility_primary_contact_lname,
         facility_primary_contact_phone_number: values.facility_primary_contact_phone_number,
         facility_primary_contact_email: values.facility_primary_contact_email,
@@ -153,7 +148,7 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
               <SelectContent>
                 {isLoading ? (
                   <SelectItem value="loading">Loading...</SelectItem>
-                ) : organizations?.map((org) => (
+                ) : organizations?.items.map((org) => (
                   <SelectItem key={org.organization_id} value={org.organization_id}>
                     {org.organization_name}
                   </SelectItem>
@@ -252,25 +247,16 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="facility_primary_contact_mname">Contact Middle Name</Label>
+              <Label htmlFor="facility_primary_contact_lname">Contact Last Name</Label>
               <Input
-                id="facility_primary_contact_mname"
-                {...formik.getFieldProps('facility_primary_contact_mname')}
-                placeholder="Enter middle name"
+                id="facility_primary_contact_lname"
+                {...formik.getFieldProps('facility_primary_contact_lname')}
+                placeholder="Enter last name"
               />
+              {formik.touched.facility_primary_contact_lname && formik.errors.facility_primary_contact_lname && (
+                <div className="text-sm text-red-500">{formik.errors.facility_primary_contact_lname}</div>
+              )}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="facility_primary_contact_lname">Contact Last Name</Label>
-            <Input
-              id="facility_primary_contact_lname"
-              {...formik.getFieldProps('facility_primary_contact_lname')}
-              placeholder="Enter last name"
-            />
-            {formik.touched.facility_primary_contact_lname && formik.errors.facility_primary_contact_lname && (
-              <div className="text-sm text-red-500">{formik.errors.facility_primary_contact_lname}</div>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

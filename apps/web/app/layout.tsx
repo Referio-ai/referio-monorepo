@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { OpenAPI } from "@/lib/api/client";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
-import { AuthProvider } from "@propelauth/nextjs/client";
+import { AuthProvider, } from "@propelauth/nextjs/client";
 import { AuthRedirectProvider } from "@/components/auth/auth-redirect-provider";
 import { RedirectToLogin } from "@propelauth/nextjs/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -37,7 +37,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }): JSX.Element {
 
+
+
   const queryClient = new QueryClient();
+
 
 
   return (

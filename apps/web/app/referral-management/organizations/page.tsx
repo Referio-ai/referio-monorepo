@@ -1,53 +1,61 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Building, Search, Plus, MapPin, Phone, Mail, Users, Trash2, Loader2, Edit } from 'lucide-react';
+import { Building2, Search, Plus, MapPin, Phone, Mail, Users, Trash2, Loader2, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { toast } from 'sonner';
-import { useGetFacilities, createFacility, updateFacility, deleteFacility } from '@/lib/hooks/facilities';
-import { useGetAllOrganizations } from '@/lib/hooks/organizations';
-import AddFacilityModal from './components/AddFacilityModal/index';
-import EditFacilityModal from './components/EditFacilityModal/index';
+import { useGetOrganizations, createOrganization, updateOrganization, deleteOrganization } from '@/lib/hooks/organizations';
+import AddOrganizationModal from './components/AddOrganizationModal';
+import EditOrganizationModal from './components/EditOrganizationModal';
 import { PaginationWrapper } from '@/components/PaginationWrapper';
 
-interface Facility {
-  facility_id: string;
+interface Organization {
   organization_id: string;
-  facility_name: string;
-  facility_address: {
+  organization_name: string;
+  organization_address: {
     street: string;
     city: string;
     state: string;
     zip_code: string;
     country: string;
   };
-  facility_primary_contact_fname: string;
-  facility_primary_contact_mname: string;
-  facility_primary_contact_lname: string;
-  facility_primary_contact_phone_number: string;
-  facility_primary_contact_email: string;
-  propelauth_facility_id: string;
+  organization_primary_contact_fname: string;
+  organization_primary_contact_mname: string;
+  organization_primary_contact_lname: string;
+  organization_primary_contact_phone_number: string;
+  organization_primary_contact_email: string;
+  organization_prefix: string;
 }
 
-interface Organization {
-  organization_id: string;
+interface OrganizationFormData {
   organization_name: string;
+  organization_address: {
+    street: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    country: string;
+  };
+  organization_primary_contact_fname: string;
+  organization_primary_contact_mname: string;
+  organization_primary_contact_lname: string;
+  organization_primary_contact_phone_number: string;
+  organization_primary_contact_email: string;
+  organization_prefix: string;
 }
 
-interface FacilityFilters {
+interface OrganizationFilters {
   search: string;
-  organizationId: string | 'all';
   page: number;
   limit: number;
 }
 
-interface FacilityResponse {
-  items: Facility[];
+interface OrganizationResponse {
+  items: Organization[];
   pagination: {
     total_count: number;
     total_pages: number;
@@ -58,25 +66,21 @@ interface FacilityResponse {
 
 const ITEMS_PER_PAGE = 5;
 
-const FacilityManagement = () => {
-  const [filters, setFilters] = useState<FacilityFilters>({
+const OrganizationManagement = () => {
+  const [filters, setFilters] = useState<OrganizationFilters>({
     search: '',
-    organizationId: 'all',
     page: 1,
     limit: ITEMS_PER_PAGE
   });
 
-  const { data: organizations } = useGetAllOrganizations();
-
-  const { data: facilitiesResponse, isLoading: isFacilitiesLoading, refetch: refetchFacilities } = useGetFacilities({
+  const { data: organizationsResponse, isLoading: isOrganizationsLoading, refetch: refetchOrganizations } = useGetOrganizations({
     page: filters.page,
     pageSize: filters.limit,
-    search: filters.search,
-    organizationId: filters.organizationId === 'all' ? undefined : filters.organizationId || undefined
+    search: filters.search
   });
 
-  const facilities = facilitiesResponse?.items || [];
-  const pagination = facilitiesResponse?.pagination || {
+  const organizations = organizationsResponse?.items || [];
+  const pagination = organizationsResponse?.pagination || {
     total_count: 0,
     total_pages: 0,
     current_page: 1,
@@ -84,21 +88,21 @@ const FacilityManagement = () => {
   };
 
   useEffect(()=>{
-    refetchFacilities();
-  },[filters.page, filters.search, filters.organizationId]);
+    refetchOrganizations();
+  },[filters.page]);
 
-  const { mutate: createFacilityMutation, isPending: isCreatingFacility } = createFacility();
-  const { mutate: updateFacilityMutation, isPending: isUpdatingFacility } = updateFacility();
-  const { mutate: deleteFacilityMutation, isPending: isDeletingFacility } = deleteFacility();
+  const { mutate: createOrganizationMutation, isPending: isCreatingOrganization } = createOrganization();
+  const { mutate: updateOrganizationMutation, isPending: isUpdatingOrganization } = updateOrganization();
+  const { mutate: deleteOrganizationMutation, isPending: isDeletingOrganization } = deleteOrganization();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [facilityToEdit, setFacilityToEdit] = useState<Facility | null>(null);
-  const [facilityToDelete, setFacilityToDelete] = useState<Facility | null>(null);
+  const [organizationToEdit, setOrganizationToEdit] = useState<Organization | null>(null);
+  const [organizationToDelete, setOrganizationToDelete] = useState<Organization | null>(null);
 
   // Handle filter changes
-  const handleFilterChange = (key: keyof FacilityFilters, value: string | number) => {
+  const handleFilterChange = (key: keyof OrganizationFilters, value: string | number) => {
 
     if(key === 'page'){
       setFilters(prev => ({ 
@@ -115,63 +119,65 @@ const FacilityManagement = () => {
     }));
   };
 
-  // Handle add facility
-  const handleAddFacility = (facility: Facility) => {
-    createFacilityMutation(facility, {
+  // Handle add organization
+  const handleAddOrganization = (organization: OrganizationFormData) => {
+    console.log('handleAddOrganization called with:', organization);
+    createOrganizationMutation(organization, {
       onSuccess: () => {
-        toast.success("The facility has been successfully added.");
+        console.log('Organization created successfully');
+        toast.success("The organization has been successfully added.");
         setIsAddModalOpen(false);
-        refetchFacilities();
+        refetchOrganizations();
       },
       onError: (error) => {
-        console.error(error);
-        toast.error("Failed to add facility.");
+        console.error('Error creating organization:', error);
+        toast.error("Failed to add organization.");
       }
     });
   };
 
-  // Handle edit facility
-  const handleEditFacility = (facilityId: string, updatedFacility: Partial<Facility>) => {
-    updateFacilityMutation({ facilityId, facility: updatedFacility }, {
+  // Handle edit organization
+  const handleEditOrganization = (organizationId: string, updatedOrganization: Partial<Organization>) => {
+    updateOrganizationMutation({ organizationId, organization: updatedOrganization }, {
       onSuccess: () => {
-        toast.success("The facility has been successfully updated.");
+        toast.success("The organization has been successfully updated.");
         setIsEditModalOpen(false);
-        setFacilityToEdit(null);
-        refetchFacilities();
+        setOrganizationToEdit(null);
+        refetchOrganizations();
       },
       onError: (error) => {
         console.error(error);
-        toast.error("Failed to update facility.");
+        toast.error("Failed to update organization.");
       }
     });
   };
 
-  // Handle delete facility
-  const handleDeleteFacility = (facility: Facility) => {
-    setFacilityToDelete(facility);
+  // Handle delete organization
+  const handleDeleteOrganization = (organization: Organization) => {
+    setOrganizationToDelete(organization);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (facilityToDelete) {
-      deleteFacilityMutation(facilityToDelete.facility_id, {
+    if (organizationToDelete) {
+      deleteOrganizationMutation(organizationToDelete.organization_id, {
         onSuccess: () => {
-          toast.success("The facility has been successfully deleted.");
+          toast.success("The organization has been successfully deleted.");
           setIsDeleteDialogOpen(false);
-          setFacilityToDelete(null);
-          refetchFacilities();
+          setOrganizationToDelete(null);
+          refetchOrganizations();
         },
         onError: (error) => {
           console.error(error);
-          toast.error("Failed to delete facility.");
+          toast.error("Failed to delete organization.");
         }
       });
     }
   };
 
   // Handle edit button click
-  const handleEditClick = (facility: Facility) => {
-    setFacilityToEdit(facility);
+  const handleEditClick = (organization: Organization) => {
+    setOrganizationToEdit(organization);
     setIsEditModalOpen(true);
   };
 
@@ -180,20 +186,25 @@ const FacilityManagement = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Facility Management</h1>
-          <p className="text-gray-500">Manage and monitor facilities</p>
+          <h1 className="text-2xl font-bold text-gray-900">Organization Management</h1>
+          <p className="text-gray-500">Manage and monitor organizations</p>
         </div>
         <Button 
           className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
           onClick={() => setIsAddModalOpen(true)}
-          disabled={isCreatingFacility}
+          disabled={isCreatingOrganization}
         >
-          {isCreatingFacility ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          {isCreatingOrganization ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Adding Organization...
+            </>
           ) : (
-            <Plus className="w-4 h-4 mr-2" />
+            <>
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Organization
+            </>
           )}
-          {isCreatingFacility ? 'Adding...' : 'Add New Facility'}
         </Button>
       </div>
       {/* Filters */}
@@ -203,44 +214,23 @@ const FacilityManagement = () => {
             <div className="flex items-center gap-2 flex-1 min-w-[200px]">
               <Search className="w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search facilities..."
+                placeholder="Search organizations..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="flex-1"
               />
             </div>
-            <div className="flex items-center gap-2 min-w-[250px]">
-              <Select
-                value={filters.organizationId}
-                onValueChange={(value) => handleFilterChange('organizationId', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Organizations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Organizations</SelectItem>
-                  {organizations?.map((org) => (
-                    <SelectItem key={org.organization_id} value={org.organization_id}>
-                      {org.organization_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Facilities Table */}
+      {/* Organizations Table */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Facility
-                  </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Organization
                   </th>
@@ -256,39 +246,35 @@ const FacilityManagement = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {isFacilitiesLoading ? (
+                {isOrganizationsLoading ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-4 text-center">
                       <Loader2 className="w-4 h-4 animate-spin" />
                     </td>
                   </tr>
                 ) : (
-                  facilities.map((facility) => (
-                  <tr key={facility.facility_id} className="hover:bg-gray-50 transition-colors">
+                  organizations.map((organization) => (
+                  <tr key={organization.organization_id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <div className="font-medium text-gray-900">{facility.facility_name}</div>
-                        <div className="text-sm text-gray-500">ID: {facility.facility_id}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600">
-                        {organizations?.find(org => org.organization_id === facility.organization_id)?.organization_name || 'Unknown Organization'}
+                        <div className="font-medium text-gray-900">{organization.organization_name}</div>
+                        <div className="text-sm text-gray-500">ID: {organization.organization_id}</div>
+                        <div className="text-sm text-gray-500">Prefix: {organization.organization_prefix}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-1">
                         <div className="flex items-center text-sm text-gray-600">
                           <Users className="w-4 h-4 mr-2" />
-                          {`${facility.facility_primary_contact_fname} ${facility.facility_primary_contact_mname ? facility.facility_primary_contact_mname + ' ' : ''}${facility.facility_primary_contact_lname}`}
+                          {`${organization.organization_primary_contact_fname} ${organization.organization_primary_contact_mname ? organization.organization_primary_contact_mname + ' ' : ''}${organization.organization_primary_contact_lname}`}
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
                           <Phone className="w-4 h-4 mr-2" />
-                          {facility.facility_primary_contact_phone_number}
+                          {organization.organization_primary_contact_phone_number}
                         </div>
                         <div className="flex items-center text-sm text-gray-600">
                           <Mail className="w-4 h-4 mr-2" />
-                          {facility.facility_primary_contact_email}
+                          {organization.organization_primary_contact_email}
                         </div>
                       </div>
                     </td>
@@ -296,13 +282,13 @@ const FacilityManagement = () => {
                       <div className="space-y-1">
                         <div className="flex items-center text-sm text-gray-600">
                           <MapPin className="w-4 h-4 mr-2" />
-                          {facility.facility_address.street}
+                          {organization.organization_address.street}
                         </div>
                         <div className="text-sm text-gray-600 pl-6">
-                          {`${facility.facility_address.city}, ${facility.facility_address.state} ${facility.facility_address.zip_code}`}
+                          {`${organization.organization_address.city}, ${organization.organization_address.state} ${organization.organization_address.zip_code}`}
                         </div>
                         <div className="text-sm text-gray-600 pl-6">
-                          {facility.facility_address.country}
+                          {organization.organization_address.country}
                         </div>
                       </div>
                     </td>
@@ -312,10 +298,10 @@ const FacilityManagement = () => {
                           variant="ghost"
                           size="icon"
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => handleEditClick(facility as Facility)}
-                          disabled={isUpdatingFacility}
+                          onClick={() => handleEditClick(organization as Organization)}
+                          disabled={isUpdatingOrganization}
                         >
-                          {isUpdatingFacility ? (
+                          {isUpdatingOrganization ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Edit className="w-4 h-4" />
@@ -325,10 +311,10 @@ const FacilityManagement = () => {
                           variant="ghost"
                           size="icon"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDeleteFacility(facility as Facility)}
-                          disabled={isDeletingFacility}
+                          onClick={() => handleDeleteOrganization(organization as Organization)}
+                          disabled={isDeletingOrganization}
                         >
-                          {isDeletingFacility ? (
+                          {isDeletingOrganization ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Trash2 className="w-4 h-4" />
@@ -352,17 +338,16 @@ const FacilityManagement = () => {
           />
      
           {/* Empty State */}
-          {facilities.length === 0 && !isFacilitiesLoading && (
+          {organizations.length === 0 && !isOrganizationsLoading && (
             <div className="p-16 text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-                <Building className="w-10 h-10 text-gray-400" />
+                <Building2 className="w-10 h-10 text-gray-400" />
               </div>
-              <p className="text-gray-500 mb-6">No facilities found matching your filters.</p>
+              <p className="text-gray-500 mb-6">No organizations found matching your filters.</p>
               <Button
                 variant="outline"
                 onClick={() => setFilters({
                   search: '',
-                  organizationId: 'all',
                   page: 1,
                   limit: ITEMS_PER_PAGE
                 })}
@@ -374,24 +359,23 @@ const FacilityManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Add Facility Modal */}
-      <AddFacilityModal
+      {/* Add Organization Modal */}
+      <AddOrganizationModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        organizations={organizations || []}
-        onSubmit={handleAddFacility}
+        onSubmit={handleAddOrganization}
       />
 
-      {/* Edit Facility Modal */}
-      <EditFacilityModal
+      {/* Edit Organization Modal */}
+      <EditOrganizationModal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
-          setFacilityToEdit(null);
+          setOrganizationToEdit(null);
         }}
-        facility={facilityToEdit}
-        onSubmit={handleEditFacility}
-        isLoading={isUpdatingFacility}
+        organization={organizationToEdit}
+        onSubmit={handleEditOrganization}
+        isLoading={isUpdatingOrganization}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -400,8 +384,8 @@ const FacilityManagement = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the facility
-              {facilityToDelete && ` "${facilityToDelete.facility_name}"`} and remove it from our servers.
+              This action cannot be undone. This will permanently delete the organization
+              {organizationToDelete && ` "${organizationToDelete.organization_name}"`} and remove it from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -409,9 +393,9 @@ const FacilityManagement = () => {
             <AlertDialogAction 
               onClick={confirmDelete} 
               className="bg-red-600 hover:bg-red-700"
-              disabled={isDeletingFacility}
+              disabled={isDeletingOrganization}
             >
-              {isDeletingFacility ? 'Deleting...' : 'Delete'}
+              {isDeletingOrganization ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -420,4 +404,4 @@ const FacilityManagement = () => {
   );
 };
 
-export default FacilityManagement;
+export default OrganizationManagement;

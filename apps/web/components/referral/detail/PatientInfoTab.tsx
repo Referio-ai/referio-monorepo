@@ -620,7 +620,6 @@ export const PatientInfoTab: React.FC<PatientInfoTabProps> = ({
             <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-200 rounded-lg">
               <div className="text-gray-400 text-2xl mb-2">📷</div>
               <p className="mt-2 text-gray-500">No X-rays provided</p>
-              <Button className="mt-2 text-sm" variant="outline">Request X-rays</Button>
             </div>
           )}
         </CardContent>

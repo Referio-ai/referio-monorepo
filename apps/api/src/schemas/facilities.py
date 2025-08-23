@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 class Facility(BaseModel):
     facility_id: UUID
     organization_id: UUID
+    organization_name: Optional[str] = None
     facility_name: str
     facility_address: Dict[str, Any]
     facility_primary_contact_fname: str

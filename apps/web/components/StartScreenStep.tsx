@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, FileText, ChevronRight } from 'lucide-react';
+import { Loader2, FileText, ChevronRight, User, Calendar, Phone, Mail, CreditCard } from 'lucide-react';
 import { StartScreenStepProps } from './types';
 
 export const StartScreenStep: React.FC<StartScreenStepProps> = ({ 
@@ -34,23 +34,16 @@ export const StartScreenStep: React.FC<StartScreenStepProps> = ({
           <div className='flex gap-1 flex-col'>
             <p className="text-sm text-gray-600">Referring From</p>
             <p className="font-semibold text-gray-900">{referringFromOffice.name}</p>
-            <p className="text-xs text-gray-600">{referringFromOffice.address}</p>
+            {referringFromOffice.address && (
+              <p className="text-xs text-gray-600">{referringFromOffice.address}</p>
+            )}
           </div>
         </div>
-   
       </div>
 
-      {/* Previously Scanned Patient Info - Moved to top */}
-      {/* {isPreviouslyScanned && scannedPatientInfo && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="font-semibold text-amber-800 mb-1">This QR code has been previously scanned.</p>
-          <p className="text-amber-700 text-sm">
-            Associated with patient: <span className="font-bold">{scannedPatientInfo.firstNameInitial}. {scannedPatientInfo.lastNameInitial}. ({scannedPatientInfo.birthYear})</span>
-          </p>
-        </div>
-      )} */}
+  
 
-      {/* Main Referral Card */}
+      {/* Referring To Office Card */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
         <div className="text-center">
           {/* Office Icon */}
@@ -63,25 +56,39 @@ export const StartScreenStep: React.FC<StartScreenStepProps> = ({
             {referringToOffice.name}
           </h2>
           
-          {/* Office Address */}
-          <p className="text-gray-600 mb-1">{referringToOffice.address}</p>
-          
-          {/* Office Phone */}
-          {referringToOffice.phone && (
-            <p className="text-gray-600 mb-4">{referringToOffice.phone}</p>
+          {/* Office Address - Only show if available */}
+          {referringToOffice.address && referringToOffice.address !== "Address information not available" && (
+            <p className="text-gray-600 mb-1">{referringToOffice.address}</p>
           )}
           
-          {/* Welcome Message */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-blue-800 font-medium">
-              {isPreviouslyScanned ? "Welcome back!" : "Welcome!"}
-            </p>
-            <p className="text-blue-700 text-sm">
-              {isPreviouslyScanned ? "Click below to continue with this referral." : "Click below to get started."}
-            </p>
-          </div>
+          {/* Office Phone - Only show if available */}
+          {referringToOffice.phone && referringToOffice.phone !== "Phone information not available" && (
+            <p className="text-gray-600 mb-4">{referringToOffice.phone}</p>
+          )}
+        
         </div>
       </div>
+
+          {/* Patient Info Card - Middle Section */}
+          {scannedPatientInfo && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm text-center">
+          {/* Patient Icon */}
+          {/* Patient Initials and Birth Year */}
+          <div className="mb-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              {scannedPatientInfo.firstNameInitial}. {scannedPatientInfo.lastNameInitial}.
+            </h3>
+            <p className="text-lg text-gray-600 mb-2">
+              Born {scannedPatientInfo.birthYear}
+            </p>
+            {/* Last Scan Information */}
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <Calendar size={14} className="text-gray-400" />
+              <span>Last Scanned: {new Date().toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Start Referral Button */}
       <button
@@ -100,7 +107,11 @@ export const StartScreenStep: React.FC<StartScreenStepProps> = ({
       </button>
 
       {/* User ID Footer */}
- 
+      {userId && (
+        <div className="text-center text-xs text-gray-400">
+          User ID: {userId}
+        </div>
+      )}
     </div>
   );
 }; 

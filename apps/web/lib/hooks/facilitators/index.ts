@@ -6,7 +6,12 @@ import { FacilitatorUpdate } from "@/lib/api/client/models/FacilitatorUpdate";
 export const useGetFacilitators = ({ page, pageSize, search, facilityId }: { page: number, pageSize: number, search: string, facilityId: string }) => {
     return useQuery({
         queryKey: ['facilitators', page, pageSize, search, facilityId],
-        queryFn: () => FacilitatorService.apiV1GetFacilitators({ page, pageSize, search, facilityId }),
+        queryFn: () => FacilitatorService.apiV1GetFacilitators({ 
+            page, 
+            pageSize, 
+            search, 
+            facilityId: facilityId === 'all' ? undefined : facilityId 
+        }),
     });
 };
     
@@ -111,5 +116,18 @@ export const useGetUserFacilitiesByFacilitatorId = (facilitatorId: string) => {
         queryKey: ['user-facilities', facilitatorId],
         queryFn: () => FacilitatorService.apiV1GetUserFacilitiesByFacilitatorId({ facilitatorId }),
         enabled: !!facilitatorId,
+    });
+};
+
+export const useDeleteFacilitator = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: (facilitatorId: string) => 
+            FacilitatorService.apiV1DeleteFacilitator({ facilitatorId }),
+        onSuccess: () => {
+            // Invalidate and refetch facilitators list
+            queryClient.invalidateQueries({ queryKey: ['facilitators'] });
+        },
     });
 };

@@ -32,12 +32,17 @@ export interface PatientInfo {
   firstNameInitial: string;
   lastNameInitial: string;
   birthYear: string;
+  fullName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  gender?: string;
+  insuranceMemberId?: string;
 }
 
 export interface OfficeInfo {
   name: string;
-  address: string;
-  phone: string;
+  address?: string;
+  phone?: string;
 }
 
 export interface ModalProps {
