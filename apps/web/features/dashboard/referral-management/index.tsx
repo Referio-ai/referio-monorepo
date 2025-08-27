@@ -300,7 +300,7 @@ const ReferralDashboard = () => {
       
       const qrCodeElement = React.createElement(QRCode, {
         value: qrCodeUrl,
-        size: 200,
+        size: 300,
         level: "M",
         bgColor: "#ffffff",
         fgColor: "#1e293b",
@@ -325,7 +325,7 @@ const ReferralDashboard = () => {
           <style>
             @page {
               size: A4;
-              margin: 0.25in;
+              margin: 0.5in;
             }
             * {
               box-sizing: border-box;
@@ -336,106 +336,126 @@ const ReferralDashboard = () => {
               padding: 0;
               background: white;
             }
+            .qr-page {
+              page-break-after: always;
+              min-height: 100vh;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              text-align: center;
+            }
+            .qr-page:last-child {
+              page-break-after: avoid;
+            }
             .header {
               text-align: center;
-              margin-bottom: 20px;
-              padding-bottom: 10px;
+              margin-bottom: 30px;
+              padding-bottom: 15px;
               border-bottom: 2px solid #333;
+              width: 100%;
             }
             .header h1 {
               margin: 0 0 10px 0;
-              font-size: 24px;
+              font-size: 28px;
               color: #333;
             }
             .header-info {
               color: #666;
-              font-size: 14px;
-              line-height: 1.4;
+              font-size: 16px;
+              line-height: 1.6;
             }
-            .qr-grid {
-              display: grid;
-              grid-template-columns: repeat(6, 1fr);
-              gap: 8px;
-              page-break-inside: avoid;
-            }
-            .qr-item {
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              padding: 8px;
-              text-align: center;
-              page-break-inside: avoid;
-              background: #fff;
+            .qr-container {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              margin: 20px 0;
             }
             .qr-code {
-              width: 80px;
-              height: 80px;
-              margin: 0 auto;
+              margin: 20px 0;
               display: flex;
-              align-items: center;
               justify-content: center;
+              align-items: center;
             }
             .qr-code svg {
-              width: 100% !important;
-              height: 100% !important;
+              border: 3px solid #e2e8f0;
+              border-radius: 12px;
+              background: white;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
             .qr-info {
-              font-size: 10px;
-              color: #666;
-              margin-top: 4px;
+              margin-top: 25px;
+              padding: 20px;
+              background: #f8fafc;
+              border-radius: 8px;
+              border: 1px solid #e2e8f0;
+              max-width: 400px;
+            }
+            .referral-id {
+              font-size: 20px;
+              font-weight: 600;
+              color: #1e293b;
+              margin-bottom: 10px;
+              font-family: 'Courier New', monospace;
+            }
+            .batch-info {
+              font-size: 16px;
+              color: #64748b;
+              margin-bottom: 15px;
+            }
+            .status-info {
+              font-size: 14px;
+              color: #64748b;
+              margin-top: 10px;
             }
             .footer {
               text-align: center;
-              margin-top: 20px;
-              padding-top: 10px;
+              margin-top: 30px;
+              padding-top: 15px;
               border-top: 1px solid #ddd;
-              font-size: 12px;
+              font-size: 14px;
               color: #999;
+              width: 100%;
             }
             @media print {
               body {
                 background: white;
               }
-              .qr-item {
-                border: 1px solid #333;
+              .qr-page {
                 break-inside: avoid;
+                page-break-after: always;
+              }
+              .qr-page:last-child {
+                page-break-after: avoid;
               }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Referral QR Codes</h1>
-            <div class="header-info">
-              <p><strong>Batch ID:</strong> ${batch.id}</p>
-              <p><strong>Batch Prefix:</strong> ${batchPrefix}</p>
-              ${batch.description ? `<p><strong>Description:</strong> ${batch.description}</p>` : ''}
-              <p><strong>Route:</strong> ${outboundFacilityName || 'Unknown'} → ${inboundFacilityName || 'Unknown'}</p>
-              <p><strong>Generated:</strong> ${batch.createdAt ? new Date(batch.createdAt).toLocaleString() : 'Unknown'}</p>
-              <p><strong>Total QR Codes:</strong> ${totalReferrals}</p>
-              <p><strong>Batch Size:</strong> ${batchSize}</p>
-            </div>
-          </div>
-          
-          <div class="qr-grid">
-            ${referrals.map((referral: any) => {
-              const qrCodeString = generateQRCodeSVG(referral.qr_code_url);
-              return `
-                <div class="qr-item">
-                  <div class="qr-code">${qrCodeString}</div>
-                  <div class="qr-info">
-                    <div>ID: ${referral.referral_slug}</div>
-                    <div>Status: ${referral.status || 'Pending'}</div>
-                    ${referral.scanned ? '<div style="color: #059669;">✓ Scanned</div>' : ''}
-                    ${referral.submitted ? '<div style="color: #2563eb;">✓ Submitted</div>' : ''}
-                  </div>
+          ${referrals.map((referral: any, index: number) => {
+            const qrCodeString = generateQRCodeSVG(referral.qr_code_url);
+            return `
+              <div class="qr-page">
+            
+                
+                <div class="qr-container">
+                    <div class="header">
+                  <h1>Referio.ai</h1>
                 </div>
-              `;
-            }).join('')}
-          </div>
-          
-          <div class="footer">
-            <p>Generated on ${new Date().toLocaleString()} | Total QR Codes: ${totalReferrals} | Batch Size: ${batchSize}</p>
-          </div>
+                  <div class="qr-code">
+                    ${qrCodeString}
+                  </div>
+                  <div>Scan QR Code to Upload Referral</div>
+                </div>
+                
+                <div class="footer">
+                  <p>Generated on ${new Date().toLocaleString()} | QR Code ${index + 1} of ${totalReferrals}</p>
+                </div>
+              </div>
+            `;
+          }).join('')}
         </body>
       </html>
     `;
