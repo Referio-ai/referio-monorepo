@@ -7,7 +7,27 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Define public routes that don't require authentication
-const PUBLIC_ROUTES = ["/", "/login", "/signup"];
+// Static routes
+const STATIC_PUBLIC_ROUTES = ["/", "/login", "/signup", "/blog/"];
+
+// Dynamic route patterns (using regex patterns for matching)
+const DYNAMIC_PUBLIC_ROUTES = [
+  /^\/r\/[^\/]+$/,  // Matches r/[slug] - single segment after /r/
+  /^\/r\/[^\/]+\/$/, // Matches r/[slug]/ - with trailing slash
+];
+
+/**
+ * Checks if a pathname is a public route (static or dynamic)
+ */
+const isPublicRoute = (pathname: string): boolean => {
+  // Check static routes first
+  if (STATIC_PUBLIC_ROUTES.includes(pathname)) {
+    return true;
+  }
+  
+  // Check dynamic route patterns
+  return DYNAMIC_PUBLIC_ROUTES.some(pattern => pattern.test(pathname));
+};
 
 // Define route mappings for different user types
 const USER_TYPE_ROUTES = {
@@ -39,7 +59,7 @@ const handleUserTypeRedirect = (
   const targetRoute = USER_TYPE_ROUTES[userType];
   
   // If user is on a public route, redirect to their appropriate dashboard
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (isPublicRoute(pathname)) {
     router.push(targetRoute);
     return;
   }
@@ -72,7 +92,7 @@ const shouldRedirectUser = (user: any, pathname: string): boolean => {
   
   // If user type is invalid, they should be redirected
   if (!userType || !USER_TYPE_ROUTES[userType]) {
-    return !PUBLIC_ROUTES.includes(pathname);
+    return !isPublicRoute(pathname);
   }
 
   const targetRoute = USER_TYPE_ROUTES[userType];
@@ -92,7 +112,7 @@ const shouldRedirectUser = (user: any, pathname: string): boolean => {
   }
 
   // Check if user is on public route and should be redirected to their dashboard
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (isPublicRoute(pathname)) {
     return true;
   }
 
@@ -113,7 +133,7 @@ export function AuthRedirectProvider({
   useEffect(() => {
     if (!loading) {
       // If user is not logged in and trying to access a protected route
-      if (!user && !PUBLIC_ROUTES.includes(pathname)) {
+      if (!user && !isPublicRoute(pathname)) {
         //redirect to login page of propelauth
         const loginUrl = `${process.env.NEXT_PUBLIC_AUTH_URL}/login?redirectTo=${pathname}`;
         router.push(loginUrl);
@@ -129,7 +149,7 @@ export function AuthRedirectProvider({
         }
 
         // Handle user type-based routing for protected routes
-        if (!PUBLIC_ROUTES.includes(pathname)) {
+        if (!isPublicRoute(pathname)) {
           handleUserTypeRedirect(user, pathname, router);
           return;
         }

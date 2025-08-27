@@ -55,7 +55,7 @@ const validationSchema = Yup.object({
   facility_primary_contact_lname: Yup.string().required('Last name is required'),
   facility_primary_contact_phone_number: Yup.string()
     .required('Phone number is required')
-    .matches(/^\+?1?\d{10,15}$/, 'Phone number must be valid'),
+    .matches(/^\(\d{3}\) \d{3}-\d{4}$/, 'Phone number must be in format (123) 123-1234'),
   facility_primary_contact_email: Yup.string()
     .email('Invalid email address')
     .required('Email is required'),
@@ -69,6 +69,31 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
 
   const { data: organizations, isLoading } = useGetOrganizations({ page: 1, pageSize: 10, search: '' });
 
+  // Phone number formatting function
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-digits
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    const trimmed = phoneNumber.slice(0, 10);
+    
+    // Format as (XXX) XXX-XXXX
+    if (trimmed.length === 0) return '';
+    if (trimmed.length <= 3) return `(${trimmed}`;
+    if (trimmed.length <= 6) return `(${trimmed.slice(0, 3)}) ${trimmed.slice(3)}`;
+    return `(${trimmed.slice(0, 3)}) ${trimmed.slice(3, 6)}-${trimmed.slice(6)}`;
+  };
+
+  // Handle phone number input change
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    formik.setFieldValue('facility_primary_contact_phone_number', formatted);
+  };
+
+  // Extract only digits for submission
+  const getCleanPhoneNumber = (formattedPhone: string): string => {
+    return formattedPhone.replace(/\D/g, '');
+  };
 
   const generateTestData = () => {
 
@@ -84,7 +109,7 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
       },
       facility_primary_contact_fname: 'John',
       facility_primary_contact_lname: 'Smith',
-      facility_primary_contact_phone_number: '+14155552671',
+      facility_primary_contact_phone_number: '(415) 555-2671',
       facility_primary_contact_email: 'john.smith@testmedical.com',
     };
     formik.setValues(testData);
@@ -264,8 +289,10 @@ const AddFacilityModal: React.FC<AddFacilityModalProps> = ({
               <Label htmlFor="facility_primary_contact_phone_number">Contact Phone</Label>
               <Input
                 id="facility_primary_contact_phone_number"
-                {...formik.getFieldProps('facility_primary_contact_phone_number')}
-                placeholder="Enter phone number"
+                value={formik.values.facility_primary_contact_phone_number}
+                onChange={handlePhoneChange}
+                placeholder="(123) 123-1234"
+                maxLength={14}
               />
               {formik.touched.facility_primary_contact_phone_number && formik.errors.facility_primary_contact_phone_number && (
                 <div className="text-sm text-red-500">{formik.errors.facility_primary_contact_phone_number}</div>

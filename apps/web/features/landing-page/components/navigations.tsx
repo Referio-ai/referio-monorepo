@@ -23,6 +23,7 @@ export const Navigation = () => {
             <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
             <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
             <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">Reviews</a>
+            <a href="/blog" className="text-gray-600 hover:text-gray-900 transition-colors">Blog</a>
             <Button variant="ghost" size="sm">Sign In</Button>
             <Button size="sm">Get Started</Button>
           </div>
@@ -42,6 +43,7 @@ export const Navigation = () => {
               <a href="#how-it-works" className="text-gray-600 hover:text-gray-900">How It Works</a>
               <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
               <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Reviews</a>
+              <a href="/blog" className="text-gray-600 hover:text-gray-900">Blog</a>
               <div className="flex flex-col space-y-2 pt-4">
                 <Button variant="ghost" size="sm">Sign In</Button>
                 <Button size="sm">Get Started</Button>
